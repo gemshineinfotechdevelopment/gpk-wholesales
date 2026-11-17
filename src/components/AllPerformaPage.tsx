@@ -38,6 +38,7 @@ import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded';
+import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import ModeEditOutlineRoundedIcon from '@mui/icons-material/ModeEditOutlineRounded';
@@ -67,7 +68,7 @@ interface AllPerformaPageProps {
   onSelectCustomerForBill?: (customerName: string, subTab?: any) => void;
 }
 
-export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, onSelectCustomerForBill: _onSelectCustomerForBill }) => {
+export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, onSelectCustomerForBill }) => {
   const [performas, setPerformas] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -992,6 +993,18 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, on
                       <TableCell sx={{ textAlign: 'center' }}>{getStatusChip(p.status)}</TableCell>
                       <TableCell sx={{ textAlign: 'center' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                          {onSelectCustomerForBill && p.status !== 'CANCELLED' && p.status !== 'COMPLETED' && (
+                            <Tooltip title="Create Particular Bill for this Customer">
+                              <IconButton
+                                size="small"
+                                onClick={() => onSelectCustomerForBill(p.customerSnapshot?.name || '', 'Create Particular')}
+                                sx={{ color: '#059669', backgroundColor: '#ECFDF5', '&:hover': { backgroundColor: '#D1FAE5' } }}
+                              >
+                                <ReceiptLongRoundedIcon sx={{ fontSize: 18 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+
                           <Tooltip title="View Details">
                             <IconButton size="small" onClick={() => handleOpenViewModal(p._id)} sx={{ color: '#0B4DB7' }}>
                               <VisibilityRoundedIcon sx={{ fontSize: 18 }} />
@@ -1301,6 +1314,27 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, on
               >
                 Print Performa
               </Button>
+              {onSelectCustomerForBill && selectedPerformaForView.status !== 'CANCELLED' && (
+                <Button
+                  variant="contained"
+                  disableElevation
+                  onClick={() => {
+                    setViewModalOpen(false);
+                    const custName = selectedPerformaForView.customerSnapshot?.name || '';
+                    onSelectCustomerForBill(custName, 'Create Particular');
+                  }}
+                  startIcon={<ReceiptLongRoundedIcon sx={{ fontSize: 18 }} />}
+                  sx={{
+                    backgroundColor: '#059669',
+                    color: '#FFFFFF',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    '&:hover': { backgroundColor: '#047857' },
+                  }}
+                >
+                  Create Bill / Particular
+                </Button>
+              )}
             </Box>
           )}
         </DialogActions>

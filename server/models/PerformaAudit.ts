@@ -5,7 +5,8 @@ export type PerformaAuditType =
   | 'PERFORMA_ADVANCE'
   | 'PERFORMA_CONSUMED'
   | 'PERFORMA_REVERSED'
-  | 'PERFORMA_CANCELLED';
+  | 'PERFORMA_CANCELLED'
+  | 'ADDITIONAL_PRODUCT_BILLED';
 
 export interface IPerformaAudit extends Document {
   customerId: mongoose.Types.ObjectId | string;
@@ -56,7 +57,14 @@ const PerformaAuditSchema: Schema = new Schema(
     amount: { type: Number, required: true, default: 0 },
     type: {
       type: String,
-      enum: ['ADVANCE_RECEIVED', 'PERFORMA_ADVANCE', 'PERFORMA_CONSUMED', 'PERFORMA_REVERSED', 'PERFORMA_CANCELLED'],
+      enum: [
+        'ADVANCE_RECEIVED',
+        'PERFORMA_ADVANCE',
+        'PERFORMA_CONSUMED',
+        'PERFORMA_REVERSED',
+        'PERFORMA_CANCELLED',
+        'ADDITIONAL_PRODUCT_BILLED',
+      ],
       required: true,
       index: true,
     },

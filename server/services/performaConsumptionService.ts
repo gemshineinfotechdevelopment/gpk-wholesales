@@ -380,6 +380,37 @@ export const consumeBillAgainstPerforma = async (
       }
     }
 
+    // Check for additional products or items marked as additional outside performa quotation
+    for (const billItem of products) {
+      const billedCases = cleanNumber(billItem.quantity);
+      const billedNameNormalized = billItem.particular.replace(/\s*\(additional\)/i, '').trim().toLowerCase();
+      const pProd = masterPerforma.products.find((p) => {
+        const pName = p.productSnapshot.productName.trim().toLowerCase();
+        const pCode = (p.productSnapshot.productCode || '').trim().toLowerCase();
+        return pName === billedNameNormalized || (pCode && pCode === billedNameNormalized);
+      });
+
+      const isExplicitAdditional = (billItem as any).isAdditional === true;
+      if (!pProd || isExplicitAdditional) {
+        await PerformaAudit.create({
+          customerId: customer?._id || masterPerforma.customerId,
+          customerName: customerName.trim(),
+          performaId: masterPerforma._id,
+          performaNumber: masterPerforma.performaNumber,
+          particularId: new mongoose.Types.ObjectId(particularId),
+          billNo: billNo,
+          productName: billItem.particular,
+          cases: billedCases,
+          amount: cleanNumber(billItem.amount),
+          type: 'ADDITIONAL_PRODUCT_BILLED',
+          date: billDate,
+          reference: `Bill #${billNo}`,
+          notes: `Additional product: ${billItem.particular} (${billedCases} cases) billed outside quotation`,
+          createdBy: 'System',
+        });
+      }
+    }
+
     // Always calculate customer's total used advance from all customer Particulars Net Totals
     const allCustomerBills = await Particular.find({
       customerName: { $regex: new RegExp(`^${escapedCustomerName}$`, 'i') },
@@ -550,7 +581,7 @@ export const reverseBillConsumption = async (particularId: string): Promise<void
 
     await PerformaAudit.deleteMany({
       particularId: new mongoose.Types.ObjectId(particularId),
-      type: 'PERFORMA_CONSUMED',
+      type: { $in: ['PERFORMA_CONSUMED', 'ADDITIONAL_PRODUCT_BILLED'] },
     });
   } catch (err) {
     console.error(`[Performa Reversal Error for Particular ${particularId}]:`, err);
@@ -746,6 +777,9 @@ export const getCustomerPerformaSummary = async (customerIdentifier: string): Pr
       delta = displayAmount;
     } else if (a.type === 'PERFORMA_CANCELLED') {
       typeLabel = 'CANCELLED';
+      delta = 0;
+    } else if (a.type === 'ADDITIONAL_PRODUCT_BILLED') {
+      typeLabel = 'ADDITIONAL PRODUCT';
       delta = 0;
     }
 

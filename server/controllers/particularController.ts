@@ -3,6 +3,7 @@ import { Particular } from '../models/Particular';
 import { AccountLedger } from '../models/AccountLedger';
 import { escapeRegex, recalculateCustomerBalance, getParticularNetTotal } from '../utils/ledgerUtils';
 import { isCloudinaryConfigured, uploadToCloudinary, deleteFromCloudinary } from '../config/cloudinary';
+import { consumeBillAgainstPerforma, reverseBillConsumption } from '../services/performaConsumptionService';
 
 export const getParticulars = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -67,6 +68,8 @@ export const createParticular = async (req: Request, res: Response, next: NextFu
       total,
       date,
       products,
+      performaId,
+      performaNumber,
     } = req.body;
 
     let finalBillNo = billNo ? String(billNo).trim() : '';
@@ -98,6 +101,8 @@ export const createParticular = async (req: Request, res: Response, next: NextFu
       total: total || amount || '0.00',
       date: date || new Date().toISOString().split('T')[0],
       products: products || [],
+      performaId: performaId || null,
+      performaNumber: performaNumber || '',
     });
 
     // Automatically log to Account Ledger using Net Total
@@ -118,6 +123,28 @@ export const createParticular = async (req: Request, res: Response, next: NextFu
       await recalculateCustomerBalance(particular.customerName);
     }
 
+    // Automatically consume against active Performa if available
+    try {
+      const consumptionResult = await consumeBillAgainstPerforma(
+        String(particular._id),
+        particular.billNo,
+        particular.customerName,
+        particular.date,
+        particular.products,
+        billTotalNum
+      );
+      if (consumptionResult.consumed && consumptionResult.items.length > 0) {
+        const matchedItem = consumptionResult.items[0];
+        if (!particular.performaNumber && matchedItem.performaNumber) {
+          particular.performaNumber = matchedItem.performaNumber;
+          particular.performaId = matchedItem.performaId as any;
+          await particular.save();
+        }
+      }
+    } catch (consumeErr) {
+      console.error('[Performa Consumption on createParticular Error]:', consumeErr);
+    }
+
     res.status(201).json({
       success: true,
       data: particular,
@@ -136,6 +163,13 @@ export const updateParticular = async (req: Request, res: Response, next: NextFu
       return;
     }
 
+    // 1. Reverse previous performa consumption
+    try {
+      await reverseBillConsumption(String(id));
+    } catch (revErr) {
+      console.error('[Performa Reversal on updateParticular Error]:', revErr);
+    }
+
     const oldCustomerName = existing.customerName;
 
     const {
@@ -151,6 +185,8 @@ export const updateParticular = async (req: Request, res: Response, next: NextFu
       total,
       date,
       products,
+      performaId,
+      performaNumber,
     } = req.body;
 
     const updatedParticular = await Particular.findByIdAndUpdate(
@@ -168,6 +204,8 @@ export const updateParticular = async (req: Request, res: Response, next: NextFu
         ...(total !== undefined && { total }),
         ...(date !== undefined && { date }),
         ...(products !== undefined && { products }),
+        ...(performaId !== undefined && { performaId }),
+        ...(performaNumber !== undefined && { performaNumber }),
       },
       { new: true, runValidators: true }
     );
@@ -216,6 +254,20 @@ export const updateParticular = async (req: Request, res: Response, next: NextFu
     }
     await recalculateCustomerBalance(updatedParticular.customerName);
 
+    // Re-consume updated bill against Performa
+    try {
+      await consumeBillAgainstPerforma(
+        String(updatedParticular._id),
+        updatedParticular.billNo,
+        updatedParticular.customerName,
+        updatedParticular.date,
+        updatedParticular.products,
+        billTotalNum
+      );
+    } catch (consumeErr) {
+      console.error('[Performa Consumption on updateParticular Error]:', consumeErr);
+    }
+
     res.status(200).json({
       success: true,
       data: updatedParticular,
@@ -235,7 +287,14 @@ export const deleteParticular = async (req: Request, res: Response, next: NextFu
 
     const customerName = particular.customerName;
 
-    // 1. Delete associated Cloudinary asset if present
+    // 1. Reverse performa consumption
+    try {
+      await reverseBillConsumption(String(req.params.id));
+    } catch (revErr) {
+      console.error('[Performa Reversal on deleteParticular Error]:', revErr);
+    }
+
+    // 2. Delete associated Cloudinary asset if present
     if (particular.pdfPublicId && isCloudinaryConfigured()) {
       await deleteFromCloudinary(particular.pdfPublicId);
     }
@@ -301,7 +360,7 @@ export const uploadParticularPdf = async (req: Request, res: Response, next: Nex
 
         const cloudRes = await uploadToCloudinary(
           pdfData,
-          'dheeksha_trade/bills',
+          'gpk_wholesales/bills',
           pdfName || `Bill-${existingParticular.billNo || 'receipt'}`
         );
 

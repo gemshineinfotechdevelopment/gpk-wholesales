@@ -12,6 +12,7 @@ import { ProductsPage } from './components/ProductsPage';
 import { ParticularsPage, type ParticularSubTab } from './components/ParticularsPage';
 import { PerformaPage } from './components/PerformaPage';
 import { AllPerformaPage } from './components/AllPerformaPage';
+import { PendingCasesPage } from './components/PendingCasesPage';
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
@@ -23,6 +24,7 @@ function App() {
     const validTabs: NavTab[] = [
       'Performa',
       'All Performa',
+      'Pending Cases',
       'Particulars',
       'Product',
       'Company',
@@ -155,6 +157,13 @@ function App() {
             />
           )}
 
+          {/* Pending Cases Tab */}
+          {activeTab === 'Pending Cases' && (
+            <PendingCasesPage
+              onSelectCustomerForBill={handleCustomerSelectedForParticular}
+            />
+          )}
+
           {/* Particulars Tab */}
           {activeTab === 'Particulars' && (
             <ParticularsPage
@@ -214,7 +223,10 @@ function App() {
             activeTab !== 'Product' &&
             activeTab !== 'Company' &&
             activeTab !== 'All Customers' &&
-            activeTab !== 'Customers' && (
+            activeTab !== 'Customers' &&
+            activeTab !== 'Performa' &&
+            activeTab !== 'All Performa' &&
+            activeTab !== 'Pending Cases' && (
               <Box sx={{ p: 4, textAlign: 'center', color: '#64748B' }}>
                 {activeTab} content coming soon.
               </Box>

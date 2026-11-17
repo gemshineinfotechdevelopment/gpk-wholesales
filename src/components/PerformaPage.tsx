@@ -94,7 +94,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
   initialCustomerName,
   initialSubTab,
   onNavigateAllPerforma,
-  onSelectCustomerForBill: _onSelectCustomerForBill,
+  onSelectCustomerForBill,
 }) => {
   // Subtab Navigation
   const [activeSubTab, setActiveSubTab] = useState<PerformaSubTab>(() => {
@@ -2202,6 +2202,18 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                                 </IconButton>
                               </Tooltip>
 
+                              {onSelectCustomerForBill && p.status !== 'CANCELLED' && p.status !== 'COMPLETED' && (
+                                <Tooltip title="Create Particular Bill for this Customer">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => onSelectCustomerForBill(p.customerSnapshot?.name || '', 'Create Particular')}
+                                    sx={{ color: '#059669', '&:hover': { backgroundColor: '#ECFDF5' } }}
+                                  >
+                                    <ReceiptLongRoundedIcon sx={{ fontSize: 18 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+
                               <Tooltip title="View Details">
                                 <IconButton size="small" onClick={() => handleOpenViewModal(p._id)} sx={{ color: '#475569' }}>
                                   <VisibilityRoundedIcon sx={{ fontSize: 18 }} />
@@ -2504,6 +2516,27 @@ export const PerformaPage: FC<PerformaPageProps> = ({
               >
                 Print Performa
               </Button>
+              {onSelectCustomerForBill && selectedPerformaForView.status !== 'CANCELLED' && (
+                <Button
+                  variant="contained"
+                  disableElevation
+                  onClick={() => {
+                    setViewModalOpen(false);
+                    const custName = selectedPerformaForView.customerSnapshot?.name || '';
+                    onSelectCustomerForBill(custName, 'Create Particular');
+                  }}
+                  startIcon={<ReceiptLongRoundedIcon sx={{ fontSize: 18 }} />}
+                  sx={{
+                    backgroundColor: '#059669',
+                    color: '#FFFFFF',
+                    textTransform: 'none',
+                    fontWeight: 700,
+                    '&:hover': { backgroundColor: '#047857' },
+                  }}
+                >
+                  Create Bill / Particular
+                </Button>
+              )}
             </Box>
           )}
         </DialogActions>

@@ -6,6 +6,7 @@ export interface IParticularProductItem {
   rate: string;
   pktUnit: string;
   amount: string;
+  isAdditional?: boolean;
 }
 
 export interface IParticular extends Document {
@@ -24,6 +25,8 @@ export interface IParticular extends Document {
   pdfName?: string;
   pdfPublicId?: string;
   products: IParticularProductItem[];
+  performaId?: mongoose.Types.ObjectId | string;
+  performaNumber?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -34,6 +37,7 @@ const ParticularProductItemSchema: Schema = new Schema({
   rate: { type: String, default: '' },
   pktUnit: { type: String, default: '' },
   amount: { type: String, default: '' },
+  isAdditional: { type: Boolean, default: false },
 });
 
 const ParticularSchema: Schema = new Schema(
@@ -52,6 +56,8 @@ const ParticularSchema: Schema = new Schema(
     pdfData: { type: String, default: '' },
     pdfName: { type: String, default: '' },
     pdfPublicId: { type: String, default: '' },
+    performaId: { type: Schema.Types.ObjectId, ref: 'Performa', default: null },
+    performaNumber: { type: String, default: '', trim: true },
     products: [ParticularProductItemSchema],
   },
   { timestamps: true }

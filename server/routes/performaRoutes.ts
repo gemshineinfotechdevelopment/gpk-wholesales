@@ -10,11 +10,13 @@ import {
   addCustomerAdvance,
   getCustomerSummaryEndpoint,
   getCustomerAuditHistory,
+  getPendingCasesEndpoint,
 } from '../controllers/performaController';
 
 const router = Router();
 
 router.get('/next-number', getNextPerformaNumber);
+router.get('/pending-cases', getPendingCasesEndpoint);
 router.post('/advance', addCustomerAdvance);
 router.get('/customer/:customerId/summary', getCustomerSummaryEndpoint);
 router.get('/customer/:customerId/audit', getCustomerAuditHistory);
