@@ -36,6 +36,8 @@ import SavingsRoundedIcon from '@mui/icons-material/SavingsRounded';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import VpnKeyRoundedIcon from '@mui/icons-material/VpnKeyRounded';
+import { CustomerLoginModal } from './CustomerLoginModal';
 import { CustomersApi, AccountsApi, CompaniesApi } from '../services/api';
 import { printCustomerListDirectly } from '../utils/printUtils';
 import { shareLedgerOnWhatsApp } from '../utils/whatsappUtils';
@@ -70,12 +72,15 @@ export interface CustomerFinancial {
 interface AllCustomersPageProps {
   onAddNewCustomer?: () => void;
   onSelectCustomerForParticular?: (customerName: string, subTab?: 'Account Details' | 'Create Particular') => void;
+  userRole?: 'superadmin' | 'admin' | 'user';
 }
 
 export const AllCustomersPage: FC<AllCustomersPageProps> = ({
   onAddNewCustomer,
   onSelectCustomerForParticular,
+  userRole = 'admin',
 }) => {
+  const isSuperAdmin = userRole === 'superadmin';
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'PENDING' | 'SETTLED' | 'ADVANCE'>('ALL');
   const [customers, setCustomers] = useState<CustomerFinancial[]>([]);
@@ -105,6 +110,15 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
     notes: '',
   });
   const [paymentLoading, setPaymentLoading] = useState(false);
+
+  // Customer Login Modal State (Admin & Super Admin)
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [selectedLoginCustomer, setSelectedLoginCustomer] = useState<CustomerFinancial | null>(null);
+
+  const handleOpenLoginModal = (customer: CustomerFinancial) => {
+    setSelectedLoginCustomer(customer);
+    setLoginModalOpen(true);
+  };
 
   const fetchCustomers = async () => {
     try {
@@ -228,7 +242,8 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
       const deletedCust = customers.find((c) => (c._id || c.id) === id);
       await CustomersApi.delete(id);
       setCustomers((prev) => prev.filter((c) => (c._id || c.id) !== id));
-      if (deletedCust && localStorage.getItem('dheeksha_active_customer') === deletedCust.name) {
+      if (deletedCust && (localStorage.getItem('gpk_active_customer') === deletedCust.name || localStorage.getItem('dheeksha_active_customer') === deletedCust.name)) {
+        localStorage.removeItem('gpk_active_customer');
         localStorage.removeItem('dheeksha_active_customer');
       }
     } catch (err) {
@@ -493,216 +508,218 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
         </Box>
       </Box>
 
-      {/* Top Metric Cards (Overview: Debit, Credit, Net Due, Advance) */}
-      <Box
-        sx={{
-          display: 'grid',
-          gridTemplateColumns: {
-            xs: '1fr',
-            sm: 'repeat(2, 1fr)',
-            md: 'repeat(3, 1fr)',
-            lg: 'repeat(5, 1fr)',
-          },
-          gap: 2,
-          mb: 3,
-        }}
-      >
-        {/* Card 1: Total Customers */}
-        <Paper
-          elevation={0}
+      {/* Top Metric Cards (Overview: Debit, Credit, Net Due, Advance) - Visible only to Super Admin */}
+      {isSuperAdmin && (
+        <Box
           sx={{
-            p: 2,
-            borderRadius: '12px',
-            border: '1px solid #EEF2F6',
-            backgroundColor: '#FFFFFF',
-            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.8,
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: 'repeat(2, 1fr)',
+              md: 'repeat(3, 1fr)',
+              lg: 'repeat(5, 1fr)',
+            },
+            gap: 2,
+            mb: 3,
           }}
         >
-          <Box
+          {/* Card 1: Total Customers */}
+          <Paper
+            elevation={0}
             sx={{
-              width: 44,
-              height: 44,
-              borderRadius: '10px',
-              backgroundColor: '#EFF6FF',
-              color: '#0B4DB7',
+              p: 2,
+              borderRadius: '12px',
+              border: '1px solid #EEF2F6',
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
+              gap: 1.8,
             }}
           >
-            <PeopleAltRoundedIcon sx={{ fontSize: 24 }} />
-          </Box>
-          <Box>
-            <Typography sx={{ fontSize: '11.5px', fontWeight: 600, color: '#64748B' }}>
-              Total Customers
-            </Typography>
-            <Typography sx={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', lineHeight: 1.2, mt: 0.3 }}>
-              {financialTotals.totalCount}
-            </Typography>
-          </Box>
-        </Paper>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '10px',
+                backgroundColor: '#EFF6FF',
+                color: '#0B4DB7',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <PeopleAltRoundedIcon sx={{ fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '11.5px', fontWeight: 600, color: '#64748B' }}>
+                Total Customers
+              </Typography>
+              <Typography sx={{ fontSize: '20px', fontWeight: 800, color: '#0F172A', lineHeight: 1.2, mt: 0.3 }}>
+                {financialTotals.totalCount}
+              </Typography>
+            </Box>
+          </Paper>
 
-        {/* Card 2: Total Debit (Total Purchases / Billed) */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            borderRadius: '12px',
-            border: '1px solid #EEF2F6',
-            backgroundColor: '#FFFFFF',
-            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.8,
-          }}
-        >
-          <Box
+          {/* Card 2: Total Debit (Total Purchases / Billed) */}
+          <Paper
+            elevation={0}
             sx={{
-              width: 44,
-              height: 44,
-              borderRadius: '10px',
-              backgroundColor: '#F8FAFC',
-              color: '#334155',
+              p: 2,
+              borderRadius: '12px',
+              border: '1px solid #EEF2F6',
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
-              border: '1px solid #E2E8F0',
+              gap: 1.8,
             }}
           >
-            <TrendingUpRoundedIcon sx={{ fontSize: 24 }} />
-          </Box>
-          <Box>
-            <Typography sx={{ fontSize: '11.5px', fontWeight: 600, color: '#64748B' }}>
-              Total Debit (Purchases)
-            </Typography>
-            <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#1E293B', lineHeight: 1.2, mt: 0.3 }}>
-              ₹{financialTotals.totalDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </Typography>
-          </Box>
-        </Paper>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '10px',
+                backgroundColor: '#F8FAFC',
+                color: '#334155',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+                border: '1px solid #E2E8F0',
+              }}
+            >
+              <TrendingUpRoundedIcon sx={{ fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '11.5px', fontWeight: 600, color: '#64748B' }}>
+                Total Debit (Purchases)
+              </Typography>
+              <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#1E293B', lineHeight: 1.2, mt: 0.3 }}>
+                ₹{financialTotals.totalDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </Typography>
+            </Box>
+          </Paper>
 
-        {/* Card 3: Total Credit (Paid / Advances Received) */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            borderRadius: '12px',
-            border: '1px solid #EEF2F6',
-            backgroundColor: '#FFFFFF',
-            boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.8,
-          }}
-        >
-          <Box
+          {/* Card 3: Total Credit (Paid / Advances Received) */}
+          <Paper
+            elevation={0}
             sx={{
-              width: 44,
-              height: 44,
-              borderRadius: '10px',
-              backgroundColor: '#F0FDF4',
-              color: '#16A34A',
+              p: 2,
+              borderRadius: '12px',
+              border: '1px solid #EEF2F6',
+              backgroundColor: '#FFFFFF',
+              boxShadow: '0 1px 3px rgba(15, 23, 42, 0.04)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
+              gap: 1.8,
             }}
           >
-            <CheckCircleOutlineRoundedIcon sx={{ fontSize: 24 }} />
-          </Box>
-          <Box>
-            <Typography sx={{ fontSize: '11.5px', fontWeight: 600, color: '#16A34A' }}>
-              Total Credit (Paid)
-            </Typography>
-            <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#16A34A', lineHeight: 1.2, mt: 0.3 }}>
-              ₹{financialTotals.totalCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </Typography>
-          </Box>
-        </Paper>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '10px',
+                backgroundColor: '#F0FDF4',
+                color: '#16A34A',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <CheckCircleOutlineRoundedIcon sx={{ fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '11.5px', fontWeight: 600, color: '#16A34A' }}>
+                Total Credit (Paid)
+              </Typography>
+              <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#16A34A', lineHeight: 1.2, mt: 0.3 }}>
+                ₹{financialTotals.totalCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </Typography>
+            </Box>
+          </Paper>
 
-        {/* Card 4: Total Pending Due (Receivables) */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            borderRadius: '12px',
-            border: '1px solid #FECACA',
-            backgroundColor: '#FEF2F2',
-            boxShadow: '0 1px 3px rgba(220, 38, 38, 0.06)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.8,
-          }}
-        >
-          <Box
+          {/* Card 4: Total Pending Due (Receivables) */}
+          <Paper
+            elevation={0}
             sx={{
-              width: 44,
-              height: 44,
-              borderRadius: '10px',
-              backgroundColor: '#DC2626',
-              color: '#FFFFFF',
+              p: 2,
+              borderRadius: '12px',
+              border: '1px solid #FECACA',
+              backgroundColor: '#FEF2F2',
+              boxShadow: '0 1px 3px rgba(220, 38, 38, 0.06)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
+              gap: 1.8,
             }}
           >
-            <ErrorOutlineRoundedIcon sx={{ fontSize: 24 }} />
-          </Box>
-          <Box>
-            <Typography sx={{ fontSize: '11.5px', fontWeight: 700, color: '#991B1B' }}>
-              Total Pending Due
-            </Typography>
-            <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#DC2626', lineHeight: 1.2, mt: 0.3 }}>
-              ₹{financialTotals.totalPendingDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </Typography>
-          </Box>
-        </Paper>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '10px',
+                backgroundColor: '#DC2626',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <ErrorOutlineRoundedIcon sx={{ fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '11.5px', fontWeight: 700, color: '#991B1B' }}>
+                Total Pending Due
+              </Typography>
+              <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#DC2626', lineHeight: 1.2, mt: 0.3 }}>
+                ₹{financialTotals.totalPendingDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </Typography>
+            </Box>
+          </Paper>
 
-        {/* Card 5: Total Advance Held */}
-        <Paper
-          elevation={0}
-          sx={{
-            p: 2,
-            borderRadius: '12px',
-            border: '1px solid #BAE6FD',
-            backgroundColor: '#F0F9FF',
-            boxShadow: '0 1px 3px rgba(2, 132, 199, 0.06)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 1.8,
-          }}
-        >
-          <Box
+          {/* Card 5: Total Advance Held */}
+          <Paper
+            elevation={0}
             sx={{
-              width: 44,
-              height: 44,
-              borderRadius: '10px',
-              backgroundColor: '#0284C7',
-              color: '#FFFFFF',
+              p: 2,
+              borderRadius: '12px',
+              border: '1px solid #BAE6FD',
+              backgroundColor: '#F0F9FF',
+              boxShadow: '0 1px 3px rgba(2, 132, 199, 0.06)',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0,
+              gap: 1.8,
             }}
           >
-            <SavingsRoundedIcon sx={{ fontSize: 24 }} />
-          </Box>
-          <Box>
-            <Typography sx={{ fontSize: '11.5px', fontWeight: 700, color: '#0369A1' }}>
-              Advance Balances
-            </Typography>
-            <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#0284C7', lineHeight: 1.2, mt: 0.3 }}>
-              ₹{financialTotals.totalAdvanceHeld.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-            </Typography>
-          </Box>
-        </Paper>
-      </Box>
+            <Box
+              sx={{
+                width: 44,
+                height: 44,
+                borderRadius: '10px',
+                backgroundColor: '#0284C7',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <SavingsRoundedIcon sx={{ fontSize: 24 }} />
+            </Box>
+            <Box>
+              <Typography sx={{ fontSize: '11.5px', fontWeight: 700, color: '#0369A1' }}>
+                Advance Balances
+              </Typography>
+              <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#0284C7', lineHeight: 1.2, mt: 0.3 }}>
+                ₹{financialTotals.totalAdvanceHeld.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+              </Typography>
+            </Box>
+          </Paper>
+        </Box>
+      )}
 
       {/* Filter Tabs / Pills */}
       <Box sx={{ display: 'flex', gap: 1, mb: 2.2, flexWrap: 'wrap', alignItems: 'center' }}>
@@ -822,6 +839,7 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                 >
                   CUSTOMER NAME & CONTACT
                 </TableCell>
+                {/* Address & GST */}
                 <TableCell
                   sx={{
                     py: 1.8,
@@ -835,75 +853,96 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                 >
                   ADDRESS & GST
                 </TableCell>
-                <TableCell
-                  align="right"
-                  sx={{
-                    py: 1.8,
-                    px: 2.5,
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    color: '#1E293B',
-                    letterSpacing: '0.04em',
-                    borderBottom: '1px solid #EEF2F6',
-                    width: '150px',
-                  }}
-                >
-                  <Tooltip title="Total value of products billed / purchased by customer (Debit Dr)" arrow>
-                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'help' }}>
-                      <span>DEBIT (DR)</span>
-                      <InfoOutlinedIcon sx={{ fontSize: 13, color: '#94A3B8' }} />
-                    </Box>
-                  </Tooltip>
-                  <Typography sx={{ fontSize: '10px', color: '#64748B', fontWeight: 500 }}>
-                    Product Purchases
-                  </Typography>
-                </TableCell>
-                <TableCell
-                  align="right"
-                  sx={{
-                    py: 1.8,
-                    px: 2.5,
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    color: '#16A34A',
-                    letterSpacing: '0.04em',
-                    borderBottom: '1px solid #EEF2F6',
-                    width: '150px',
-                  }}
-                >
-                  <Tooltip title="Total advance and payments received from customer (Credit Cr)" arrow>
-                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'help' }}>
-                      <span>CREDIT (CR)</span>
-                      <InfoOutlinedIcon sx={{ fontSize: 13, color: '#16A34A' }} />
-                    </Box>
-                  </Tooltip>
-                  <Typography sx={{ fontSize: '10px', color: '#16A34A', fontWeight: 500 }}>
-                    Paid / Advance
-                  </Typography>
-                </TableCell>
-                <TableCell
-                  align="right"
-                  sx={{
-                    py: 1.8,
-                    px: 2.5,
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    color: '#475569',
-                    letterSpacing: '0.04em',
-                    borderBottom: '1px solid #EEF2F6',
-                    width: '160px',
-                  }}
-                >
-                  <Tooltip title="Net balance = Total Credit (Paid) minus Total Debit (Purchased)" arrow>
-                    <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'help' }}>
-                      <span>NET BALANCE</span>
-                      <InfoOutlinedIcon sx={{ fontSize: 13, color: '#94A3B8' }} />
-                    </Box>
-                  </Tooltip>
-                  <Typography sx={{ fontSize: '10px', color: '#64748B', fontWeight: 500 }}>
-                    Due / Advance Status
-                  </Typography>
-                </TableCell>
+
+                {isSuperAdmin ? (
+                  <>
+                    <TableCell
+                      align="right"
+                      sx={{
+                        py: 1.8,
+                        px: 2.5,
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        color: '#1E293B',
+                        letterSpacing: '0.04em',
+                        borderBottom: '1px solid #EEF2F6',
+                        width: '150px',
+                      }}
+                    >
+                      <Tooltip title="Total value of products billed / purchased by customer (Debit Dr)" arrow>
+                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'help' }}>
+                          <span>DEBIT (DR)</span>
+                          <InfoOutlinedIcon sx={{ fontSize: 13, color: '#94A3B8' }} />
+                        </Box>
+                      </Tooltip>
+                      <Typography sx={{ fontSize: '10px', color: '#64748B', fontWeight: 500 }}>
+                        Product Purchases
+                      </Typography>
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{
+                        py: 1.8,
+                        px: 2.5,
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        color: '#16A34A',
+                        letterSpacing: '0.04em',
+                        borderBottom: '1px solid #EEF2F6',
+                        width: '150px',
+                      }}
+                    >
+                      <Tooltip title="Total advance and payments received from customer (Credit Cr)" arrow>
+                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'help' }}>
+                          <span>CREDIT (CR)</span>
+                          <InfoOutlinedIcon sx={{ fontSize: 13, color: '#16A34A' }} />
+                        </Box>
+                      </Tooltip>
+                      <Typography sx={{ fontSize: '10px', color: '#16A34A', fontWeight: 500 }}>
+                        Paid / Advance
+                      </Typography>
+                    </TableCell>
+                    <TableCell
+                      align="right"
+                      sx={{
+                        py: 1.8,
+                        px: 2.5,
+                        fontSize: '11.5px',
+                        fontWeight: 700,
+                        color: '#475569',
+                        letterSpacing: '0.04em',
+                        borderBottom: '1px solid #EEF2F6',
+                        width: '160px',
+                      }}
+                    >
+                      <Tooltip title="Net balance = Total Credit (Paid) minus Total Debit (Purchased)" arrow>
+                        <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.5, cursor: 'help' }}>
+                          <span>NET BALANCE</span>
+                          <InfoOutlinedIcon sx={{ fontSize: 13, color: '#94A3B8' }} />
+                        </Box>
+                      </Tooltip>
+                      <Typography sx={{ fontSize: '10px', color: '#64748B', fontWeight: 500 }}>
+                        Due / Advance Status
+                      </Typography>
+                    </TableCell>
+                  </>
+                ) : (
+                  <TableCell
+                    align="center"
+                    sx={{
+                      py: 1.8,
+                      px: 2.5,
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      color: '#475569',
+                      letterSpacing: '0.04em',
+                      borderBottom: '1px solid #EEF2F6',
+                      width: '140px',
+                    }}
+                  >
+                    STATUS
+                  </TableCell>
+                )}
                 <TableCell
                   align="center"
                   sx={{
@@ -1065,114 +1104,170 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                         )}
                       </TableCell>
 
-                      {/* Total Debit (Dr) */}
-                      <TableCell
-                        align="right"
-                        sx={{
-                          py: 1.8,
-                          px: 2.5,
-                          fontSize: '14px',
-                          color: '#1E293B',
-                          fontWeight: 700,
-                          borderBottom: isLast ? 'none' : '1px solid #F1F5F9',
-                        }}
-                      >
-                        <Typography sx={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>
-                          ₹{totalDebitNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </Typography>
-                        <Typography sx={{ fontSize: '10.5px', color: '#64748B', fontWeight: 500 }}>
-                          Debit (Dr)
-                        </Typography>
-                      </TableCell>
-
-                      {/* Total Credit (Cr) */}
-                      <TableCell
-                        align="right"
-                        sx={{
-                          py: 1.8,
-                          px: 2.5,
-                          fontSize: '14px',
-                          color: '#16A34A',
-                          fontWeight: 700,
-                          borderBottom: isLast ? 'none' : '1px solid #F1F5F9',
-                        }}
-                      >
-                        <Typography sx={{ fontSize: '14px', fontWeight: 700, color: '#16A34A' }}>
-                          ₹{totalCreditNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </Typography>
-                        <Typography sx={{ fontSize: '10.5px', color: '#16A34A', fontWeight: 500 }}>
-                          Credit (Cr)
-                        </Typography>
-                      </TableCell>
-
-                      {/* Net Balance / Status */}
-                      <TableCell
-                        align="right"
-                        sx={{
-                          py: 1.8,
-                          px: 2.5,
-                          borderBottom: isLast ? 'none' : '1px solid #F1F5F9',
-                        }}
-                      >
-                        {pendingDueNum > 0 ? (
-                          <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                            <Typography sx={{ fontSize: '14.5px', fontWeight: 800, color: '#DC2626' }}>
-                              ₹{pendingDueNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                      {/* Financial Revenue Columns - Visible only to Super Admin */}
+                      {isSuperAdmin ? (
+                        <>
+                          {/* Total Debit (Dr) */}
+                          <TableCell
+                            align="right"
+                            sx={{
+                              py: 1.8,
+                              px: 2.5,
+                              fontSize: '14px',
+                              color: '#1E293B',
+                              fontWeight: 700,
+                              borderBottom: isLast ? 'none' : '1px solid #F1F5F9',
+                            }}
+                          >
+                            <Typography sx={{ fontSize: '14px', fontWeight: 700, color: '#1E293B' }}>
+                              ₹{totalDebitNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                             </Typography>
+                            <Typography sx={{ fontSize: '10.5px', color: '#64748B', fontWeight: 500 }}>
+                              Debit (Dr)
+                            </Typography>
+                          </TableCell>
+
+                          {/* Total Credit (Cr) */}
+                          <TableCell
+                            align="right"
+                            sx={{
+                              py: 1.8,
+                              px: 2.5,
+                              fontSize: '14px',
+                              color: '#16A34A',
+                              fontWeight: 700,
+                              borderBottom: isLast ? 'none' : '1px solid #F1F5F9',
+                            }}
+                          >
+                            <Typography sx={{ fontSize: '14px', fontWeight: 700, color: '#16A34A' }}>
+                              ₹{totalCreditNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </Typography>
+                            <Typography sx={{ fontSize: '10.5px', color: '#16A34A', fontWeight: 500 }}>
+                              Credit (Cr)
+                            </Typography>
+                          </TableCell>
+
+                          {/* Net Balance / Status */}
+                          <TableCell
+                            align="right"
+                            sx={{
+                              py: 1.8,
+                              px: 2.5,
+                              borderBottom: isLast ? 'none' : '1px solid #F1F5F9',
+                            }}
+                          >
+                            {pendingDueNum > 0 ? (
+                              <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                <Typography sx={{ fontSize: '14.5px', fontWeight: 800, color: '#DC2626' }}>
+                                  ₹{pendingDueNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </Typography>
+                                <Chip
+                                  label="Pending Due"
+                                  size="small"
+                                  sx={{
+                                    height: '20px',
+                                    fontSize: '10.5px',
+                                    fontWeight: 700,
+                                    backgroundColor: '#FEE2E2',
+                                    color: '#DC2626',
+                                    borderRadius: '4px',
+                                    mt: 0.3,
+                                  }}
+                                />
+                              </Box>
+                            ) : netBalanceNum > 0 ? (
+                              <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                <Typography sx={{ fontSize: '14.5px', fontWeight: 800, color: '#0284C7' }}>
+                                  +₹{netBalanceNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </Typography>
+                                <Chip
+                                  label="Advance Balance"
+                                  size="small"
+                                  sx={{
+                                    height: '20px',
+                                    fontSize: '10.5px',
+                                    fontWeight: 700,
+                                    backgroundColor: '#E0F2FE',
+                                    color: '#0284C7',
+                                    borderRadius: '4px',
+                                    mt: 0.3,
+                                  }}
+                                />
+                              </Box>
+                            ) : (
+                              <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                                <Typography sx={{ fontSize: '14px', fontWeight: 700, color: '#16A34A' }}>
+                                  ₹0.00
+                                </Typography>
+                                <Chip
+                                  label="Settled"
+                                  size="small"
+                                  sx={{
+                                    height: '20px',
+                                    fontSize: '10.5px',
+                                    fontWeight: 700,
+                                    backgroundColor: '#DCFCE7',
+                                    color: '#16A34A',
+                                    borderRadius: '4px',
+                                    mt: 0.3,
+                                  }}
+                                />
+                              </Box>
+                            )}
+                          </TableCell>
+                        </>
+                      ) : (
+                        /* Admin View: Show status badge only without exposing revenue values */
+                        <TableCell
+                          align="center"
+                          sx={{
+                            py: 1.8,
+                            px: 2.5,
+                            borderBottom: isLast ? 'none' : '1px solid #F1F5F9',
+                          }}
+                        >
+                          {pendingDueNum > 0 ? (
                             <Chip
                               label="Pending Due"
                               size="small"
                               sx={{
-                                height: '20px',
-                                fontSize: '10.5px',
+                                height: '22px',
+                                fontSize: '11px',
                                 fontWeight: 700,
                                 backgroundColor: '#FEE2E2',
                                 color: '#DC2626',
-                                borderRadius: '4px',
-                                mt: 0.3,
+                                borderRadius: '6px',
                               }}
                             />
-                          </Box>
-                        ) : netBalanceNum > 0 ? (
-                          <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                            <Typography sx={{ fontSize: '14.5px', fontWeight: 800, color: '#0284C7' }}>
-                              +₹{netBalanceNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                            </Typography>
+                          ) : netBalanceNum > 0 ? (
                             <Chip
                               label="Advance Balance"
                               size="small"
                               sx={{
-                                height: '20px',
-                                fontSize: '10.5px',
+                                height: '22px',
+                                fontSize: '11px',
                                 fontWeight: 700,
                                 backgroundColor: '#E0F2FE',
                                 color: '#0284C7',
-                                borderRadius: '4px',
-                                mt: 0.3,
+                                borderRadius: '6px',
                               }}
                             />
-                          </Box>
-                        ) : (
-                          <Box sx={{ display: 'inline-flex', flexDirection: 'column', alignItems: 'flex-end' }}>
-                            <Typography sx={{ fontSize: '14px', fontWeight: 700, color: '#16A34A' }}>
-                              ₹0.00
-                            </Typography>
+                          ) : (
                             <Chip
                               label="Settled"
                               size="small"
                               sx={{
-                                height: '20px',
-                                fontSize: '10.5px',
+                                height: '22px',
+                                fontSize: '11px',
                                 fontWeight: 700,
                                 backgroundColor: '#DCFCE7',
                                 color: '#16A34A',
-                                borderRadius: '4px',
-                                mt: 0.3,
+                                borderRadius: '6px',
                               }}
                             />
-                          </Box>
-                        )}
-                      </TableCell>
+                          )}
+                        </TableCell>
+                      )}
 
                       {/* Actions */}
                       <TableCell
@@ -1253,6 +1348,29 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                               }}
                             >
                               <PaymentsRoundedIcon sx={{ fontSize: 16 }} />
+                            </IconButton>
+                          </Tooltip>
+
+                          {/* Manage Customer Portal Login (Phone Number Login) */}
+                          <Tooltip title="Manage Customer Login (Phone No)" arrow>
+                            <IconButton
+                              size="small"
+                              onClick={() => handleOpenLoginModal(customer)}
+                              sx={{
+                                color: '#16A34A',
+                                backgroundColor: '#F0FDF4',
+                                border: '1px solid #BBF7D0',
+                                borderRadius: '6px',
+                                p: 0.7,
+                                transition: 'all 0.15s ease',
+                                '&:hover': {
+                                  color: '#15803D',
+                                  backgroundColor: '#DCFCE7',
+                                  borderColor: '#86EFAC',
+                                },
+                              }}
+                            >
+                              <VpnKeyRoundedIcon sx={{ fontSize: 16 }} />
                             </IconButton>
                           </Tooltip>
 
@@ -1633,6 +1751,15 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
             rangeText
           );
         }}
+      />
+
+      {/* Customer Login Management Modal (Admin & Super Admin) */}
+      <CustomerLoginModal
+        open={loginModalOpen}
+        onClose={() => setLoginModalOpen(false)}
+        customerId={selectedLoginCustomer ? (selectedLoginCustomer._id || selectedLoginCustomer.id) : undefined}
+        customerName={selectedLoginCustomer?.name}
+        customerMobile={selectedLoginCustomer?.mobile}
       />
     </Box>
   );

@@ -7,7 +7,17 @@ export const getAccountDetails = async (req: Request, res: Response, next: NextF
     const { customerName } = req.query;
     const filter: any = {};
     if (customerName && typeof customerName === 'string' && customerName.trim() !== '' && customerName.toLowerCase() !== 'all') {
-      filter.customerName = { $regex: new RegExp(`^${escapeRegex(customerName.trim())}$`, 'i') };
+      const trimmed = customerName.trim();
+      const cleanDigits = trimmed.replace(/[^0-9]/g, '');
+      let targetName = trimmed;
+      if (cleanDigits.length >= 7) {
+        const { Customer } = await import('../models/Customer');
+        const matchedCust = await Customer.findOne({ mobile: { $regex: cleanDigits, $options: 'i' } });
+        if (matchedCust) {
+          targetName = matchedCust.name;
+        }
+      }
+      filter.customerName = { $regex: new RegExp(`^${escapeRegex(targetName)}$`, 'i') };
     }
 
     const accounts = await AccountLedger.find(filter).sort({ createdAt: -1, _id: -1 });

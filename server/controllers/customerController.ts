@@ -5,6 +5,7 @@ import { Performa } from '../models/Performa';
 import { PerformaAudit } from '../models/PerformaAudit';
 import { Particular } from '../models/Particular';
 import { escapeRegex, getParticularNetTotal } from '../utils/ledgerUtils';
+import { hashPassword } from './authController';
 
 /**
  * Helper to get the next available Customer idCode (#0001, #0002, ...).
@@ -239,17 +240,52 @@ export const getCustomerById = async (req: Request, res: Response, next: NextFun
 
 export const createCustomer = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { name, mobile, address, gst, idCode } = req.body;
+    const { name, mobile, address, gst, idCode, isLoginEnabled, password } = req.body;
+
+    if (!name || !String(name).trim()) {
+      res.status(400).json({ success: false, error: 'Customer name is mandatory' });
+      return;
+    }
+
+    if (!mobile || !String(mobile).trim() || String(mobile).trim() === 'N/A') {
+      res.status(400).json({ success: false, error: 'Mobile number is mandatory for customer registration' });
+      return;
+    }
+
+    const cleanMobile = String(mobile).replace(/\D/g, '');
+    if (cleanMobile.length < 10) {
+      res.status(400).json({ success: false, error: 'Please enter a valid 10-digit mobile number' });
+      return;
+    }
 
     const finalIdCode = await getNextCustomerIdCode(idCode);
+    const initialPassword = password || cleanMobile || '123456';
 
     const customer = await Customer.create({
-      name,
-      mobile,
-      address,
-      gst,
+      name: String(name).trim(),
+      mobile: String(mobile).trim(),
+      address: String(address || '').trim(),
+      gst: gst ? String(gst).trim() : 'N/A',
       idCode: finalIdCode,
+      isLoginEnabled: isLoginEnabled !== undefined ? Boolean(isLoginEnabled) : true,
+      loginPassword: hashPassword(initialPassword),
     });
+
+    // Also sync in Admin collection for instant customer portal login
+    const { Admin } = await import('../models/Admin');
+    await Admin.findOneAndUpdate(
+      { customerId: String(customer._id) },
+      {
+        username: cleanMobile || customer.mobile,
+        password: hashPassword(initialPassword),
+        role: 'user',
+        customerName: customer.name,
+        customerId: String(customer._id),
+        mobile: customer.mobile,
+      },
+      { upsert: true, new: true }
+    );
+
     res.status(201).json({ success: true, data: customer });
   } catch (error) {
     next(error);

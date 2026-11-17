@@ -1,5 +1,5 @@
 /**
- * Centralized API Service for Dheeksha Trade
+ * Centralized API Service for GPK Crackers
  * Automatically resolves and normalizes backend base URL from Vite environment variables.
  */
 
@@ -44,7 +44,9 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const url = `${API_BASE_URL}${normalizedEndpoint}`;
 
   // Retrieve auth token if stored
-  const token = typeof window !== 'undefined' ? localStorage.getItem('dheeksha_auth_token') : null;
+  const token = typeof window !== 'undefined'
+    ? localStorage.getItem('gpk_auth_token') || localStorage.getItem('dheeksha_auth_token')
+    : null;
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -190,14 +192,51 @@ export const PerformasApi = {
     request<any[]>(`/performas/customer/${encodeURIComponent(customerId)}/audit`),
 };
 
+export interface AuthUser {
+  username: string;
+  role: 'superadmin' | 'admin' | 'user';
+  customerName?: string;
+  customerId?: string;
+  mobile?: string;
+}
+
 // Auth API
 export const AuthApi = {
   login: (credentials: { username: string; password: string }) =>
-    request<{ token: string; user: { username: string; role: string } }>('/auth/login', {
+    request<{ token: string; user: AuthUser }>('/auth/login', {
       method: 'POST',
       body: JSON.stringify(credentials),
     }),
   getMe: () => request<any>('/auth/me'),
+  getAdminAccount: () =>
+    request<{ success: boolean; data: { username: string; role: string } }>('/auth/admin-account'),
+  updateAdminAccount: (data: { newUsername?: string; newPassword?: string }) =>
+    request<{ success: boolean; message: string; data?: any }>('/auth/admin-account', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  getCustomerLogin: (customerId: string) =>
+    request<{
+      success: boolean;
+      data: {
+        customerId: string;
+        name: string;
+        mobile: string;
+        loginUsername: string;
+        isLoginEnabled: boolean;
+        hasPassword: boolean;
+      };
+    }>(`/auth/customer-login/${encodeURIComponent(customerId)}`),
+  setCustomerLogin: (data: { customerId: string; password?: string; isLoginEnabled: boolean }) =>
+    request<{ success: boolean; message: string; data?: any }>('/auth/customer-login', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  customerChangePassword: (data: { customerId: string; newPassword: string }) =>
+    request<{ success: boolean; message: string }>('/auth/customer-change-password', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
 };
 
 // Health Check API

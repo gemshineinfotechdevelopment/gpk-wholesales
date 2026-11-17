@@ -1,8 +1,15 @@
 import { useState, type FC, type MouseEvent } from 'react';
-import { Box, Typography, Menu, MenuItem, ListItemIcon, Divider } from '@mui/material';
+import { Box, Typography, Menu, MenuItem, ListItemIcon, Divider, Chip } from '@mui/material';
 import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
+import ShieldRoundedIcon from '@mui/icons-material/ShieldRounded';
 import AdminPanelSettingsRoundedIcon from '@mui/icons-material/AdminPanelSettingsRounded';
+import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
+import VpnKeyRoundedIcon from '@mui/icons-material/VpnKeyRounded';
+import LockResetRoundedIcon from '@mui/icons-material/LockResetRounded';
+import { AdminAccountModal } from './AdminAccountModal';
+import { CustomerPasswordModal } from './CustomerPasswordModal';
+import type { AuthUser } from '../services/api';
 
 export type NavTab = 'Customers' | 'Company' | 'Product' | 'Particulars' | 'All Customers' | 'Performa' | 'All Performa';
 
@@ -11,6 +18,7 @@ interface NavbarProps {
   onSelectTab?: (tab: NavTab) => void;
   onNavigateCustomers?: () => void;
   onLogout?: () => void;
+  user?: AuthUser | null;
 }
 
 export const Navbar: FC<NavbarProps> = ({
@@ -18,9 +26,20 @@ export const Navbar: FC<NavbarProps> = ({
   onSelectTab,
   onNavigateCustomers,
   onLogout,
+  user,
 }) => {
-  const tabs: NavTab[] = ['Customers', 'Company', 'Product', 'Particulars', 'All Customers', 'Performa', 'All Performa'];
+  const isCustomer = user?.role === 'user';
+
+  // Tabs tailored for customer vs admin/superadmin
+  const fullTabs: NavTab[] = ['Customers', 'Company', 'Product', 'Particulars', 'All Customers', 'Performa', 'All Performa'];
+  const customerTabs: { label: string; tab: NavTab }[] = [
+    { label: 'All Performa', tab: 'All Performa' },
+    { label: 'Particulars', tab: 'Particulars' },
+  ];
+
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [openAdminModal, setOpenAdminModal] = useState<boolean>(false);
+  const [openCustomerPasswordModal, setOpenCustomerPasswordModal] = useState<boolean>(false);
 
   const handleTabClick = (tab: NavTab) => {
     if (onSelectTab) {
@@ -50,7 +69,7 @@ export const Navbar: FC<NavbarProps> = ({
         width: '100%',
         backgroundColor: '#FFFFFF',
         borderBottom: '1px solid #EEF2F6',
-        px: { xs: 2.5, md: 4.5 },
+        px: { xs: 2, md: 4 },
         height: '64px',
         display: 'flex',
         alignItems: 'center',
@@ -63,51 +82,54 @@ export const Navbar: FC<NavbarProps> = ({
     >
       {/* Left Logo Section */}
       <Box
-        onClick={() => handleTabClick('Customers')}
+        onClick={() => handleTabClick(isCustomer ? 'Particulars' : 'Customers')}
         sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
       >
-        {/* Stylized D Logo Badge */}
+        {/* Stylized GPK Firecracker Logo Badge */}
         <Box
           sx={{
-            width: 32,
-            height: 32,
-            borderRadius: '8px',
-            border: '1px solid #E2E8F0',
-            backgroundColor: '#FFFFFF',
+            width: 36,
+            height: 36,
+            borderRadius: '9px',
+            background: 'linear-gradient(135deg, #DC2626 0%, #EA580C 50%, #CA8A04 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
-            overflow: 'hidden',
+            boxShadow: '0 2px 6px rgba(220, 38, 38, 0.25)',
+            color: '#FFFFFF',
+            fontWeight: 900,
+            fontSize: '13px',
+            letterSpacing: '0.04em',
           }}
         >
-          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="2" y="2" width="20" height="20" rx="4" fill="#F8FAFC" />
-            <path
-              d="M7 6H13C16.3137 6 19 8.68629 19 12C19 15.3137 16.3137 18 13 18H7V6Z"
-              stroke="#0B4DB7"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M10 9.5H13C14.3807 9.5 15.5 10.6193 15.5 12C15.5 13.3807 14.3807 14.5 13 14.5H10V9.5Z"
-              fill="#0B4DB7"
-            />
-          </svg>
+          GPK
         </Box>
 
-        <Typography
-          variant="h6"
-          sx={{
-            fontWeight: 700,
-            fontSize: '18px',
-            color: '#0F172A',
-            letterSpacing: '-0.01em',
-          }}
-        >
-          Dheeksha
-        </Typography>
+        <Box>
+          <Typography
+            variant="h6"
+            sx={{
+              fontWeight: 800,
+              fontSize: '18px',
+              color: '#0F172A',
+              letterSpacing: '-0.02em',
+              lineHeight: 1.1,
+            }}
+          >
+            GPK Crackers
+          </Typography>
+          <Typography
+            sx={{
+              fontSize: '10px',
+              fontWeight: 700,
+              color: '#DC2626',
+              letterSpacing: '0.06em',
+              textTransform: 'uppercase',
+            }}
+          >
+            Wholesales • Sivakasi
+          </Typography>
+        </Box>
       </Box>
 
       {/* Center Navigation Links */}
@@ -116,78 +138,166 @@ export const Navbar: FC<NavbarProps> = ({
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: { xs: 3, md: 4.5 },
+          gap: { xs: 2, md: 3.5 },
           height: '100%',
         }}
       >
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab;
-          return (
-            <Box
-              key={tab}
-              onClick={() => handleTabClick(tab)}
-              sx={{
-                position: 'relative',
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                cursor: 'pointer',
-                transition: 'color 0.15s ease',
-              }}
-            >
-              <Typography
-                sx={{
-                  fontWeight: isActive ? 600 : 500,
-                  fontSize: '14.5px',
-                  color: isActive ? '#0B4DB7' : '#475569',
-                  letterSpacing: '-0.01em',
-                  px: 0.5,
-                  transition: 'color 0.15s ease',
-                  '&:hover': {
-                    color: '#0B4DB7',
-                  },
-                }}
-              >
-                {tab}
-              </Typography>
-
-              {/* Active indicator underline bar */}
-              {isActive && (
+        {isCustomer
+          ? customerTabs.map(({ label, tab }) => {
+              const isActive = activeTab === tab;
+              return (
                 <Box
+                  key={tab}
+                  onClick={() => handleTabClick(tab)}
                   sx={{
-                    position: 'absolute',
-                    bottom: 0,
-                    left: 0,
-                    right: 0,
-                    height: '3px',
-                    backgroundColor: '#0B4DB7',
-                    borderTopLeftRadius: '2px',
-                    borderTopRightRadius: '2px',
+                    position: 'relative',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    px: 1,
                   }}
-                />
-              )}
-            </Box>
-          );
-        })}
+                >
+                  <Typography
+                    sx={{
+                      fontWeight: isActive ? 700 : 500,
+                      fontSize: '14.5px',
+                      color: isActive ? '#0B4DB7' : '#475569',
+                      letterSpacing: '-0.01em',
+                      transition: 'color 0.15s ease',
+                      '&:hover': {
+                        color: '#0B4DB7',
+                      },
+                    }}
+                  >
+                    {label}
+                  </Typography>
+
+                  {isActive && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: '3px',
+                        backgroundColor: '#0B4DB7',
+                        borderTopLeftRadius: '2px',
+                        borderTopRightRadius: '2px',
+                      }}
+                    />
+                  )}
+                </Box>
+              );
+            })
+          : fullTabs.map((tab) => {
+              const isActive = activeTab === tab;
+              return (
+                <Box
+                  key={tab}
+                  onClick={() => handleTabClick(tab)}
+                  sx={{
+                    position: 'relative',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    cursor: 'pointer',
+                    transition: 'color 0.15s ease',
+                  }}
+                >
+                  <Typography
+                    sx={{
+                      fontWeight: isActive ? 600 : 500,
+                      fontSize: '14px',
+                      color: isActive ? '#0B4DB7' : '#475569',
+                      letterSpacing: '-0.01em',
+                      px: 0.5,
+                      transition: 'color 0.15s ease',
+                      '&:hover': {
+                        color: '#0B4DB7',
+                      },
+                    }}
+                  >
+                    {tab}
+                  </Typography>
+
+                  {/* Active indicator underline bar */}
+                  {isActive && (
+                    <Box
+                      sx={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: '3px',
+                        backgroundColor: '#0B4DB7',
+                        borderTopLeftRadius: '2px',
+                        borderTopRightRadius: '2px',
+                      }}
+                    />
+                  )}
+                </Box>
+              );
+            })}
       </Box>
 
-      {/* Right Action Icons (Profile / Logout) */}
+      {/* Right Action Icons (Role Chip + Profile Menu) */}
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        {/* Role Badge Chip */}
+        <Chip
+          size="small"
+          label={
+            user?.role === 'superadmin'
+              ? 'Super Admin'
+              : user?.role === 'admin'
+              ? 'Admin'
+              : 'Customer'
+          }
+          sx={{
+            fontWeight: 700,
+            fontSize: '11px',
+            backgroundColor:
+              user?.role === 'superadmin'
+                ? '#FEF2F2'
+                : user?.role === 'admin'
+                ? '#EEF2FF'
+                : '#F0FDF4',
+            color:
+              user?.role === 'superadmin'
+                ? '#DC2626'
+                : user?.role === 'admin'
+                ? '#0B4DB7'
+                : '#16A34A',
+            border: `1px solid ${
+              user?.role === 'superadmin'
+                ? '#FECACA'
+                : user?.role === 'admin'
+                ? '#C7D2FE'
+                : '#BBF7D0'
+            }`,
+            display: { xs: 'none', sm: 'inline-flex' },
+          }}
+        />
+
         <Box
           onClick={handleProfileClick}
           sx={{
-            width: 34,
-            height: 34,
+            width: 36,
+            height: 36,
             borderRadius: '50%',
-            backgroundColor: '#0B4DB7',
+            backgroundColor:
+              user?.role === 'superadmin'
+                ? '#DC2626'
+                : user?.role === 'admin'
+                ? '#0B4DB7'
+                : '#16A34A',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
-            boxShadow: '0 1px 3px rgba(11, 77, 183, 0.25)',
+            boxShadow: '0 2px 5px rgba(0,0,0,0.12)',
             '&:hover': {
-              backgroundColor: '#083B8D',
               transform: 'scale(1.05)',
             },
           }}
@@ -205,28 +315,89 @@ export const Navbar: FC<NavbarProps> = ({
           slotProps={{
             paper: {
               sx: {
-                borderRadius: '10px',
-                minWidth: '160px',
-                boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+                borderRadius: '12px',
+                minWidth: '200px',
+                boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
                 border: '1px solid #E2E8F0',
                 mt: 1,
+                p: 0.5,
               },
             },
           }}
         >
-          <MenuItem disabled sx={{ opacity: '1 !important', py: 1 }}>
+          <MenuItem disabled sx={{ opacity: '1 !important', py: 1.2 }}>
             <ListItemIcon>
-              <AdminPanelSettingsRoundedIcon sx={{ fontSize: 18, color: '#0B4DB7' }} />
+              {user?.role === 'superadmin' ? (
+                <ShieldRoundedIcon sx={{ fontSize: 22, color: '#DC2626' }} />
+              ) : user?.role === 'admin' ? (
+                <AdminPanelSettingsRoundedIcon sx={{ fontSize: 22, color: '#0B4DB7' }} />
+              ) : (
+                <AccountCircleRoundedIcon sx={{ fontSize: 22, color: '#16A34A' }} />
+              )}
             </ListItemIcon>
             <Box>
               <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
-                Administrator
+                {user?.role === 'superadmin'
+                  ? 'Super Administrator'
+                  : user?.role === 'admin'
+                  ? 'Store Administrator'
+                  : user?.customerName || user?.username || 'Customer'}
               </Typography>
               <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
-                Logged In
+                {user?.role === 'user' ? 'Customer Account' : user?.username}
               </Typography>
             </Box>
           </MenuItem>
+          {user?.role === 'superadmin' && (
+            <>
+              <Divider sx={{ my: 0.5 }} />
+              <MenuItem
+                onClick={() => {
+                  handleCloseMenu();
+                  setOpenAdminModal(true);
+                }}
+                sx={{ py: 1 }}
+              >
+                <ListItemIcon>
+                  <VpnKeyRoundedIcon sx={{ fontSize: 18, color: '#0B4DB7' }} />
+                </ListItemIcon>
+                <Box>
+                  <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+                    Change Admin Credentials
+                  </Typography>
+                  <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
+                    Manage store admin username/pass
+                  </Typography>
+                </Box>
+              </MenuItem>
+            </>
+          )}
+
+          {user?.role === 'user' && (
+            <>
+              <Divider sx={{ my: 0.5 }} />
+              <MenuItem
+                onClick={() => {
+                  handleCloseMenu();
+                  setOpenCustomerPasswordModal(true);
+                }}
+                sx={{ py: 1 }}
+              >
+                <ListItemIcon>
+                  <LockResetRoundedIcon sx={{ fontSize: 18, color: '#0B4DB7' }} />
+                </ListItemIcon>
+                <Box>
+                  <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+                    Set / Change Password
+                  </Typography>
+                  <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
+                    Set a personal portal password
+                  </Typography>
+                </Box>
+              </MenuItem>
+            </>
+          )}
+
           <Divider sx={{ my: 0.5 }} />
           <MenuItem onClick={handleLogoutClick} sx={{ color: '#DC2626', py: 1 }}>
             <ListItemIcon>
@@ -237,6 +408,25 @@ export const Navbar: FC<NavbarProps> = ({
             </Typography>
           </MenuItem>
         </Menu>
+
+        {/* Super Admin Dialog for Changing Admin Credentials */}
+        {user?.role === 'superadmin' && (
+          <AdminAccountModal
+            open={openAdminModal}
+            onClose={() => setOpenAdminModal(false)}
+          />
+        )}
+
+        {/* Customer Dialog for Setting / Changing Password */}
+        {user?.role === 'user' && (
+          <CustomerPasswordModal
+            open={openCustomerPasswordModal}
+            onClose={() => setOpenCustomerPasswordModal(false)}
+            customerId={user?.customerId}
+            customerName={user?.customerName}
+            mobile={user?.mobile || user?.username}
+          />
+        )}
       </Box>
     </Box>
   );

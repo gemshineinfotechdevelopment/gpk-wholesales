@@ -1,7 +1,7 @@
 module.exports = {
   apps: [
     {
-      name: 'dheeksha-trade-api',
+      name: 'gpk-crackers-api',
       cwd: './server',
       script: 'dist/index.js',
       instances: 1,

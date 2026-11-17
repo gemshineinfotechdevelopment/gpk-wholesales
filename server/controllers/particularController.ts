@@ -9,7 +9,17 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
     const { customerName } = req.query;
     const filter: any = {};
     if (customerName && typeof customerName === 'string' && customerName.trim() !== '' && customerName.toLowerCase() !== 'all') {
-      filter.customerName = { $regex: new RegExp(`^${escapeRegex(customerName.trim())}$`, 'i') };
+      const trimmed = customerName.trim();
+      const cleanDigits = trimmed.replace(/[^0-9]/g, '');
+      let targetName = trimmed;
+      if (cleanDigits.length >= 7) {
+        const { Customer } = await import('../models/Customer');
+        const matchedCust = await Customer.findOne({ mobile: { $regex: cleanDigits, $options: 'i' } });
+        if (matchedCust) {
+          targetName = matchedCust.name;
+        }
+      }
+      filter.customerName = { $regex: new RegExp(`^${escapeRegex(targetName)}$`, 'i') };
     }
 
     const particulars = await Particular.find(filter).sort({ createdAt: -1, _id: -1 });
@@ -301,7 +311,7 @@ export const uploadParticularPdf = async (req: Request, res: Response, next: Nex
 
         const cloudRes = await uploadToCloudinary(
           pdfData,
-          'dheeksha_trade/bills',
+          'gpk_crackers/bills',
           pdfName || `Bill-${existingParticular.billNo || 'receipt'}`
         );
 

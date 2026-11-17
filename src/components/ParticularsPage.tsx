@@ -82,11 +82,14 @@ interface ProductRowItem {
 interface ParticularsPageProps {
   initialCustomerName?: string;
   initialSubTab?: ParticularSubTab;
+  userRole?: 'superadmin' | 'admin' | 'user';
 }
 
-export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName, initialSubTab }) => {
+export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName, initialSubTab, userRole = 'superadmin' }) => {
+  const isCustomer = userRole === 'user';
   const [activeSubTab, setActiveSubTab] = useState<ParticularSubTab>(() => {
-    return initialSubTab || (localStorage.getItem('dheeksha_particular_subtab') as ParticularSubTab) || 'Select Customer';
+    if (isCustomer) return 'Account Details';
+    return initialSubTab || (localStorage.getItem('gpk_particular_subtab') as ParticularSubTab) || (localStorage.getItem('dheeksha_particular_subtab') as ParticularSubTab) || 'Select Customer';
   });
 
   // Live Dropdown options
@@ -104,10 +107,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
   });
 
   const [accountCustomerInput, setAccountCustomerInput] = useState<string>(() => {
-    return initialCustomerName && initialCustomerName !== 'ALL' ? initialCustomerName : 'All Customers';
+    return initialCustomerName && initialCustomerName !== 'ALL' ? initialCustomerName : (isCustomer ? '' : 'All Customers');
   });
   const [particularCustomerInput, setParticularCustomerInput] = useState<string>(() => {
-    return initialCustomerName && initialCustomerName !== 'ALL' ? initialCustomerName : 'All Customers';
+    return initialCustomerName && initialCustomerName !== 'ALL' ? initialCustomerName : (isCustomer ? '' : 'All Customers');
   });
 
   useEffect(() => {
@@ -259,14 +262,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
   useEffect(() => {
     if (initialSubTab) {
       setActiveSubTab(initialSubTab);
-      localStorage.setItem('dheeksha_particular_subtab', initialSubTab);
+      localStorage.setItem('gpk_particular_subtab', initialSubTab);
     }
   }, [initialSubTab]);
 
   // Persist activeSubTab whenever it changes
   useEffect(() => {
     if (activeSubTab) {
-      localStorage.setItem('dheeksha_particular_subtab', activeSubTab);
+      localStorage.setItem('gpk_particular_subtab', activeSubTab);
     }
   }, [activeSubTab]);
 
@@ -314,7 +317,15 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
   const fetchAccounts = async (targetCustomer?: string) => {
     try {
       setAccountLoading(true);
-      const cust = targetCustomer !== undefined ? targetCustomer : (filterCustomer || currentCustomerName);
+      const cust = isCustomer
+        ? (initialCustomerName || currentCustomerName || filterCustomer)
+        : (targetCustomer !== undefined ? targetCustomer : (filterCustomer || currentCustomerName));
+
+      if (isCustomer && (!cust || cust === 'ALL')) {
+        setAccountDetails([]);
+        return;
+      }
+
       const data = await AccountsApi.getAll(cust && cust !== 'ALL' ? cust : undefined);
       setAccountDetails(data || []);
     } catch (err) {
@@ -328,7 +339,15 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
   const fetchParticulars = async (targetCustomer?: string) => {
     try {
       setParticularLoading(true);
-      const cust = targetCustomer !== undefined ? targetCustomer : (filterCustomer || currentCustomerName);
+      const cust = isCustomer
+        ? (initialCustomerName || currentCustomerName || filterCustomer)
+        : (targetCustomer !== undefined ? targetCustomer : (filterCustomer || currentCustomerName));
+
+      if (isCustomer && (!cust || cust === 'ALL')) {
+        setParticularDetails([]);
+        return;
+      }
+
       const data = await ParticularsApi.getAll(cust && cust !== 'ALL' ? cust : undefined);
       setParticularDetails(data || []);
     } catch (err) {
@@ -339,13 +358,21 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
   };
 
   useEffect(() => {
-    const custToFetch = filterCustomer || currentCustomerName;
+    if (isCustomer && activeSubTab !== 'Account Details' && activeSubTab !== 'Particular Details') {
+      setActiveSubTab('Account Details');
+    }
+  }, [isCustomer, activeSubTab]);
+
+  useEffect(() => {
+    const custToFetch = isCustomer
+      ? (initialCustomerName || currentCustomerName || filterCustomer)
+      : (filterCustomer || currentCustomerName);
     if (activeSubTab === 'Account Details') {
       fetchAccounts(custToFetch);
     } else if (activeSubTab === 'Particular Details') {
       fetchParticulars(custToFetch);
     }
-  }, [activeSubTab, filterCustomer, currentCustomerName]);
+  }, [activeSubTab, filterCustomer, currentCustomerName, initialCustomerName, isCustomer]);
 
   // Overall totals
   const overallTotals = useMemo(() => {
@@ -524,8 +551,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
         companyName: company ? company.trim() : '',
         preparedBy: 'S.Nagaraj',
         phone: '+91 98765 43210',
-        email: 'info@dheekshatrade.com',
-        website: 'www.dheekshatrade.com',
+        email: 'info@gpkcrackers.com',
+        website: 'www.gpkcrackers.com',
         transport: transport && transport.trim() !== '' && transport !== '-' ? transport.trim() : '-',
         caseCount: caseCount || '0',
         date: date,
@@ -663,8 +690,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
       companyName: billData.companyName || company || '',
       preparedBy: billData.preparedBy || 'S.Nagaraj',
       phone: '+91 98765 43210',
-      email: 'info@dheekshatrade.com',
-      website: 'www.dheekshatrade.com',
+      email: 'info@gpkcrackers.com',
+      website: 'www.gpkcrackers.com',
       transport: billData.transport && billData.transport.trim() !== '' && billData.transport !== '-' ? billData.transport.trim() : '-',
       caseCount: billData.caseCount || billData.cases || (billData.products ? billData.products.reduce((acc: number, p: any) => acc + (parseFloat(p.quantity) || 0), 0) : 0),
       products: (billData.products || []).map((p: any) => ({
@@ -702,8 +729,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
         companyName: billData.companyName || '',
         preparedBy: 'S.Nagaraj',
         phone: billData.phone || '+91 98765 43210',
-        email: 'info@dheekshatrade.com',
-        website: 'www.dheekshatrade.com',
+        email: 'info@gpkcrackers.com',
+        website: 'www.gpkcrackers.com',
         transport: billData.transport && billData.transport !== '-' ? billData.transport : '-',
         caseCount: billData.caseCount || '0',
         date: billData.date || new Date().toISOString().split('T')[0],
@@ -1051,7 +1078,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
           pb: 0.5,
         }}
       >
-        {SUB_TABS.map((tab) => {
+        {(isCustomer
+          ? (['Account Details', 'Particular Details'] as ParticularSubTab[])
+          : SUB_TABS
+        ).map((tab) => {
           const isActive = activeSubTab === tab;
           return (
             <Box
@@ -1178,13 +1208,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                       setCurrentCustomerName(val.name);
                       setFilterCustomer(val.name);
                       setAddCreditCustomerName(val.name);
-                      localStorage.setItem('dheeksha_active_customer', val.name);
+                      localStorage.setItem('gpk_active_customer', val.name);
                     } else {
                       setSelectedCustomerId('');
                       setCurrentCustomerName('');
                       setFilterCustomer('');
                       setAddCreditCustomerName('');
-                      localStorage.removeItem('dheeksha_active_customer');
+                      localStorage.removeItem('gpk_active_customer');
                     }
                   }}
                   renderInput={(params) => (
@@ -1306,7 +1336,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                     onChange={(_, val) => {
                       const name = val ? val.name : '';
                       setCurrentCustomerName(name);
-                      localStorage.setItem('dheeksha_active_customer', name);
+                      localStorage.setItem('gpk_active_customer', name);
                       if (val) {
                         setSelectedCustomerId(val.id);
                         setFilterCustomer(val.name);
@@ -2402,86 +2432,88 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                   letterSpacing: '-0.01em',
                 }}
               >
-                Account Details {filterCustomer && filterCustomer !== 'ALL' ? `- ${filterCustomer}` : (currentCustomerName ? `- ${currentCustomerName}` : '(All Customers)')}
+                Account Details {isCustomer ? `- ${initialCustomerName || currentCustomerName || filterCustomer || 'My Account'}` : (filterCustomer && filterCustomer !== 'ALL' ? `- ${filterCustomer}` : (currentCustomerName ? `- ${currentCustomerName}` : '(All Customers)'))}
               </Typography>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                <Autocomplete
-                  size="small"
-                  openOnFocus
-                  autoHighlight
-                  options={[{ id: 'ALL', name: 'All Customers' }, ...customerOptions]}
-                  getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
-                  isOptionEqualToValue={(option, val) => option.name === val.name}
-                  value={
-                    filterCustomer && filterCustomer !== 'ALL'
-                      ? customerOptions.find((c) => c.name === filterCustomer) || { id: filterCustomer, name: filterCustomer }
-                      : (currentCustomerName && currentCustomerName !== 'ALL' ? customerOptions.find((c) => c.name === currentCustomerName) || { id: 'ALL', name: 'All Customers' } : { id: 'ALL', name: 'All Customers' })
-                  }
-                  inputValue={accountCustomerInput}
-                  onInputChange={(_, newInputValue, reason) => {
-                    if (reason === 'input') {
-                      setAccountCustomerInput(newInputValue);
-                    } else if (reason === 'reset') {
-                      const curName = filterCustomer && filterCustomer !== 'ALL'
-                        ? filterCustomer
-                        : (currentCustomerName && currentCustomerName !== 'ALL' ? currentCustomerName : 'All Customers');
-                      setAccountCustomerInput(newInputValue || curName);
-                    } else if (reason === 'clear') {
-                      setAccountCustomerInput('');
+                {!isCustomer && (
+                  <Autocomplete
+                    size="small"
+                    openOnFocus
+                    autoHighlight
+                    options={[{ id: 'ALL', name: 'All Customers' }, ...customerOptions]}
+                    getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
+                    isOptionEqualToValue={(option, val) => option.name === val.name}
+                    value={
+                      filterCustomer && filterCustomer !== 'ALL'
+                        ? customerOptions.find((c) => c.name === filterCustomer) || { id: filterCustomer, name: filterCustomer }
+                        : (currentCustomerName && currentCustomerName !== 'ALL' ? customerOptions.find((c) => c.name === currentCustomerName) || { id: 'ALL', name: 'All Customers' } : { id: 'ALL', name: 'All Customers' })
                     }
-                  }}
-                  filterOptions={(options, state) => {
-                    if (!state.inputValue || state.inputValue === 'All Customers') {
-                      return options;
-                    }
-                    const query = state.inputValue.toLowerCase().trim();
-                    return options.filter((o) => {
-                      const name = typeof o === 'string' ? o : o.name;
-                      return name && name.toLowerCase().includes(query);
-                    });
-                  }}
-                  onChange={(_, val) => {
-                    const selectedName = val ? (val.id === 'ALL' ? 'ALL' : val.name) : 'ALL';
-                    setFilterCustomer(selectedName);
-                    if (val && val.id !== 'ALL') {
-                      setCurrentCustomerName(val.name);
-                      setSelectedCustomerId(val.id);
-                      localStorage.setItem('dheeksha_active_customer', val.name);
-                    }
-                    fetchAccounts(selectedName);
-                  }}
-                  sx={{ width: 220 }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder="Filter Customer..."
-                      onClick={() => {
-                        if (accountCustomerInput === 'All Customers') {
-                          setAccountCustomerInput('');
-                        }
-                      }}
-                      onFocus={(e) => {
-                        if (accountCustomerInput === 'All Customers') {
-                          setAccountCustomerInput('');
-                        } else {
-                          (e.target as HTMLInputElement)?.select?.();
-                        }
-                      }}
-                      sx={{
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '6px',
-                        '& .MuiOutlinedInput-root': {
-                          height: '34px',
+                    inputValue={accountCustomerInput}
+                    onInputChange={(_, newInputValue, reason) => {
+                      if (reason === 'input') {
+                        setAccountCustomerInput(newInputValue);
+                      } else if (reason === 'reset') {
+                        const curName = filterCustomer && filterCustomer !== 'ALL'
+                          ? filterCustomer
+                          : (currentCustomerName && currentCustomerName !== 'ALL' ? currentCustomerName : 'All Customers');
+                        setAccountCustomerInput(newInputValue || curName);
+                      } else if (reason === 'clear') {
+                        setAccountCustomerInput('');
+                      }
+                    }}
+                    filterOptions={(options, state) => {
+                      if (!state.inputValue || state.inputValue === 'All Customers') {
+                        return options;
+                      }
+                      const query = state.inputValue.toLowerCase().trim();
+                      return options.filter((o) => {
+                        const name = typeof o === 'string' ? o : o.name;
+                        return name && name.toLowerCase().includes(query);
+                      });
+                    }}
+                    onChange={(_, val) => {
+                      const selectedName = val ? (val.id === 'ALL' ? 'ALL' : val.name) : 'ALL';
+                      setFilterCustomer(selectedName);
+                      if (val && val.id !== 'ALL') {
+                        setCurrentCustomerName(val.name);
+                        setSelectedCustomerId(val.id);
+                        localStorage.setItem('gpk_active_customer', val.name);
+                      }
+                      fetchAccounts(selectedName);
+                    }}
+                    sx={{ width: 220 }}
+                    renderInput={(params) => (
+                      <TextField
+                        {...params}
+                        placeholder="Filter Customer..."
+                        onClick={() => {
+                          if (accountCustomerInput === 'All Customers') {
+                            setAccountCustomerInput('');
+                          }
+                        }}
+                        onFocus={(e) => {
+                          if (accountCustomerInput === 'All Customers') {
+                            setAccountCustomerInput('');
+                          } else {
+                            (e.target as HTMLInputElement)?.select?.();
+                          }
+                        }}
+                        sx={{
+                          backgroundColor: '#FFFFFF',
                           borderRadius: '6px',
-                          fontSize: '12.5px',
-                          fontWeight: 600,
-                          py: 0,
-                        },
-                      }}
-                    />
-                  )}
-                />
+                          '& .MuiOutlinedInput-root': {
+                            height: '34px',
+                            borderRadius: '6px',
+                            fontSize: '12.5px',
+                            fontWeight: 600,
+                            py: 0,
+                          },
+                        }}
+                      />
+                    )}
+                  />
+                )}
                 <Button
                   variant="contained"
                   disableElevation
@@ -2684,86 +2716,88 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                 letterSpacing: '-0.01em',
               }}
             >
-              Particular Details {filterCustomer && filterCustomer !== 'ALL' ? `- ${filterCustomer}` : (currentCustomerName ? `- ${currentCustomerName}` : '(All Bills)')}
+              Particular Details {isCustomer ? `- ${initialCustomerName || currentCustomerName || filterCustomer || 'My Bills'}` : (filterCustomer && filterCustomer !== 'ALL' ? `- ${filterCustomer}` : (currentCustomerName ? `- ${currentCustomerName}` : '(All Bills)'))}
             </Typography>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-              <Autocomplete
-                size="small"
-                openOnFocus
-                autoHighlight
-                options={[{ id: 'ALL', name: 'All Customers' }, ...customerOptions]}
-                getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
-                isOptionEqualToValue={(option, val) => option.name === val.name}
-                value={
-                  filterCustomer && filterCustomer !== 'ALL'
-                    ? customerOptions.find((c) => c.name === filterCustomer) || { id: filterCustomer, name: filterCustomer }
-                    : (currentCustomerName && currentCustomerName !== 'ALL' ? customerOptions.find((c) => c.name === currentCustomerName) || { id: 'ALL', name: 'All Customers' } : { id: 'ALL', name: 'All Customers' })
-                }
-                inputValue={particularCustomerInput}
-                onInputChange={(_, newInputValue, reason) => {
-                  if (reason === 'input') {
-                    setParticularCustomerInput(newInputValue);
-                  } else if (reason === 'reset') {
-                    const curName = filterCustomer && filterCustomer !== 'ALL'
-                      ? filterCustomer
-                      : (currentCustomerName && currentCustomerName !== 'ALL' ? currentCustomerName : 'All Customers');
-                    setParticularCustomerInput(newInputValue || curName);
-                  } else if (reason === 'clear') {
-                    setParticularCustomerInput('');
+              {!isCustomer && (
+                <Autocomplete
+                  size="small"
+                  openOnFocus
+                  autoHighlight
+                  options={[{ id: 'ALL', name: 'All Customers' }, ...customerOptions]}
+                  getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
+                  isOptionEqualToValue={(option, val) => option.name === val.name}
+                  value={
+                    filterCustomer && filterCustomer !== 'ALL'
+                      ? customerOptions.find((c) => c.name === filterCustomer) || { id: filterCustomer, name: filterCustomer }
+                      : (currentCustomerName && currentCustomerName !== 'ALL' ? customerOptions.find((c) => c.name === currentCustomerName) || { id: 'ALL', name: 'All Customers' } : { id: 'ALL', name: 'All Customers' })
                   }
-                }}
-                filterOptions={(options, state) => {
-                  if (!state.inputValue || state.inputValue === 'All Customers') {
-                    return options;
-                  }
-                  const query = state.inputValue.toLowerCase().trim();
-                  return options.filter((o) => {
-                    const name = typeof o === 'string' ? o : o.name;
-                    return name && name.toLowerCase().includes(query);
-                  });
-                }}
-                onChange={(_, val) => {
-                  const selectedName = val ? (val.id === 'ALL' ? 'ALL' : val.name) : 'ALL';
-                  setFilterCustomer(selectedName);
-                  if (val && val.id !== 'ALL') {
-                    setCurrentCustomerName(val.name);
-                    setSelectedCustomerId(val.id);
-                    localStorage.setItem('dheeksha_active_customer', val.name);
-                  }
-                  fetchParticulars(selectedName);
-                }}
-                sx={{ width: 220 }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    placeholder="Filter Customer..."
-                    onClick={() => {
-                      if (particularCustomerInput === 'All Customers') {
-                        setParticularCustomerInput('');
-                      }
-                    }}
-                    onFocus={(e) => {
-                      if (particularCustomerInput === 'All Customers') {
-                        setParticularCustomerInput('');
-                      } else {
-                        (e.target as HTMLInputElement)?.select?.();
-                      }
-                    }}
-                    sx={{
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '6px',
-                      '& .MuiOutlinedInput-root': {
-                        height: '34px',
+                  inputValue={particularCustomerInput}
+                  onInputChange={(_, newInputValue, reason) => {
+                    if (reason === 'input') {
+                      setParticularCustomerInput(newInputValue);
+                    } else if (reason === 'reset') {
+                      const curName = filterCustomer && filterCustomer !== 'ALL'
+                        ? filterCustomer
+                        : (currentCustomerName && currentCustomerName !== 'ALL' ? currentCustomerName : 'All Customers');
+                      setParticularCustomerInput(newInputValue || curName);
+                    } else if (reason === 'clear') {
+                      setParticularCustomerInput('');
+                    }
+                  }}
+                  filterOptions={(options, state) => {
+                    if (!state.inputValue || state.inputValue === 'All Customers') {
+                      return options;
+                    }
+                    const query = state.inputValue.toLowerCase().trim();
+                    return options.filter((o) => {
+                      const name = typeof o === 'string' ? o : o.name;
+                      return name && name.toLowerCase().includes(query);
+                    });
+                  }}
+                  onChange={(_, val) => {
+                    const selectedName = val ? (val.id === 'ALL' ? 'ALL' : val.name) : 'ALL';
+                    setFilterCustomer(selectedName);
+                    if (val && val.id !== 'ALL') {
+                      setCurrentCustomerName(val.name);
+                      setSelectedCustomerId(val.id);
+                      localStorage.setItem('gpk_active_customer', val.name);
+                    }
+                    fetchParticulars(selectedName);
+                  }}
+                  sx={{ width: 220 }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Filter Customer..."
+                      onClick={() => {
+                        if (particularCustomerInput === 'All Customers') {
+                          setParticularCustomerInput('');
+                        }
+                      }}
+                      onFocus={(e) => {
+                        if (particularCustomerInput === 'All Customers') {
+                          setParticularCustomerInput('');
+                        } else {
+                          (e.target as HTMLInputElement)?.select?.();
+                        }
+                      }}
+                      sx={{
+                        backgroundColor: '#FFFFFF',
                         borderRadius: '6px',
-                        fontSize: '12.5px',
-                        fontWeight: 600,
-                        py: 0,
-                      },
-                    }}
-                  />
-                )}
-              />
+                        '& .MuiOutlinedInput-root': {
+                          height: '34px',
+                          borderRadius: '6px',
+                          fontSize: '12.5px',
+                          fontWeight: 600,
+                          py: 0,
+                        },
+                      }}
+                    />
+                  )}
+                />
+              )}
               <Chip
                 label={`${particularDetails.length} Bills`}
                 size="small"
@@ -2978,76 +3012,83 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                               </IconButton>
                             </Tooltip>
 
-                            {/* Edit Particular Bill Button */}
-                            <Tooltip title="Edit Bill Details" arrow>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleOpenEditParticular(row)}
-                                sx={{
-                                  backgroundColor: '#0284C7',
-                                  color: '#FFFFFF',
-                                  borderRadius: '4px',
-                                  width: '24px',
-                                  height: '22px',
-                                  p: 0,
-                                  '&:hover': { backgroundColor: '#0369A1' },
-                                }}
-                              >
-                                <ModeEditOutlineRoundedIcon sx={{ fontSize: 14 }} />
-                              </IconButton>
-                            </Tooltip>
+                            {/* Edit Particular Bill Button (Admin & Super Admin only) */}
+                            {!isCustomer && (
+                              <Tooltip title="Edit Bill Details" arrow>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleOpenEditParticular(row)}
+                                  sx={{
+                                    backgroundColor: '#0284C7',
+                                    color: '#FFFFFF',
+                                    borderRadius: '4px',
+                                    width: '24px',
+                                    height: '22px',
+                                    p: 0,
+                                    '&:hover': { backgroundColor: '#0369A1' },
+                                  }}
+                                >
+                                  <ModeEditOutlineRoundedIcon sx={{ fontSize: 14 }} />
+                                </IconButton>
+                              </Tooltip>
+                            )}
 
-                            {/* PDF Upload / View Button (Under 1 MB) */}
-                            <Tooltip
-                              title={
-                                hasPdf
-                                  ? `View PDF (${row.pdfName || 'Attached Document'})`
-                                  : 'Upload PDF (Under 1 MB)'
-                              }
-                              arrow
-                            >
-                              <IconButton
-                                size="small"
-                                onClick={() => (hasPdf ? handleOpenPdfPreview(row) : handleTriggerPdfUpload(rowId))}
-                                disabled={isUploading}
-                                sx={{
-                                  backgroundColor: hasPdf ? '#16A34A' : '#6366F1',
-                                  color: '#FFFFFF',
-                                  borderRadius: '4px',
-                                  width: '24px',
-                                  height: '22px',
-                                  p: 0,
-                                  '&:hover': { backgroundColor: hasPdf ? '#15803D' : '#4F46E5' },
-                                  '&.Mui-disabled': { backgroundColor: '#CBD5E1', color: '#FFFFFF' },
-                                }}
+                            {/* PDF Upload / View Button */}
+                            {(hasPdf || !isCustomer) && (
+                              <Tooltip
+                                title={
+                                  hasPdf
+                                    ? `View PDF (${row.pdfName || 'Attached Document'})`
+                                    : 'Upload PDF (Under 1 MB)'
+                                }
+                                arrow
                               >
-                                {isUploading ? (
-                                  <CircularProgress size={12} sx={{ color: '#FFFFFF' }} />
-                                ) : hasPdf ? (
-                                  <PictureAsPdfRoundedIcon sx={{ fontSize: 14 }} />
-                                ) : (
-                                  <UploadFileRoundedIcon sx={{ fontSize: 14 }} />
-                                )}
-                              </IconButton>
-                            </Tooltip>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => (hasPdf ? handleOpenPdfPreview(row) : handleTriggerPdfUpload(rowId))}
+                                  disabled={isUploading}
+                                  sx={{
+                                    backgroundColor: hasPdf ? '#16A34A' : '#6366F1',
+                                    color: '#FFFFFF',
+                                    borderRadius: '4px',
+                                    width: '24px',
+                                    height: '22px',
+                                    p: 0,
+                                    '&:hover': { backgroundColor: hasPdf ? '#15803D' : '#4F46E5' },
+                                    '&.Mui-disabled': { backgroundColor: '#CBD5E1', color: '#FFFFFF' },
+                                  }}
+                                >
+                                  {isUploading ? (
+                                    <CircularProgress size={12} sx={{ color: '#FFFFFF' }} />
+                                  ) : hasPdf ? (
+                                    <PictureAsPdfRoundedIcon sx={{ fontSize: 14 }} />
+                                  ) : (
+                                    <UploadFileRoundedIcon sx={{ fontSize: 14 }} />
+                                  )}
+                                </IconButton>
+                              </Tooltip>
+                            )}
 
-                            <Tooltip title="Delete" arrow>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDeleteParticular(rowId)}
-                                sx={{
-                                  backgroundColor: '#DC2626',
-                                  color: '#FFFFFF',
-                                  borderRadius: '4px',
-                                  width: '24px',
-                                  height: '22px',
-                                  p: 0,
-                                  '&:hover': { backgroundColor: '#B91C1C' },
-                                }}
-                              >
-                                <DeleteOutlineRoundedIcon sx={{ fontSize: 14 }} />
-                              </IconButton>
-                            </Tooltip>
+                            {/* Delete Button (Admin & Super Admin only) */}
+                            {!isCustomer && (
+                              <Tooltip title="Delete" arrow>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteParticular(rowId)}
+                                  sx={{
+                                    backgroundColor: '#DC2626',
+                                    color: '#FFFFFF',
+                                    borderRadius: '4px',
+                                    width: '24px',
+                                    height: '22px',
+                                    p: 0,
+                                    '&:hover': { backgroundColor: '#B91C1C' },
+                                  }}
+                                >
+                                  <DeleteOutlineRoundedIcon sx={{ fontSize: 14 }} />
+                                </IconButton>
+                              </Tooltip>
+                            )}
                           </Box>
                         </TableCell>
                       </TableRow>

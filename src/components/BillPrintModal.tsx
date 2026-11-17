@@ -51,11 +51,11 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
             body * {
               visibility: hidden !important;
             }
-            .dheeksha-printable-section,
-            .dheeksha-printable-section * {
+            .gpk-printable-section,
+            .gpk-printable-section * {
               visibility: visible !important;
             }
-            .dheeksha-printable-section {
+            .gpk-printable-section {
               position: absolute !important;
               left: 0 !important;
               top: 0 !important;
@@ -66,7 +66,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
-            .dheeksha-no-print {
+            .gpk-no-print {
               display: none !important;
             }
             @page {
@@ -93,7 +93,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
       >
         {/* Modal Top Bar */}
         <Box
-          className="dheeksha-no-print"
+          className="gpk-no-print"
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -179,7 +179,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
           }}
         >
           <Box
-            className="dheeksha-printable-section"
+            className="gpk-printable-section"
             sx={{
               backgroundColor: '#FFFFFF',
               boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
@@ -194,7 +194,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
 
         {/* Modal Bottom Actions */}
         <DialogActions
-          className="dheeksha-no-print"
+          className="gpk-no-print"
           sx={{
             px: 3,
             py: 1.5,

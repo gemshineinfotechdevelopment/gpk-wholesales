@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ==============================================================================
-# Dheeksha Trade VPS Deployment / Update Script
+# GPK Crackers VPS Deployment / Update Script
 # Usage on VPS: bash deploy.sh
 # ==============================================================================
 

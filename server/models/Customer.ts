@@ -9,6 +9,8 @@ export interface ICustomer extends Document {
   address: string;
   mobile: string;
   gst: string;
+  isLoginEnabled?: boolean;
+  loginPassword?: string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -23,6 +25,8 @@ const CustomerSchema: Schema = new Schema(
     address: { type: String, required: true, trim: true },
     mobile: { type: String, required: true, trim: true },
     gst: { type: String, required: true, trim: true },
+    isLoginEnabled: { type: Boolean, default: false },
+    loginPassword: { type: String, trim: true },
   },
   { timestamps: true }
 );

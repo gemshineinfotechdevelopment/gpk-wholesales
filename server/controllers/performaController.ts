@@ -14,7 +14,16 @@ export const getPerformas = async (req: Request, res: Response, next: NextFuncti
     if (customerId && mongoose.Types.ObjectId.isValid(String(customerId))) {
       filter.customerId = new mongoose.Types.ObjectId(String(customerId));
     } else if (customerName && typeof customerName === 'string' && customerName.trim() !== '' && customerName.toLowerCase() !== 'all') {
-      filter['customerSnapshot.name'] = { $regex: new RegExp(`^${escapeRegex(customerName.trim())}$`, 'i') };
+      const trimmed = customerName.trim();
+      const cleanDigits = trimmed.replace(/[^0-9]/g, '');
+      let targetName = trimmed;
+      if (cleanDigits.length >= 7) {
+        const matchedCust = await Customer.findOne({ mobile: { $regex: cleanDigits, $options: 'i' } });
+        if (matchedCust) {
+          targetName = matchedCust.name;
+        }
+      }
+      filter['customerSnapshot.name'] = { $regex: new RegExp(`^${escapeRegex(targetName)}$`, 'i') };
     }
 
     if (companyName && typeof companyName === 'string' && companyName.trim() !== '' && companyName.toLowerCase() !== 'all') {

@@ -145,7 +145,7 @@ export const generateBillHtml = (bill: BillPrintData): string => {
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Bill #${bill.billNo || 'Invoice'} - Dheeksha Trade Link</title>
+  <title>Bill #${bill.billNo || 'Invoice'} - GPK Crackers</title>
   <style>
     @page {
       size: A4 portrait;
@@ -349,7 +349,7 @@ export const generateBillHtml = (bill: BillPrintData): string => {
     <!-- Header -->
     <div class="top-header">
       <div class="signatory">Prepared By: <b>${preparedBy}</b></div>
-      <div class="comp-name">Dheeksha Trade Link</div>
+      <div class="comp-name">GPK Crackers</div>
       <div class="comp-sub">Wholesale & Retail Trading • Sivakasi</div>
       <div><span class="doc-type-badge">ESTIMATE / PARTICULAR BILL</span></div>
     </div>
@@ -437,7 +437,7 @@ export const generateBillHtml = (bill: BillPrintData): string => {
         <div style="font-weight: 700; color:#334155;">Customer Signature</div>
       </div>
       <div class="sig-block">
-        <div style="font-weight: 700; color:#0F172A; margin-bottom: 24px;">For Dheeksha Trade Link</div>
+        <div style="font-weight: 700; color:#0F172A; margin-bottom: 24px;">For GPK Crackers</div>
         <div class="sig-line"></div>
         <div style="font-weight: 700; color:#334155;">Authorized Signatory</div>
       </div>
@@ -555,7 +555,7 @@ export const generateCustomerListPrintHtml = (
         <!-- Full Header Banner (Page 1) -->
         <div class="company-banner">
           <div>
-            <div class="comp-name">DHEEKSHA TRADE LINK</div>
+            <div class="comp-name">GPK CRACKERS</div>
             <div class="comp-sub">Wholesale & Retail Trading • Sivakasi</div>
             <div class="report-heading">${reportTitle}</div>
             ${dateRangeText ? `<div class="date-badge">${dateRangeText}</div>` : ''}
@@ -595,7 +595,7 @@ export const generateCustomerListPrintHtml = (
         <div class="subsequent-header">
           <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0F172A; padding-bottom: 4px; margin-bottom: 6px;">
             <div>
-              <span style="font-size: 15px; font-weight: 900; color: #0B4DB7;">DHEEKSHA TRADE LINK</span>
+              <span style="font-size: 15px; font-weight: 900; color: #0B4DB7;">GPK CRACKERS</span>
               <span style="font-size: 10.5px; font-weight: 700; color: #475569; margin-left: 8px;">• ${reportTitle}</span>
               ${dateRangeText ? `<span class="date-badge" style="margin-left: 8px; font-size: 9px; padding: 1px 6px;">${dateRangeText}</span>` : ''}
             </div>
@@ -994,7 +994,7 @@ export const generateLedgerStatementHtml = (
         <!-- Full Header Banner (Page 1) -->
         <div class="company-banner">
           <div>
-            <div class="comp-name">DHEEKSHA TRADE LINK</div>
+            <div class="comp-name">GPK CRACKERS</div>
             <div class="comp-sub">Wholesale & Retail Trading • Sivakasi</div>
             <div class="report-heading">ACCOUNT STATEMENT: ${customerName.toUpperCase()}</div>
             ${dateRangeText ? `<div class="date-badge">${dateRangeText}</div>` : ''}
@@ -1028,7 +1028,7 @@ export const generateLedgerStatementHtml = (
         <div class="subsequent-header">
           <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0F172A; padding-bottom: 4px; margin-bottom: 5px;">
             <div>
-              <span style="font-size: 15px; font-weight: 900; color: #0B4DB7;">DHEEKSHA TRADE LINK</span>
+              <span style="font-size: 15px; font-weight: 900; color: #0B4DB7;">GPK CRACKERS</span>
               <span style="font-size: 10.5px; font-weight: 700; color: #475569; margin-left: 8px;">• ACCOUNT STATEMENT: ${customerName.toUpperCase()}</span>
               ${dateRangeText ? `<span class="date-badge" style="margin-left: 8px; font-size: 9px; padding: 1px 6px;">${dateRangeText}</span>` : ''}
             </div>
@@ -1415,7 +1415,7 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
         <!-- Full Header Banner (Page 1) -->
         <div class="company-banner">
           <div>
-            <div class="comp-name">DHEEKSHA TRADE LINK</div>
+            <div class="comp-name">GPK CRACKERS</div>
             <div class="comp-sub">Wholesale & Retail Trading • Sivakasi</div>
             <div class="report-heading">PARTICULARS BILLS MASTER REPORT</div>
             ${dateRangeText ? `<div class="date-badge">${dateRangeText}</div>` : ''}
@@ -1447,7 +1447,7 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
         <div class="subsequent-header">
           <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0F172A; padding-bottom: 4px; margin-bottom: 5px;">
             <div>
-              <span style="font-size: 15px; font-weight: 900; color: #0B4DB7;">DHEEKSHA TRADE LINK</span>
+              <span style="font-size: 15px; font-weight: 900; color: #0B4DB7;">GPK CRACKERS</span>
               <span style="font-size: 10.5px; font-weight: 700; color: #475569; margin-left: 8px;">• PARTICULARS BILLS MASTER REPORT</span>
               ${dateRangeText ? `<span class="date-badge" style="margin-left: 8px; font-size: 9px; padding: 1px 6px;">${dateRangeText}</span>` : ''}
             </div>
@@ -1792,7 +1792,7 @@ export const generateCompaniesListPrintHtml = (companies: any[]): string => {
 <body>
   <div class="header">
     <div>
-      <div style="font-size:24px; font-weight:900; color:#0B4DB7;">DHEEKSHA TRADE LINK</div>
+      <div style="font-size:24px; font-weight:900; color:#0B4DB7;">GPK CRACKERS</div>
       <h2 style="font-size:15px; margin-top:2px;">COMPANIES DIRECTORY</h2>
     </div>
     <div style="text-align:right; font-size:11.5px;">
@@ -1860,7 +1860,7 @@ export const generateProductsListPrintHtml = (products: any[]): string => {
 <body>
   <div class="header">
     <div>
-      <div style="font-size:24px; font-weight:900; color:#0B4DB7;">DHEEKSHA TRADE LINK</div>
+      <div style="font-size:24px; font-weight:900; color:#0B4DB7;">GPK CRACKERS</div>
       <h2 style="font-size:15px; margin-top:2px;">PRODUCTS PRICE CATALOG</h2>
     </div>
     <div style="text-align:right; font-size:11.5px;">
@@ -2017,7 +2017,7 @@ export const generatePerformaHtml = (performa: any): string => {
       <body>
         <div style="position: relative; text-align: center; border-bottom: 2px solid #0F172A; padding-bottom: 8px; margin-bottom: 10px;">
           <div style="position: absolute; right: 0; top: 0; font-size: 12px; font-weight: 700; color: #475569;">Prepared By: <b>${performa.preparedBy || 'S.Nagaraj'}</b></div>
-          <h1 style="font-size: 26px; font-weight: 900; color: #0B4DB7; margin: 0 0 2px 0; text-transform: uppercase;">Dheeksha Trade Link</h1>
+          <h1 style="font-size: 26px; font-weight: 900; color: #0B4DB7; margin: 0 0 2px 0; text-transform: uppercase;">GPK Crackers</h1>
           <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase;">Wholesale & Retail Trading • Sivakasi</div>
         </div>
 
@@ -2142,7 +2142,7 @@ export const generatePerformaHtml = (performa: any): string => {
             <div style="border-top: 1px solid #0F172A; padding-top: 4px; font-weight: 700;">Customer Signature</div>
           </div>
           <div style="text-align: center; width: 160px;">
-            <div style="font-weight: 700; margin-bottom: 24px;">For Dheeksha Trade Link</div>
+            <div style="font-weight: 700; margin-bottom: 24px;">For GPK Crackers</div>
             <div style="border-top: 1px solid #0F172A; padding-top: 4px; font-weight: 700;">Authorized Signatory</div>
           </div>
         </div>
@@ -2217,7 +2217,7 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
         <!-- Full Header Banner (Page 1) -->
         <div class="company-banner">
           <div>
-            <div class="comp-name">DHEEKSHA TRADE LINK</div>
+            <div class="comp-name">GPK CRACKERS</div>
             <div class="comp-sub">Wholesale & Retail Trading • Sivakasi</div>
             <div class="report-heading">${reportTitle}</div>
             ${dateRangeText ? `<div class="date-badge">${dateRangeText}</div>` : ''}
@@ -2249,7 +2249,7 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
         <div class="subsequent-header">
           <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0F172A; padding-bottom: 4px; margin-bottom: 5px;">
             <div>
-              <span style="font-size: 15px; font-weight: 900; color: #0B4DB7;">DHEEKSHA TRADE LINK</span>
+              <span style="font-size: 15px; font-weight: 900; color: #0B4DB7;">GPK CRACKERS</span>
               <span style="font-size: 10.5px; font-weight: 700; color: #475569; margin-left: 8px;">• ${reportTitle}</span>
               ${dateRangeText ? `<span class="date-badge" style="margin-left: 8px; font-size: 9px; padding: 1px 6px;">${dateRangeText}</span>` : ''}
             </div>
@@ -2561,10 +2561,10 @@ export const printPerformaDirectly = (performa: any) => {
  * Reusable hidden-iframe print helper with image loading support
  */
 const triggerBrowserPrint = (htmlContent: string) => {
-  let iframe = document.getElementById('dheeksha-print-iframe') as HTMLIFrameElement | null;
+  let iframe = document.getElementById('gpk-print-iframe') as HTMLIFrameElement | null;
   if (!iframe) {
     iframe = document.createElement('iframe');
-    iframe.id = 'dheeksha-print-iframe';
+    iframe.id = 'gpk-print-iframe';
     iframe.style.position = 'fixed';
     iframe.style.right = '0';
     iframe.style.bottom = '0';

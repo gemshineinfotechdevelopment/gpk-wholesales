@@ -98,7 +98,12 @@ export const PerformaPage: FC<PerformaPageProps> = ({
 }) => {
   // Subtab Navigation
   const [activeSubTab, setActiveSubTab] = useState<PerformaSubTab>(() => {
-    return initialSubTab || (localStorage.getItem('dheeksha_performa_subtab') as PerformaSubTab) || 'Create Performa';
+    return (
+      initialSubTab ||
+      (localStorage.getItem('gpk_performa_subtab') as PerformaSubTab) ||
+      (localStorage.getItem('dheeksha_performa_subtab') as PerformaSubTab) ||
+      'Create Performa'
+    );
   });
 
   // Master Dropdown Data
@@ -218,14 +223,14 @@ export const PerformaPage: FC<PerformaPageProps> = ({
   useEffect(() => {
     if (initialSubTab) {
       setActiveSubTab(initialSubTab);
-      localStorage.setItem('dheeksha_performa_subtab', initialSubTab);
+      localStorage.setItem('gpk_performa_subtab', initialSubTab);
     }
   }, [initialSubTab]);
 
   // Persist activeSubTab on change
   useEffect(() => {
     if (activeSubTab) {
-      localStorage.setItem('dheeksha_performa_subtab', activeSubTab);
+      localStorage.setItem('gpk_performa_subtab', activeSubTab);
     }
   }, [activeSubTab]);
 

@@ -42,16 +42,25 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
       return;
     }
 
+    const cleanMobile = formData.mobileNumber.replace(/\D/g, '');
+    if (!formData.mobileNumber.trim() || cleanMobile.length < 10) {
+      alert('Mobile Number is mandatory (minimum 10 digits) for customer login registration.');
+      return;
+    }
+
     try {
       setLoading(true);
+
       await CustomersApi.create({
         name: formData.fullName.trim(),
-        mobile: formData.mobileNumber.trim() || 'N/A',
+        mobile: formData.mobileNumber.trim(),
         gst: formData.gstin.trim() || 'N/A',
         address: formData.billingAddress.trim(),
         avatarLetter: formData.fullName.trim().charAt(0).toUpperCase(),
         avatarBg: '#DBEAFE',
         avatarColor: '#0B4DB7',
+        isLoginEnabled: true,
+        password: cleanMobile, // Initial password is their registered phone number
       });
       if (onSubmitSuccess) {
         onSubmitSuccess();
@@ -96,7 +105,7 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
             letterSpacing: '-0.01em',
           }}
         >
-          Enter the details below to register a new client profile into the Dheeksha platform.
+          Enter the details below to register a new client profile into the GPK Crackers platform.
         </Typography>
       </Box>
 
@@ -180,7 +189,7 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
                   letterSpacing: '-0.01em',
                 }}
               >
-                Mobile Number
+                Mobile Number *
               </Typography>
               <Box
                 sx={{

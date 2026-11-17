@@ -137,7 +137,7 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
 
   return (
     <div
-      className="dheeksha-performa-container"
+      className="gpk-performa-container"
       style={{
         width: '100%',
         maxWidth: '820px',
@@ -172,7 +172,7 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
             letterSpacing: '-0.01em',
           }}
         >
-          Dheeksha Trade Link
+          GPK Crackers
         </h1>
         <div style={{ fontSize: '14px', fontWeight: 600, color: '#334155' }}>
           Sivakasi
@@ -466,7 +466,7 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
           </div>
         </div>
         <div style={{ textAlign: 'center', width: '160px' }}>
-          <div style={{ fontWeight: 700, marginBottom: '24px' }}>For Dheeksha Trade Link</div>
+          <div style={{ fontWeight: 700, marginBottom: '24px' }}>For GPK Crackers</div>
           <div style={{ borderTop: '1px solid #0F172A', paddingTop: '4px', fontWeight: 700 }}>
             Authorized Signatory
           </div>

@@ -1,7 +1,7 @@
 {
-  "name": "dheeksha-trade-backend",
+  "name": "gpk-crackers-backend",
   "version": "1.0.0",
-  "description": "Backend API Server for Dheeksha Trade application",
+  "description": "Backend API Server for GPK Crackers application",
   "main": "dist/index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only index.ts",

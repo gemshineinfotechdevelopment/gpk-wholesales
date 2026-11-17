@@ -50,11 +50,11 @@ export const PerformaPrintModal: React.FC<PerformaPrintModalProps> = ({ open, on
             body * {
               visibility: hidden !important;
             }
-            .dheeksha-printable-performa,
-            .dheeksha-printable-performa * {
+            .gpk-printable-performa,
+            .gpk-printable-performa * {
               visibility: visible !important;
             }
-            .dheeksha-printable-performa {
+            .gpk-printable-performa {
               position: absolute !important;
               left: 0 !important;
               top: 0 !important;
@@ -65,7 +65,7 @@ export const PerformaPrintModal: React.FC<PerformaPrintModalProps> = ({ open, on
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
             }
-            .dheeksha-no-print {
+            .gpk-no-print {
               display: none !important;
             }
             @page {
@@ -90,7 +90,7 @@ export const PerformaPrintModal: React.FC<PerformaPrintModalProps> = ({ open, on
         }}
       >
         <Box
-          className="dheeksha-no-print"
+          className="gpk-no-print"
           sx={{
             display: 'flex',
             alignItems: 'center',
@@ -175,7 +175,7 @@ export const PerformaPrintModal: React.FC<PerformaPrintModalProps> = ({ open, on
           }}
         >
           <Box
-            className="dheeksha-printable-performa"
+            className="gpk-printable-performa"
             sx={{
               backgroundColor: '#FFFFFF',
               boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
@@ -189,7 +189,7 @@ export const PerformaPrintModal: React.FC<PerformaPrintModalProps> = ({ open, on
         </DialogContent>
 
         <DialogActions
-          className="dheeksha-no-print"
+          className="gpk-no-print"
           sx={{
             px: 3,
             py: 1.5,

@@ -65,9 +65,16 @@ interface EditProductItem {
 interface AllPerformaPageProps {
   onAddNewPerforma?: () => void;
   onSelectCustomerForBill?: (customerName: string, subTab?: any) => void;
+  customerFilter?: string;
+  userRole?: 'superadmin' | 'admin' | 'user';
 }
 
-export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, onSelectCustomerForBill: _onSelectCustomerForBill }) => {
+export const AllPerformaPage: FC<AllPerformaPageProps> = ({
+  onAddNewPerforma,
+  onSelectCustomerForBill: _onSelectCustomerForBill,
+  customerFilter,
+  userRole = 'superadmin',
+}) => {
   const [performas, setPerformas] = useState<any[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
@@ -77,7 +84,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, on
 
   // Filters State
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [selectedCustomerFilter, setSelectedCustomerFilter] = useState<string>('ALL');
+  const [selectedCustomerFilter, setSelectedCustomerFilter] = useState<string>(() => customerFilter || 'ALL');
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('ALL');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
@@ -134,8 +141,14 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, on
   const fetchPerformas = async () => {
     try {
       setLoading(true);
+      const effectiveCustomer = userRole === 'user' ? (customerFilter || selectedCustomerFilter) : selectedCustomerFilter;
+      if (userRole === 'user' && (!effectiveCustomer || effectiveCustomer === 'ALL')) {
+        setPerformas([]);
+        setLoading(false);
+        return;
+      }
       const res = await PerformasApi.getAll({
-        customerName: selectedCustomerFilter,
+        customerName: effectiveCustomer,
         companyName: selectedCompanyFilter,
         status: selectedStatusFilter,
         search: searchQuery,
@@ -172,6 +185,12 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, on
   }, []);
 
   useEffect(() => {
+    if (customerFilter) {
+      setSelectedCustomerFilter(customerFilter);
+    }
+  }, [customerFilter]);
+
+  useEffect(() => {
     fetchPerformas();
   }, [selectedCustomerFilter, selectedCompanyFilter, selectedStatusFilter, startDate, endDate, sortBy, sortOrder]);
 
@@ -182,7 +201,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, on
 
   const handleResetFilters = () => {
     setSearchQuery('');
-    setSelectedCustomerFilter('ALL');
+    setSelectedCustomerFilter(customerFilter || 'ALL');
     setSelectedCompanyFilter('ALL');
     setSelectedStatusFilter('ALL');
     setStartDate('');
@@ -602,10 +621,12 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, on
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', fontSize: '20px' }}>
-              All Performas
+              All Performas {userRole === 'user' && customerFilter ? `- ${customerFilter}` : ''}
             </Typography>
             <Typography variant="body2" sx={{ color: '#64748B', fontSize: '13px' }}>
-              Directory of customer advance performas, brand allocations, editing, and fulfillment
+              {userRole === 'user'
+                ? `Directory of your advance performas and product allocations (${customerFilter || 'My Account'})`
+                : 'Directory of customer advance performas, brand allocations, editing, and fulfillment'}
             </Typography>
           </Box>
         </Box>
@@ -634,7 +655,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, on
           <IconButton onClick={fetchPerformas} sx={{ border: '1px solid #E2E8F0', borderRadius: '8px' }}>
             <RefreshRoundedIcon sx={{ color: '#475569', fontSize: 20 }} />
           </IconButton>
-          {onAddNewPerforma && (
+          {onAddNewPerforma && userRole !== 'user' && (
             <Button
               variant="contained"
               disableElevation
@@ -764,22 +785,24 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, on
             </Select>
           </FormControl>
 
-          {/* Customer Dropdown */}
-          <FormControl size="small" fullWidth>
-            <InputLabel>Customer</InputLabel>
-            <Select
-              value={selectedCustomerFilter}
-              label="Customer"
-              onChange={(e) => setSelectedCustomerFilter(e.target.value)}
-            >
-              <MenuItem value="ALL">All Customers</MenuItem>
-              {customers.map((c) => (
-                <MenuItem key={c._id || c.name} value={c.name}>
-                  {c.name}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
+          {/* Customer Dropdown (Hidden for Customer login) */}
+          {userRole !== 'user' && (
+            <FormControl size="small" fullWidth>
+              <InputLabel>Customer</InputLabel>
+              <Select
+                value={selectedCustomerFilter}
+                label="Customer"
+                onChange={(e) => setSelectedCustomerFilter(e.target.value)}
+              >
+                <MenuItem value="ALL">All Customers</MenuItem>
+                {customers.map((c) => (
+                  <MenuItem key={c._id || c.name} value={c.name}>
+                    {c.name}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
 
           {/* Status Dropdown */}
           <FormControl size="small" fullWidth>
@@ -998,19 +1021,21 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, on
                             </IconButton>
                           </Tooltip>
 
-                          <Tooltip title="Edit Performa">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenEditModal(p)}
-                              sx={{
-                                color: '#2563EB',
-                                backgroundColor: '#EFF6FF',
-                                '&:hover': { backgroundColor: '#DBEAFE' },
-                              }}
-                            >
-                              <ModeEditOutlineRoundedIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                          </Tooltip>
+                          {userRole !== 'user' && (
+                            <Tooltip title="Edit Performa">
+                              <IconButton
+                                size="small"
+                                onClick={() => handleOpenEditModal(p)}
+                                sx={{
+                                  color: '#2563EB',
+                                  backgroundColor: '#EFF6FF',
+                                  '&:hover': { backgroundColor: '#DBEAFE' },
+                                }}
+                              >
+                                <ModeEditOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
 
                           <Tooltip title="Share on WhatsApp">
                             <IconButton
@@ -1032,7 +1057,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, on
                             </IconButton>
                           </Tooltip>
 
-                          {p.status !== 'CANCELLED' && p.status !== 'COMPLETED' && (
+                          {userRole !== 'user' && p.status !== 'CANCELLED' && p.status !== 'COMPLETED' && (
                             <Tooltip title="Cancel Performa">
                               <IconButton size="small" onClick={() => handleCancelPerforma(p._id, p.performaNumber)} sx={{ color: '#D97706' }}>
                                 <CancelOutlinedIcon sx={{ fontSize: 18 }} />
@@ -1040,11 +1065,13 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({ onAddNewPerforma, on
                             </Tooltip>
                           )}
 
-                          <Tooltip title="Delete Performa">
-                            <IconButton size="small" onClick={() => handleDeletePerforma(p._id, p.performaNumber)} sx={{ color: '#DC2626', '&:hover': { backgroundColor: '#FEE2E2' } }}>
-                              <DeleteOutlineRoundedIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                          </Tooltip>
+                          {userRole !== 'user' && (
+                            <Tooltip title="Delete Performa">
+                              <IconButton size="small" onClick={() => handleDeletePerforma(p._id, p.performaNumber)} sx={{ color: '#DC2626', '&:hover': { backgroundColor: '#FEE2E2' } }}>
+                                <DeleteOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                              </IconButton>
+                            </Tooltip>
+                          )}
                         </Box>
                       </TableCell>
                     </TableRow>

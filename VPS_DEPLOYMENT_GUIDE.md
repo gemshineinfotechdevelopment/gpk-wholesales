@@ -1,8 +1,8 @@
-# Dheeksha Trade - VPS Deployment Guide (Ubuntu)
+# GPK Crackers - VPS Deployment Guide (Ubuntu)
 
-Target Domain / Subdomain: `dheeksha-trade.gemshine.tech`  
+Target Domain / Subdomain: `gpk-crackers.gemshine.tech` (or `dheeksha-trade.gemshine.tech`)  
 Backend Port: `5004`  
-Database: Local MongoDB on VPS (`mongodb://127.0.0.1:27017/dheeksha_trade`)
+Database: Local MongoDB on VPS (`mongodb://127.0.0.1:27017/gpk_crackers` or `dheeksha_trade`)
 
 ---
 

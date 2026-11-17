@@ -112,7 +112,7 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
 
   return (
     <div
-      className="dheeksha-bill-container"
+      className="gpk-bill-container"
       style={{
         width: '100%',
         maxWidth: '820px',
@@ -148,7 +148,7 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
             textTransform: 'uppercase',
           }}
         >
-          Dheeksha Trade Link
+          GPK Crackers
         </h1>
         <div style={{ fontSize: '11px', fontWeight: 700, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
           Wholesale & Retail Trading • Sivakasi
@@ -405,7 +405,7 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
           <div style={{ fontWeight: 700, color: '#334155' }}>Customer Signature</div>
         </div>
         <div style={{ textAlign: 'center', width: '160px' }}>
-          <div style={{ fontWeight: 700, color: '#0F172A', marginBottom: '24px' }}>For Dheeksha Trade Link</div>
+          <div style={{ fontWeight: 700, color: '#0F172A', marginBottom: '24px' }}>For GPK Crackers</div>
           <div style={{ borderTop: '1px solid #0F172A', marginBottom: '4px' }}></div>
           <div style={{ fontWeight: 700, color: '#334155' }}>Authorized Signatory</div>
         </div>

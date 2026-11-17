@@ -1,86 +1,85 @@
-# Dheeksha Trade - Fullstack Application
+# GPK Crackers - Wholesales Billing & Management System
 
-Dheeksha Trade is a billing and inventory management application built with **React (Vite) + TypeScript + Material UI** on the frontend and **Express + TypeScript + MongoDB (Mongoose)** on the backend.
+**GPK Crackers** is a comprehensive wholesale billing, inventory, and customer ledger management application built with **React (Vite) + TypeScript + Material UI** on the frontend and **Express + TypeScript + MongoDB (Mongoose)** on the backend.
+
+---
+
+## 🔐 Multi-Tier Role-Based Authentication
+
+The platform provides 3 distinct levels of login:
+
+1. **Super Admin (`superadmin`)**:
+   - Access to everything across the system.
+   - Full visibility into overall business revenue generation metrics:
+     - Total Customers
+     - Total Debit (Purchases)
+     - Total Credit (Paid)
+     - Total Pending Due
+     - Advance Balances
+   - Full editing, deleting, and configuration privileges.
+
+2. **Store Admin (`admin`)**:
+   - Manages day-to-day operations: creating orders, customers, particulars, billing, and statements.
+   - **Privacy Protection**: Aggregate customer revenue generation cards and financial totals are hidden from admin view.
+
+3. **Customer / User (`user`)**:
+   - Dedicated customer portal.
+   - Customers log in using their **Mobile Number** or customer name with password.
+   - **Strict Privacy**: Customers can **only view their own personal records**:
+     - Their personal ledger (debit, credit, advance balance)
+     - Their performa invoices and bills (view & print)
 
 ---
 
 ## 📁 Project Structure
 
 ```text
-Dheeksha-trade/                      # Root Project Directory (Frontend + Monorepo root)
+gpk-wholesales/                      # Root Project Directory (Frontend + Monorepo root)
 ├── index.html                       # Frontend HTML entry point
 ├── package.json                     # Frontend & Root scripts configuration
 ├── vite.config.ts                   # Vite configuration
 ├── tsconfig.json                    # TypeScript base config
-├── .env                             # Frontend environment variables (VITE_API_BASE_URL)
+├── .env                             # Frontend environment variables (VITE_API_URL)
 │
 ├── src/                             # 🎨 FRONTEND SOURCE CODE (React + TS + MUI)
 │   ├── assets/                      # Static assets (images, logos, icons)
 │   ├── components/                  # React UI components & pages
 │   │   ├── AddCompanyPage.tsx
 │   │   ├── AddCustomerPage.tsx
-│   │   ├── AllCustomersPage.tsx
+│   │   ├── AllCustomersPage.tsx     # Role-aware customer directory & revenue summary
+│   │   ├── AllPerformaPage.tsx      # Orders directory (customer filtered for user)
 │   │   ├── BillPrintModal.tsx
 │   │   ├── BillPrintTemplate.tsx
 │   │   ├── CompaniesPage.tsx
 │   │   ├── CustomersPage.tsx
-│   │   ├── LoginPage.tsx
-│   │   ├── Navbar.tsx
-│   │   ├── ParticularsPage.tsx
+│   │   ├── LoginPage.tsx            # Multi-role login (Super Admin, Admin, Customer)
+│   │   ├── Navbar.tsx               # Role-based navigation header
+│   │   ├── ParticularsPage.tsx      # Customer ledger & transaction history
+│   │   ├── PerformaPage.tsx
+│   │   ├── PerformaPrintModal.tsx
 │   │   └── ProductsPage.tsx
-│   ├── services/                    # API client (Axios/Fetch calls to backend)
-│   │   └── api.ts
-│   ├── theme/                       # Material UI Theme customizations
-│   │   └── theme.ts
-│   ├── utils/                       # Helper functions (printUtils, formatting)
-│   │   └── printUtils.ts
-│   ├── App.tsx                      # Main Application Component
-│   ├── main.tsx                     # React DOM entry point
-│   └── index.css                    # Global styling
+│   ├── services/                    # API client services
+│   ├── utils/                       # Print & WhatsApp helpers
+│   ├── App.tsx                      # Root component & routing state
+│   └── main.tsx                     # React DOM entry point
 │
-└── server/                          # 🚀 BACKEND (Express + TS + Mongo)
-    ├── package.json                 # Backend dependencies & scripts
-    ├── tsconfig.json                # Backend TypeScript configuration
-    ├── .env                         # Backend environment variables (DB URI, PORT, CORS)
-    ├── config/                      # DB Connection (MongoDB Mongoose)
-    ├── controllers/                 # Request handlers / business logic
-    ├── middleware/                  # Auth, error handling middlewares
-    ├── models/                      # Mongoose data schemas (Customer, Product, etc.)
-    ├── routes/                      # Express REST API route definitions
-    ├── utils/                       # Server utilities & helper functions
-    └── index.ts                     # Express Server entry point
+├── server/                          # 🚀 BACKEND SOURCE CODE (Express + TS)
+│   ├── config/                      # Database & Cloudinary configurations
+│   ├── controllers/                 # Controllers (authController with 3 roles)
+│   ├── models/                      # MongoDB Schemas (Admin, Customer, Performa, etc.)
+│   ├── routes/                      # API endpoint routes
+│   └── index.ts                     # Express server startup
 ```
 
 ---
 
-## ⚡ How to Run the Application
+## 🚀 Running Locally
 
-> **Note:** Always run npm commands from the project root (`Dheeksha-trade`), **do not `cd src`**!
-
-### 1. Run Both Frontend & Backend Together (Recommended)
-From the root directory:
 ```bash
+# Start both Frontend & Backend concurrently:
 npm run dev:all
-```
-*Frontend runs on `http://localhost:5173` (or `5000`)*  
-*Backend API runs on `http://localhost:5001`*
 
-### 2. Run Only Frontend
-From the root directory:
-```bash
-npm run dev
+# Or run separately:
+npm run dev           # Client on http://localhost:5173
+npm run dev:server    # Backend API on http://localhost:5004
 ```
-
-### 3. Run Only Backend Server
-From the root directory:
-```bash
-npm run dev:server
-```
-*(Or `cd server` then `npm run dev`)*
-
-### 4. Build for Production
-From the root directory:
-```bash
-npm run build:all
-```
-

@@ -199,7 +199,7 @@ export const shareBillOnWhatsApp = async (bill: BillPrintData, phone?: string) =
   const rawPack = parseFloat(String(bill.packing || '0').replace(/[^0-9.]/g, '')) || 0;
   const rawTax = parseFloat(String(bill.tax || '0').replace(/[^0-9.]/g, '')) || 0;
 
-  const text = `*DHEEKSHA TRADE - INVOICE BILL* 🧾
+  const text = `*GPK CRACKERS - INVOICE BILL* 🧾
 ----------------------------------------
 *Bill No:* #${bill.billNo}
 *Customer:* ${bill.customerName}
@@ -217,7 +217,7 @@ ${itemsText || '-'}
 *NET TOTAL:* ₹${bill.total || '0.00'}
 ----------------------------------------
 _Thank you for your business!_
-*Dheeksha Trade*`;
+*GPK Crackers*`;
 
   const html = generateBillHtml(bill);
   await shareToWhatsApp({
@@ -245,7 +245,7 @@ export const shareLedgerOnWhatsApp = async (
 
   const dateRangeStr = fromDate || toDate ? ` (${fromDate || 'Start'} to ${toDate || 'Present'})` : '';
 
-  const text = `*DHEEKSHA TRADE - ACCOUNT STATEMENT* 📊
+  const text = `*GPK CRACKERS - ACCOUNT STATEMENT* 📊
 ----------------------------------------
 *Customer:* ${customerName}${dateRangeStr}
 *Total Transactions:* ${accountDetails.length}
@@ -255,7 +255,7 @@ export const shareLedgerOnWhatsApp = async (
 *NET BALANCE:* ₹${netBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${netBalance > 0 ? '(Due)' : netBalance < 0 ? '(Advance)' : '(Settled)'}
 ----------------------------------------
 _Generated on ${new Date().toLocaleDateString('en-GB')}_
-*Dheeksha Trade*`;
+*GPK Crackers*`;
 
   const rangeLabel = fromDate || toDate ? `${fromDate || ''} - ${toDate || ''}` : undefined;
   const html = generateLedgerStatementHtml(customerName, accountDetails, rangeLabel);
@@ -287,7 +287,7 @@ export const shareParticularsListOnWhatsApp = async (
     0
   );
 
-  const text = `*DHEEKSHA TRADE - PARTICULAR BILLS STATEMENT* 📋
+  const text = `*GPK CRACKERS - PARTICULAR BILLS STATEMENT* 📋
 ----------------------------------------
 *Customer:* ${customerName}
 *Total Bills:* ${particularDetails.length}
@@ -295,7 +295,7 @@ export const shareParticularsListOnWhatsApp = async (
 *Total Billed Amount:* ₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 ----------------------------------------
 _Generated on ${new Date().toLocaleDateString('en-GB')}_
-*Dheeksha Trade*`;
+*GPK Crackers*`;
 
   const rangeLabel = fromDate || toDate ? `${fromDate || ''} - ${toDate || ''}` : undefined;
   const html = generateParticularsListPrintHtml(particularDetails, rangeLabel);
@@ -358,7 +358,7 @@ export const sharePerformaOnWhatsApp = async (performa: any, phone?: string) => 
     })
     .join('\n');
 
-  const text = `*DHEEKSHA TRADE - PERFORMA INVOICE / QUOTATION* 📝
+  const text = `*GPK CRACKERS - PERFORMA INVOICE / QUOTATION* 📝
 ----------------------------------------
 *Performa No:* #${pfNum}
 *Customer:* ${custName}
@@ -372,7 +372,7 @@ ${itemsText || '-'}
 *Subtotal:* ₹${subtotalVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 ${discountAmt > 0 ? `*Discount:* ${performa.discount ? `${performa.discount}${String(performa.discount).includes('%') ? '' : '%'}` : ''} (-₹${discountAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })})\n` : ''}${packingAmt > 0 ? `*Packing:* ${performa.packing ? `${performa.packing}${String(performa.packing).includes('%') ? '' : '%'}` : ''} (+₹${packingAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })})\n` : ''}${taxAmt > 0 ? `*Tax:* ₹${taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n` : ''}*TOTAL ALLOCATED VALUE:* ₹${Number(totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 ----------------------------------------
-*Dheeksha Trade*`;
+*GPK Crackers*`;
 
   const html = generatePerformaHtml(performa);
   await shareToWhatsApp({
@@ -398,7 +398,7 @@ export const shareAllPerformasOnWhatsApp = async (
   const totalCases = performas.reduce((acc, p) => acc + (parseFloat(p.totalCases || p.totalRequiredCases) || 0), 0);
   const totalValue = performas.reduce((acc, p) => acc + (parseFloat(p.totalAmount || p.totalAllocatedAmount) || 0), 0);
 
-  const text = `*DHEEKSHA TRADE - PERFORMA SUMMARY* 📊
+  const text = `*GPK CRACKERS - PERFORMA SUMMARY* 📊
 ----------------------------------------
 *Title:* ${summaryTitle}
 *Total Performas:* ${totalPerformas}
@@ -406,7 +406,7 @@ export const shareAllPerformasOnWhatsApp = async (
 *Total Value:* ₹${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 ----------------------------------------
 _Generated on ${new Date().toLocaleDateString('en-GB')}_
-*Dheeksha Trade*`;
+*GPK Crackers*`;
 
   const rangeLabel = fromDate || toDate ? `${fromDate || ''} - ${toDate || ''}` : undefined;
   const html = generateAllPerformasPrintHtml(performas, summaryTitle, rangeLabel);
@@ -434,7 +434,7 @@ export const shareCustomerListOnWhatsApp = async (
   const totalCredit = customers.reduce((acc, c) => acc + (parseFloat(c.totalCredit) || 0), 0);
   const totalDue = customers.reduce((acc, c) => acc + (parseFloat(c.pendingDue) || 0), 0);
 
-  const text = `*DHEEKSHA TRADE - CUSTOMERS MASTER REPORT* 👥
+  const text = `*GPK CRACKERS - CUSTOMERS MASTER REPORT* 👥
 ----------------------------------------
 *Title:* ${reportTitle}
 *Total Customers:* ${totalCustomers}
@@ -443,7 +443,7 @@ export const shareCustomerListOnWhatsApp = async (
 *Total Pending Due:* ₹${totalDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
 ----------------------------------------
 _Generated on ${new Date().toLocaleDateString('en-GB')}_
-*Dheeksha Trade*`;
+*GPK Crackers*`;
 
   const rangeLabel = fromDate || toDate ? `${fromDate || ''} - ${toDate || ''}` : undefined;
   const html = generateCustomerListPrintHtml(customers, reportTitle, rangeLabel);

@@ -115,7 +115,7 @@ app.use(errorHandler);
 // Start Server
 app.listen(PORT, () => {
   console.log(`=============================================`);
-  console.log(` 🚀 Dheeksha Trade Server running on port ${PORT}`);
+  console.log(` 🚀 GPK Crackers Server running on port ${PORT}`);
   console.log(` 🔗 Health check: http://localhost:${PORT}/api/health`);
   console.log(` 🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
   console.log(`=============================================`);
