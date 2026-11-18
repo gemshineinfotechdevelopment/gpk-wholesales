@@ -31,7 +31,6 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Divider,
 } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
@@ -41,7 +40,6 @@ import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded';
 import BusinessRoundedIcon from '@mui/icons-material/BusinessRounded';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
-import PhoneRoundedIcon from '@mui/icons-material/PhoneRounded';
 import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlineRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import EditRoundedIcon from '@mui/icons-material/EditRounded';
@@ -77,11 +75,6 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
 
   // Company Cases Tab specific selection
   const [activeCompanySelection, setActiveCompanySelection] = useState<string>('ALL');
-  const [companyViewMode, setCompanyViewMode] = useState<Record<string, 'product' | 'order'>>({});
-
-  // Expanded cards state (for card view mode)
-  const [expandedCustomers, setExpandedCustomers] = useState<Record<string, boolean>>({});
-  const [expandedCompanies, setExpandedCompanies] = useState<Record<string, boolean>>({});
 
   // Detail Modals
   const [customerModal, setCustomerModal] = useState<{
@@ -226,14 +219,6 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
       (c) => c.companyName.toLowerCase() === activeCompanySelection.toLowerCase()
     );
   }, [data, activeCompanySelection]);
-
-  const toggleCustomerExpand = (customerName: string) => {
-    setExpandedCustomers((prev) => ({ ...prev, [customerName]: !prev[customerName] }));
-  };
-
-  const toggleCompanyExpand = (companyName: string) => {
-    setExpandedCompanies((prev) => ({ ...prev, [companyName]: !prev[companyName] }));
-  };
 
   // Copy customer pending cases text for WhatsApp
   const handleCopyCustomerWhatsApp = (customer: PendingCustomerGroup) => {
@@ -1066,31 +1051,28 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
           ) : (
             /* DETAILED CARD VIEW (ALTERNATIVE) */
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {data?.customerCases?.map((customer) => {
-                const isExpanded = Boolean(expandedCustomers[customer.customerName]);
-
-                return (
-                  <Paper
-                    key={customer.customerName}
+              {data?.customerCases?.map((customer) => (
+                <Paper
+                  key={customer.customerName}
+                  sx={{
+                    borderRadius: '10px',
+                    border: '1px solid #E2E8F0',
+                    overflow: 'hidden',
+                    backgroundColor: '#FFFFFF',
+                  }}
+                >
+                  <Box
                     sx={{
-                      borderRadius: '10px',
-                      border: '1px solid #E2E8F0',
-                      overflow: 'hidden',
-                      backgroundColor: '#FFFFFF',
+                      p: 2,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 1.5,
+                      cursor: 'pointer',
                     }}
+                    onClick={() => setCustomerModal({ open: true, customer })}
                   >
-                    <Box
-                      sx={{
-                        p: 2,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: 1.5,
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => toggleCustomerExpand(customer.customerName)}
-                    >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Avatar sx={{ bgcolor: '#DBEAFE', color: '#0B4DB7', fontWeight: 800, width: 38, height: 38 }}>
                           {customer.customerName.charAt(0).toUpperCase()}
@@ -1119,8 +1101,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                       </Box>
                     </Box>
                   </Paper>
-                );
-              })}
+                ))}
             </Box>
           )}
         </Box>
@@ -1419,8 +1400,6 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
             /* DETAILED CARD VIEW FOR COMPANIES */
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
               {displayedCompanyCases.map((company) => {
-                const totalStock = company.totalStockCases ?? (company.totalPendingCases + (company.totalGivenCases || 0));
-                const totalGiven = company.totalGivenCases ?? 0;
                 const totalBalance = company.totalBalanceCases ?? company.totalPendingCases;
                 const balanceAmt = company.totalBalanceAmount ?? company.totalPendingAmount;
 
