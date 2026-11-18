@@ -5,10 +5,7 @@ import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import ShieldRoundedIcon from '@mui/icons-material/ShieldRounded';
 import AdminPanelSettingsRoundedIcon from '@mui/icons-material/AdminPanelSettingsRounded';
 import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
-import VpnKeyRoundedIcon from '@mui/icons-material/VpnKeyRounded';
 import LockResetRoundedIcon from '@mui/icons-material/LockResetRounded';
-import TuneRoundedIcon from '@mui/icons-material/TuneRounded';
-import { AdminAccountModal } from './AdminAccountModal';
 import { CustomerPasswordModal } from './CustomerPasswordModal';
 import { SettingsApi, type AuthUser } from '../services/api';
 
@@ -41,7 +38,6 @@ export const Navbar: FC<NavbarProps> = ({
     { label: 'Particulars', tab: 'Particulars' },
   ];
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [openAdminModal, setOpenAdminModal] = useState<boolean>(false);
   const [openCustomerPasswordModal, setOpenCustomerPasswordModal] = useState<boolean>(false);
 
   const [customLogo, setCustomLogo] = useState<string>(() => {
@@ -380,49 +376,6 @@ export const Navbar: FC<NavbarProps> = ({
               </Typography>
             </Box>
           </MenuItem>
-          {user?.role === 'superadmin' && (
-            <>
-              <Divider sx={{ my: 0.5 }} />
-              <MenuItem
-                onClick={() => {
-                  handleCloseMenu();
-                  if (onSelectTab) onSelectTab('Settings');
-                }}
-                sx={{ py: 1 }}
-              >
-                <ListItemIcon>
-                  <TuneRoundedIcon sx={{ fontSize: 18, color: '#DC2626' }} />
-                </ListItemIcon>
-                <Box>
-                  <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
-                    Portal Settings
-                  </Typography>
-                  <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
-                    Credentials, branding, logo & invoices
-                  </Typography>
-                </Box>
-              </MenuItem>
-              <MenuItem
-                onClick={() => {
-                  handleCloseMenu();
-                  setOpenAdminModal(true);
-                }}
-                sx={{ py: 1 }}
-              >
-                <ListItemIcon>
-                  <VpnKeyRoundedIcon sx={{ fontSize: 18, color: '#0B4DB7' }} />
-                </ListItemIcon>
-                <Box>
-                  <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
-                    Quick Admin Credentials
-                  </Typography>
-                  <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
-                    Quick modal to change store admin pass
-                  </Typography>
-                </Box>
-              </MenuItem>
-            </>
-          )}
 
           {user?.role === 'user' && (
             <>
@@ -459,14 +412,6 @@ export const Navbar: FC<NavbarProps> = ({
             </Typography>
           </MenuItem>
         </Menu>
-
-        {/* Super Admin Dialog for Changing Admin Credentials */}
-        {user?.role === 'superadmin' && (
-          <AdminAccountModal
-            open={openAdminModal}
-            onClose={() => setOpenAdminModal(false)}
-          />
-        )}
 
         {/* Customer Dialog for Setting / Changing Password */}
         {user?.role === 'user' && (

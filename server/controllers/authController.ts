@@ -320,12 +320,20 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     const hashedPassword = hashPassword(cleanPassword);
 
     // 1. Check Super Admin & Admin accounts first
-    let adminDoc = await Admin.findOne({
-      $or: [
-        { username: cleanUsername, role: { $in: ['superadmin', 'admin'] } },
-        { role: 'superadmin', username: 'superadmin' },
-      ],
-    });
+    let adminDoc: any = null;
+    if (cleanUsername === 'superadmin') {
+      adminDoc = await Admin.findOne({
+        $or: [{ username: 'superadmin' }, { role: 'superadmin' }],
+      });
+    } else {
+      adminDoc = await Admin.findOne({
+        username: cleanUsername,
+        role: { $in: ['superadmin', 'admin'] },
+      });
+      if (!adminDoc && cleanUsername === 'admin') {
+        adminDoc = await Admin.findOne({ role: 'admin' });
+      }
+    }
 
     // Auto-seed fallback for superadmin / admin on initial setup
     if (!adminDoc) {
@@ -344,7 +352,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       }
     }
 
-    if (adminDoc && (cleanUsername === adminDoc.username || cleanUsername === 'superadmin' || cleanUsername === 'admin')) {
+    if (adminDoc) {
       const isMatch = adminDoc.password === hashedPassword || adminDoc.password === cleanPassword;
       if (!isMatch) {
         res.status(401).json({ success: false, error: 'Invalid username or password' });

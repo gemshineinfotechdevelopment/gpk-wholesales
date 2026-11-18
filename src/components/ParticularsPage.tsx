@@ -3382,6 +3382,12 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                   <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '95px' }}>
                     DATE
                   </TableCell>
+                  <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '80px' }}>
+                    CASES
+                  </TableCell>
+                  <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '110px' }}>
+                    PENDING CASES
+                  </TableCell>
                   <TableCell align="right" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '100px' }}>
                     SUBTOTAL
                   </TableCell>
@@ -3408,13 +3414,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
               <TableBody>
                 {particularLoading ? (
                   <TableRow>
-                    <TableCell colSpan={11} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={13} align="center" sx={{ py: 6 }}>
                       <CircularProgress size={32} sx={{ color: '#0B4DB7' }} />
                     </TableCell>
                   </TableRow>
                 ) : particularDetails.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={11} align="center" sx={{ py: 6, color: '#64748B' }}>
+                    <TableCell colSpan={13} align="center" sx={{ py: 6, color: '#64748B' }}>
                       No particular bills found {filterCustomer !== 'ALL' ? `for ${filterCustomer}` : ''}.
                     </TableCell>
                   </TableRow>
@@ -3429,6 +3435,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                     const taxStr = row.tax && parseFloat(row.tax) > 0 ? `₹${parseFloat(row.tax).toLocaleString('en-IN')}` : '-';
                     const hasPdf = Boolean(row.pdfData && row.pdfData.trim() !== '');
                     const isUploading = uploadingBillId === rowId;
+                    const pendingCasesVal = Number(row.pendingCaseCount) || 0;
 
                     return (
                       <TableRow
@@ -3450,6 +3457,29 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                         </TableCell>
                         <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '12.5px', fontWeight: 500, color: '#475569', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           {row.date}
+                        </TableCell>
+                        <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '13px', fontWeight: 700, color: '#0F172A', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
+                          {row.caseCount || '0'}
+                        </TableCell>
+                        <TableCell align="center" sx={{ py: 1.4, px: 1, borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
+                          {pendingCasesVal > 0 ? (
+                            <Chip
+                              size="small"
+                              label={`${pendingCasesVal} Cases`}
+                              sx={{
+                                backgroundColor: '#FEF3C7',
+                                color: '#B45309',
+                                fontWeight: 800,
+                                fontSize: '11.5px',
+                                height: '22px',
+                                borderRadius: '5px',
+                              }}
+                            />
+                          ) : (
+                            <Typography sx={{ fontSize: '12px', color: '#16A34A', fontWeight: 700 }}>
+                              0 (Nil)
+                            </Typography>
+                          )}
                         </TableCell>
                         <TableCell align="right" sx={{ py: 1.4, px: 1.5, fontSize: '13px', fontWeight: 600, color: '#475569', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           ₹{subtotalNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}

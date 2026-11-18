@@ -23,8 +23,55 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
       filter.customerName = { $regex: new RegExp(`^${escapeRegex(targetName)}$`, 'i') };
     }
 
-    const particulars = await Particular.find(filter).sort({ createdAt: -1, _id: -1 });
-    res.status(200).json({ success: true, count: particulars.length, data: particulars });
+    const particulars = await Particular.find(filter).sort({ createdAt: -1, _id: -1 }).lean();
+
+    // Fetch active performas to compute pending cases for each customer / performa
+    const { Performa } = await import('../models/Performa');
+    const activePerformas = await Performa.find({
+      status: { $in: ['ACTIVE', 'PARTIALLY_USED'] },
+    }).lean();
+
+    const customerPendingMap = new Map<string, number>();
+    const performaIdPendingMap = new Map<string, number>();
+
+    for (const perf of activePerformas) {
+      const cName = (perf.customerSnapshot?.name || (perf as any).customerName || '').trim().toLowerCase();
+      const rem = typeof perf.totalRemainingCases === 'number'
+        ? perf.totalRemainingCases
+        : (perf.products || []).reduce((sum: number, pr: any) => sum + (Number(pr.remainingCases) || 0), 0);
+
+      performaIdPendingMap.set(String(perf._id), rem);
+      if (perf.performaNumber) {
+        performaIdPendingMap.set(perf.performaNumber.trim(), rem);
+      }
+
+      const prev = customerPendingMap.get(cName) || 0;
+      customerPendingMap.set(cName, prev + rem);
+    }
+
+    const enriched = particulars.map((p: any) => {
+      let pending = 0;
+      if (p.performaId && performaIdPendingMap.has(String(p.performaId))) {
+        pending = performaIdPendingMap.get(String(p.performaId)) || 0;
+      } else if (p.performaNumber && performaIdPendingMap.has(p.performaNumber.trim())) {
+        pending = performaIdPendingMap.get(p.performaNumber.trim()) || 0;
+      } else if (p.customerName) {
+        const norm = p.customerName.trim().toLowerCase();
+        pending = customerPendingMap.get(norm) || 0;
+      }
+
+      const computedBillCases = (p.caseCount && p.caseCount !== '0')
+        ? p.caseCount
+        : (p.products || []).reduce((sum: number, pr: any) => sum + (parseFloat(pr.quantity) || 0), 0).toString();
+
+      return {
+        ...p,
+        caseCount: computedBillCases,
+        pendingCaseCount: pending,
+      };
+    });
+
+    res.status(200).json({ success: true, count: enriched.length, data: enriched });
   } catch (error) {
     next(error);
   }
