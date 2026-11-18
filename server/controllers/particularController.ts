@@ -25,39 +25,43 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
 
     const particulars = await Particular.find(filter).sort({ createdAt: -1, _id: -1 }).lean();
 
-    // Fetch active performas to compute pending cases for each customer / performa
-    const { Performa } = await import('../models/Performa');
-    const activePerformas = await Performa.find({
-      status: { $in: ['ACTIVE', 'PARTIALLY_USED'] },
-    }).lean();
-
-    const customerPendingMap = new Map<string, number>();
-    const performaIdPendingMap = new Map<string, number>();
-
-    for (const perf of activePerformas) {
-      const cName = (perf.customerSnapshot?.name || (perf as any).customerName || '').trim().toLowerCase();
-      const rem = typeof perf.totalRemainingCases === 'number'
-        ? perf.totalRemainingCases
-        : (perf.products || []).reduce((sum: number, pr: any) => sum + (Number(pr.remainingCases) || 0), 0);
-
-      performaIdPendingMap.set(String(perf._id), rem);
-      if (perf.performaNumber) {
-        performaIdPendingMap.set(perf.performaNumber.trim(), rem);
-      }
-
-      const prev = customerPendingMap.get(cName) || 0;
-      customerPendingMap.set(cName, prev + rem);
-    }
+    // Use unified pending cases calculation to guarantee exact synchronization with Pending Cases dashboard
+    const { calculatePendingCasesData } = await import('../services/performaConsumptionService');
+    const { customerPendingMap, performaPendingMap } = await calculatePendingCasesData();
 
     const enriched = particulars.map((p: any) => {
+      const pCustName = (p.customerName || '').trim();
+      const pCustKey = pCustName.toLowerCase();
+      const pCleanDigits = pCustName.replace(/[^0-9]/g, '');
+      const pPfNum = (p.performaNumber || '').trim().toUpperCase();
+      const pPfId = p.performaId ? String(p.performaId).trim() : '';
+
       let pending = 0;
-      if (p.performaId && performaIdPendingMap.has(String(p.performaId))) {
-        pending = performaIdPendingMap.get(String(p.performaId)) || 0;
-      } else if (p.performaNumber && performaIdPendingMap.has(p.performaNumber.trim())) {
-        pending = performaIdPendingMap.get(p.performaNumber.trim()) || 0;
-      } else if (p.customerName) {
-        const norm = p.customerName.trim().toLowerCase();
-        pending = customerPendingMap.get(norm) || 0;
+
+      // 1. Direct customer pending cases match (matches customer card in Pending Cases)
+      if (customerPendingMap.has(pCustKey)) {
+        pending = customerPendingMap.get(pCustKey) || 0;
+      } else if (pCleanDigits.length >= 7 && customerPendingMap.has(pCleanDigits)) {
+        pending = customerPendingMap.get(pCleanDigits) || 0;
+      } else if (p.customerId && customerPendingMap.has(String(p.customerId))) {
+        pending = customerPendingMap.get(String(p.customerId)) || 0;
+      } else {
+        // 2. Fuzzy / partial substring match across customer map
+        for (const [key, val] of customerPendingMap.entries()) {
+          if (key.length > 2 && (pCustKey.includes(key) || key.includes(pCustKey))) {
+            pending = val;
+            break;
+          }
+        }
+      }
+
+      // 3. Fallback to performa pending map if linked performa still has remaining cases
+      if (pending === 0) {
+        if (pPfNum && performaPendingMap.has(pPfNum)) {
+          pending = performaPendingMap.get(pPfNum) || 0;
+        } else if (pPfId && performaPendingMap.has(pPfId)) {
+          pending = performaPendingMap.get(pPfId) || 0;
+        }
       }
 
       const computedBillCases = (p.caseCount && p.caseCount !== '0')

@@ -828,6 +828,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
 
   // Subtab 2: Submit Particular Bill
   const handleCreateParticular = async () => {
+    if (createLoading) return;
     if (!billNo || !billNo.trim()) {
       alert('Please enter a Bill Number');
       return;

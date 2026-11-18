@@ -4,6 +4,7 @@ import { PerformaAudit } from '../models/PerformaAudit';
 import { Customer } from '../models/Customer';
 import { Particular } from '../models/Particular';
 import { AccountLedger } from '../models/AccountLedger';
+import { Company } from '../models/Company';
 import { escapeRegex, recalculateCustomerBalance } from '../utils/ledgerUtils';
 
 export interface BillProductInput {
@@ -722,6 +723,21 @@ export const getCustomerPerformaSummary = async (customerIdentifier: string): Pr
   // Keep Master Performa updated
   if (masterPerforma) {
     let changed = false;
+    const computedRemainingCases = (masterPerforma.products || []).reduce(
+      (sum, p) =>
+        sum +
+        Math.max(
+          0,
+          p.remainingCases !== undefined && p.remainingCases !== null
+            ? Number(p.remainingCases) || 0
+            : (Number(p.requiredCases) || 0) - (Number(p.usedCases) || 0)
+        ),
+      0
+    );
+    if (masterPerforma.totalRemainingCases !== computedRemainingCases) {
+      masterPerforma.totalRemainingCases = computedRemainingCases;
+      changed = true;
+    }
     if (masterPerforma.additionalCredits !== additionalCredits) {
       masterPerforma.additionalCredits = additionalCredits;
       changed = true;
@@ -874,6 +890,305 @@ export const getCustomerPerformaSummary = async (customerIdentifier: string): Pr
       products: p.products || [],
     })),
     transactionHistory: transactionHistory.reverse(), // most recent first for UI tables
+  };
+};
+
+export interface PendingCasesData {
+  grandTotalPendingCases: number;
+  grandTotalPendingAmount: number;
+  customerPendingMap: Map<string, number>;
+  customerCompanyPendingMap: Map<string, number>;
+  performaPendingMap: Map<string, number>;
+  customerCases: any[];
+  companyCases: any[];
+}
+
+/**
+ * Unified calculation of Pending Cases across all active Performas.
+ * Guarantees exact case count synchronization between the Pending Cases Dashboard
+ * and the Pending Cases column in the Particular Details table.
+ */
+export const calculatePendingCasesData = async (options?: {
+  customerName?: string;
+  companyName?: string;
+  search?: string;
+}): Promise<PendingCasesData> => {
+  const { customerName, companyName, search } = options || {};
+
+  // Fetch all non-cancelled performas
+  const filter: any = {
+    status: { $nin: ['CANCELLED', 'cancelled'] },
+  };
+
+  if (customerName && typeof customerName === 'string' && customerName.trim() !== '' && customerName.toLowerCase() !== 'all') {
+    filter['customerSnapshot.name'] = { $regex: new RegExp(`^${escapeRegex(customerName.trim())}$`, 'i') };
+  }
+
+  if (companyName && typeof companyName === 'string' && companyName.trim() !== '' && companyName.toLowerCase() !== 'all') {
+    const compRegex = new RegExp(escapeRegex(companyName.trim()), 'i');
+    filter.$or = [
+      { companyName: compRegex },
+      { 'products.productSnapshot.companyName': compRegex },
+    ];
+  }
+
+  const performas = await Performa.find(filter).sort({ date: -1, createdAt: -1 }).lean();
+
+  const registeredCompanies = await Company.find({}).lean();
+  const companyMetaMap = new Map<string, any>();
+  for (const comp of registeredCompanies) {
+    if (comp.name) {
+      companyMetaMap.set(comp.name.trim().toLowerCase(), comp);
+    }
+  }
+
+  const customerMap = new Map<string, any>();
+  const companyMap = new Map<string, any>();
+  const customerPendingMap = new Map<string, number>();
+  const customerCompanyPendingMap = new Map<string, number>();
+  const performaPendingMap = new Map<string, number>();
+
+  let grandTotalPendingCases = 0;
+  let grandTotalPendingAmount = 0;
+
+  for (const perf of performas) {
+    const rawCustName = (perf.customerSnapshot?.name || (perf as any).customerName || 'Unknown Customer').trim();
+    const custKey = rawCustName.toLowerCase();
+    const custPhone = (perf.customerSnapshot?.phone || '').trim();
+    const custId = perf.customerId ? String(perf.customerId).trim() : '';
+
+    if (!customerMap.has(custKey)) {
+      customerMap.set(custKey, {
+        customerId: custId || undefined,
+        customerName: rawCustName,
+        customerPhone: custPhone,
+        customerCompany: perf.customerSnapshot?.companyName || '',
+        customerAddress: perf.customerSnapshot?.address || '',
+        customerGst: perf.customerSnapshot?.gst || '',
+        totalPendingCases: 0,
+        totalPendingAmount: 0,
+        totalRequiredCases: 0,
+        totalUsedCases: 0,
+        performasCount: 0,
+        performaNumbers: [],
+        items: [],
+      });
+    }
+
+    const custEntry = customerMap.get(custKey)!;
+    if (perf.performaNumber && !custEntry.performaNumbers.includes(perf.performaNumber)) {
+      custEntry.performaNumbers.push(perf.performaNumber);
+      custEntry.performasCount++;
+    }
+
+    let perfTotalPending = 0;
+
+    for (const item of (perf.products || [])) {
+      const reqCases = Math.max(0, Number(item.requiredCases) || 0);
+      const usedCases = Math.max(0, Number(item.usedCases) || 0);
+      let remainingCases = 0;
+      if (item.remainingCases !== undefined && item.remainingCases !== null && !isNaN(Number(item.remainingCases))) {
+        remainingCases = Math.max(0, Number(item.remainingCases));
+      } else {
+        remainingCases = Math.max(0, reqCases - usedCases);
+      }
+
+      if (remainingCases <= 0) continue;
+
+      perfTotalPending += remainingCases;
+      grandTotalPendingCases += remainingCases;
+
+      const rate = Math.max(0, Number(item.rate) || 0);
+      const remainingAmt = item.remainingAmount ? Number(item.remainingAmount) : remainingCases * rate;
+      grandTotalPendingAmount += remainingAmt;
+
+      const prodName = item.productSnapshot?.productName || 'Unknown Product';
+      const prodCode = item.productSnapshot?.productCode || '';
+      const category = item.productSnapshot?.category || '';
+      const itemCompany = (item.productSnapshot?.companyName?.trim() || perf.companyName?.trim() || 'General');
+
+      // Update customer entry
+      custEntry.totalPendingCases += remainingCases;
+      custEntry.totalPendingAmount += remainingAmt;
+      custEntry.totalRequiredCases += reqCases;
+      custEntry.totalUsedCases += usedCases;
+      custEntry.items.push({
+        performaId: String(perf._id),
+        performaNumber: perf.performaNumber,
+        performaDate: perf.date,
+        productId: item.productId ? String(item.productId) : undefined,
+        productName: prodName,
+        productCode: prodCode,
+        category,
+        companyName: itemCompany,
+        requiredCases: reqCases,
+        usedCases,
+        remainingCases,
+        rate,
+        pktPerUnit: Number(item.pktPerUnit) || 1,
+        remainingAmount: remainingAmt,
+      });
+
+      // Customer-Company map
+      const compKey = itemCompany.toLowerCase();
+      const custCompKey = `${custKey}___${compKey}`;
+      customerCompanyPendingMap.set(custCompKey, (customerCompanyPendingMap.get(custCompKey) || 0) + remainingCases);
+
+      // Company entry
+      if (!companyMap.has(compKey)) {
+        const matchedComp = companyMetaMap.get(compKey);
+        companyMap.set(compKey, {
+          companyName: matchedComp?.name || itemCompany,
+          companyId: matchedComp?._id ? String(matchedComp._id) : undefined,
+          address: matchedComp?.address || '',
+          gstin: matchedComp?.gstin || '',
+          avatarLetter: matchedComp?.avatarLetter || itemCompany.charAt(0).toUpperCase(),
+          avatarBg: matchedComp?.avatarBg || '#DBEAFE',
+          avatarColor: matchedComp?.avatarColor || '#0B4DB7',
+          totalPendingCases: 0,
+          totalPendingAmount: 0,
+          customersWaiting: new Set<string>(),
+          productSummaries: new Map(),
+          items: [],
+        });
+      }
+
+      const compEntry = companyMap.get(compKey)!;
+      compEntry.totalPendingCases += remainingCases;
+      compEntry.totalPendingAmount += remainingAmt;
+      compEntry.customersWaiting.add(rawCustName);
+
+      // Product summary under company
+      const prodKey = `${prodName.toLowerCase()}___${prodCode.toLowerCase()}`;
+      if (!compEntry.productSummaries.has(prodKey)) {
+        compEntry.productSummaries.set(prodKey, {
+          productName: prodName,
+          productCode: prodCode,
+          category,
+          totalRemainingCases: 0,
+          totalRequiredCases: 0,
+          totalUsedCases: 0,
+          rate,
+          estimatedAmount: 0,
+          customers: [],
+        });
+      }
+      const prodSummary = compEntry.productSummaries.get(prodKey)!;
+      prodSummary.totalRemainingCases += remainingCases;
+      prodSummary.totalRequiredCases += reqCases;
+      prodSummary.totalUsedCases += usedCases;
+      prodSummary.estimatedAmount += remainingAmt;
+      prodSummary.customers.push({
+        customerName: rawCustName,
+        customerPhone: custPhone,
+        performaNumber: perf.performaNumber,
+        remainingCases,
+        date: perf.date,
+      });
+
+      // Raw item under company
+      compEntry.items.push({
+        performaId: String(perf._id),
+        performaNumber: perf.performaNumber,
+        performaDate: perf.date,
+        customerName: rawCustName,
+        customerPhone: custPhone,
+        productId: item.productId ? String(item.productId) : undefined,
+        productName: prodName,
+        productCode: prodCode,
+        category,
+        remainingCases,
+        requiredCases: reqCases,
+        usedCases,
+        rate,
+        remainingAmount: remainingAmt,
+      });
+    }
+
+    // Set performa mapping
+    performaPendingMap.set(String(perf._id), perfTotalPending);
+    if (perf.performaNumber) {
+      performaPendingMap.set(perf.performaNumber.trim().toUpperCase(), perfTotalPending);
+      performaPendingMap.set(perf.performaNumber.trim().toLowerCase(), perfTotalPending);
+      performaPendingMap.set(perf.performaNumber.trim(), perfTotalPending);
+    }
+  }
+
+  // Populate customerPendingMap with various customer aliases (name, digits, id)
+  for (const [cKey, cEntry] of customerMap.entries()) {
+    customerPendingMap.set(cKey, cEntry.totalPendingCases);
+    if (cEntry.customerPhone) {
+      const cleanPhone = cEntry.customerPhone.replace(/[^0-9]/g, '');
+      if (cleanPhone.length >= 7) {
+        customerPendingMap.set(cleanPhone, cEntry.totalPendingCases);
+      }
+    }
+    const cleanNameDigits = cEntry.customerName.replace(/[^0-9]/g, '');
+    if (cleanNameDigits.length >= 7) {
+      customerPendingMap.set(cleanNameDigits, cEntry.totalPendingCases);
+    }
+    if (cEntry.customerId) {
+      customerPendingMap.set(cEntry.customerId, cEntry.totalPendingCases);
+    }
+  }
+
+  // Customer cases array (only customers with pending cases)
+  let customerCases = Array.from(customerMap.values())
+    .filter((c) => c.totalPendingCases > 0)
+    .sort((a, b) => b.totalPendingCases - a.totalPendingCases);
+
+  // Company cases array (only companies with pending cases)
+  let companyCases = Array.from(companyMap.values())
+    .filter((c) => c.totalPendingCases > 0)
+    .map((c) => ({
+      companyName: c.companyName,
+      companyId: c.companyId,
+      address: c.address,
+      gstin: c.gstin,
+      avatarLetter: c.avatarLetter,
+      avatarBg: c.avatarBg,
+      avatarColor: c.avatarColor,
+      totalPendingCases: c.totalPendingCases,
+      totalPendingAmount: c.totalPendingAmount,
+      customersCount: c.customersWaiting.size,
+      customersWaitingNames: Array.from(c.customersWaiting),
+      productSummaries: Array.from(c.productSummaries.values()).sort(
+        (a: any, b: any) => b.totalRemainingCases - a.totalRemainingCases
+      ),
+      items: c.items.sort((a: any, b: any) => b.remainingCases - a.remainingCases),
+    }))
+    .sort((a: any, b: any) => b.totalPendingCases - a.totalPendingCases);
+
+  // Filter by search term if provided
+  if (search && typeof search === 'string' && search.trim() !== '') {
+    const q = search.trim().toLowerCase();
+    customerCases = customerCases.filter((c) =>
+      c.customerName.toLowerCase().includes(q) ||
+      c.customerPhone.toLowerCase().includes(q) ||
+      c.customerCompany.toLowerCase().includes(q) ||
+      c.items.some((item: any) =>
+        item.productName.toLowerCase().includes(q) ||
+        item.productCode.toLowerCase().includes(q) ||
+        item.companyName.toLowerCase().includes(q) ||
+        item.performaNumber.toLowerCase().includes(q)
+      )
+    );
+
+    companyCases = companyCases.filter((c) =>
+      c.companyName.toLowerCase().includes(q) ||
+      c.productSummaries.some((p: any) => p.productName.toLowerCase().includes(q) || p.productCode.toLowerCase().includes(q)) ||
+      c.items.some((i: any) => i.customerName.toLowerCase().includes(q) || i.performaNumber.toLowerCase().includes(q))
+    );
+  }
+
+  return {
+    grandTotalPendingCases,
+    grandTotalPendingAmount,
+    customerPendingMap,
+    customerCompanyPendingMap,
+    performaPendingMap,
+    customerCases,
+    companyCases,
   };
 };
 
