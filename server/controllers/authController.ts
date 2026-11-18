@@ -42,6 +42,77 @@ export const seedDefaultAdmin = async (): Promise<void> => {
 };
 
 /**
+ * Super Admin: Get current superadmin username
+ */
+export const getSuperAdminAccount = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    let superAdmin = await Admin.findOne({ role: 'superadmin' });
+    if (!superAdmin) {
+      superAdmin = await Admin.findOne({ username: 'superadmin' });
+    }
+    res.status(200).json({
+      success: true,
+      data: {
+        username: superAdmin ? superAdmin.username : 'superadmin',
+        role: 'superadmin',
+      },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Super Admin: Change superadmin username and/or password
+ */
+export const updateSuperAdminAccount = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { newUsername, newPassword } = req.body;
+
+    if (!newUsername && !newPassword) {
+      res.status(400).json({ success: false, error: 'Please provide either a new username or new password' });
+      return;
+    }
+
+    let superAdmin = await Admin.findOne({ role: 'superadmin' });
+    if (!superAdmin) {
+      superAdmin = await Admin.findOne({ username: 'superadmin' });
+    }
+
+    if (!superAdmin) {
+      superAdmin = await Admin.create({
+        username: newUsername ? String(newUsername).trim().toLowerCase() : 'superadmin',
+        password: newPassword ? hashPassword(newPassword) : hashPassword('superadmin123'),
+        role: 'superadmin',
+      });
+    } else {
+      if (newUsername && String(newUsername).trim()) {
+        const cleanUser = String(newUsername).trim().toLowerCase();
+        // Check if conflicting with store admin
+        const conflict = await Admin.findOne({ username: cleanUser, role: 'admin' });
+        if (conflict) {
+          res.status(400).json({ success: false, error: 'Username already in use by store admin' });
+          return;
+        }
+        superAdmin.username = cleanUser;
+      }
+      if (newPassword && String(newPassword).trim()) {
+        superAdmin.password = hashPassword(String(newPassword).trim());
+      }
+      await superAdmin.save();
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Super Admin credentials updated successfully',
+      data: { username: superAdmin.username },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Super Admin: Get current store admin username
  */
 export const getAdminAccount = async (_req: Request, res: Response, next: NextFunction): Promise<void> => {
