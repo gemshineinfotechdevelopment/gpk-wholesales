@@ -338,8 +338,8 @@ export const AuthApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  customerChangePassword: (data: { customerId: string; newPassword: string }) =>
-    request<{ success: boolean; message: string }>('/auth/customer-change-password', {
+  customerChangePassword: (data: { customerId?: string; mobile?: string; newPassword: string }) =>
+    request<{ success: boolean; message: string; customerId?: string }>('/auth/customer-change-password', {
       method: 'POST',
       body: JSON.stringify(data),
     }),

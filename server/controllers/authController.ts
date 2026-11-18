@@ -169,12 +169,13 @@ export const setCustomerLogin = async (req: Request, res: Response, next: NextFu
     if (password && String(password).trim()) {
       const cleanPass = String(password).trim();
       customer.loginPassword = hashPassword(cleanPass);
+      customer.hasCustomPassword = true;
 
       // Upsert linked user account in Admin collection
       await Admin.findOneAndUpdate(
         { customerId: String(customer._id) },
         {
-          username: cleanMobile,
+          username: cleanMobile.slice(-10) || cleanMobile,
           password: hashPassword(cleanPass),
           role: 'user',
           customerName: customer.name,
@@ -184,14 +185,15 @@ export const setCustomerLogin = async (req: Request, res: Response, next: NextFu
         { upsert: true, new: true }
       );
     } else if (customer.isLoginEnabled && !customer.loginPassword) {
-      // Default initial password to last 6 digits of mobile or 123456
-      const defaultPass = cleanMobile.slice(-6) || '123456';
+      // Default initial password to the mobile number
+      const defaultPass = cleanMobile.slice(-10) || cleanMobile;
       customer.loginPassword = hashPassword(defaultPass);
+      customer.hasCustomPassword = false;
 
       await Admin.findOneAndUpdate(
         { customerId: String(customer._id) },
         {
-          username: cleanMobile,
+          username: cleanMobile.slice(-10) || cleanMobile,
           password: hashPassword(defaultPass),
           role: 'user',
           customerName: customer.name,
@@ -242,24 +244,28 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
     const rawInput = String(username).trim();
     const cleanUsername = rawInput.toLowerCase();
     const cleanDigits = rawInput.replace(/[^0-9]/g, '');
+    const clean10 = cleanDigits.length >= 10 ? cleanDigits.slice(-10) : cleanDigits;
     const cleanPassword = String(password).trim();
     const hashedPassword = hashPassword(cleanPassword);
 
-    // 1. Check Admin / Superadmin accounts
-    let userDoc = await Admin.findOne({
-      $or: [{ username: cleanUsername }, { username: cleanDigits && cleanDigits.length >= 10 ? cleanDigits : '___' }],
+    // 1. Check Super Admin & Admin accounts first
+    let adminDoc = await Admin.findOne({
+      $or: [
+        { username: cleanUsername, role: { $in: ['superadmin', 'admin'] } },
+        { role: 'superadmin', username: 'superadmin' },
+      ],
     });
 
     // Auto-seed fallback for superadmin / admin on initial setup
-    if (!userDoc) {
+    if (!adminDoc) {
       if (cleanUsername === 'superadmin' && (cleanPassword === 'superadmin123' || cleanPassword === 'gpk123')) {
-        userDoc = await Admin.create({
+        adminDoc = await Admin.create({
           username: 'superadmin',
           password: hashedPassword,
           role: 'superadmin',
         });
       } else if (cleanUsername === 'admin' && (cleanPassword === 'admin123' || cleanPassword === 'admin')) {
-        userDoc = await Admin.create({
+        adminDoc = await Admin.create({
           username: 'admin',
           password: hashedPassword,
           role: 'admin',
@@ -267,71 +273,97 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       }
     }
 
-    if (userDoc) {
-      const isMatch = userDoc.password === hashedPassword || userDoc.password === cleanPassword;
+    if (adminDoc && (cleanUsername === adminDoc.username || cleanUsername === 'superadmin' || cleanUsername === 'admin')) {
+      const isMatch = adminDoc.password === hashedPassword || adminDoc.password === cleanPassword;
       if (!isMatch) {
         res.status(401).json({ success: false, error: 'Invalid username or password' });
         return;
       }
 
-      // Explicit role assignment:
-      // If username is 'superadmin' or record is superadmin -> 'superadmin'
-      // Otherwise if role is 'admin' or username is 'admin' -> strictly 'admin'
-      const assignedRole =
-        userDoc.username === 'superadmin' || userDoc.role === 'superadmin'
-          ? 'superadmin'
-          : userDoc.role === 'user'
-          ? 'user'
-          : 'admin';
-
+      const assignedRole = adminDoc.role === 'superadmin' || adminDoc.username === 'superadmin' ? 'superadmin' : 'admin';
       const token = crypto.randomBytes(32).toString('hex');
       res.status(200).json({
         success: true,
         message: 'Login successful',
         token,
         user: {
-          username: userDoc.username,
+          username: adminDoc.username,
           role: assignedRole,
-          customerName: userDoc.customerName,
-          customerId: userDoc.customerId,
-          mobile: userDoc.mobile,
         },
       });
       return;
     }
 
-    // 2. Check Customer Collection by Phone Number, Name, or ID Code
+    // 2. Customer Authentication: Search in Customer Collection
+    // Match by 10-digit mobile, full mobile digits, exact customer name, or idCode
     const customer = await Customer.findOne({
       $or: [
-        cleanDigits.length >= 7 ? { mobile: { $regex: cleanDigits, $options: 'i' } } : null,
+        clean10.length >= 7 ? { mobile: { $regex: clean10 } } : null,
+        cleanDigits.length >= 7 ? { mobile: { $regex: cleanDigits } } : null,
         { name: { $regex: new RegExp(`^${rawInput.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') } },
         { idCode: rawInput.toUpperCase() },
       ].filter(Boolean) as any[],
     });
 
     if (customer) {
-      // Check if Admin or Super Admin created login for this customer
-      if (!customer.isLoginEnabled) {
-        res.status(403).json({
-          success: false,
-          error: 'Customer portal login is not activated for this phone number. Please contact GPK Crackers admin.',
-        });
-        return;
-      }
+      const customerCleanPhone = (customer.mobile || '').replace(/\D/g, '');
+      const customerClean10 = customerCleanPhone.slice(-10);
 
-      // Verify customer password
-      const cleanCustomerMobile = (customer.mobile || '').replace(/[^0-9]/g, '');
-      const isMatch =
-        (customer.loginPassword && (customer.loginPassword === hashedPassword || customer.loginPassword === cleanPassword)) ||
-        cleanPassword === cleanCustomerMobile.slice(-6) ||
-        cleanPassword === cleanCustomerMobile ||
-        cleanPassword === 'user123' ||
-        cleanPassword === '123456';
+      // Check password:
+      // If customer has set their own password (hasCustomPassword === true):
+      // Only that password is accepted!
+      // If first-time login (!hasCustomPassword):
+      // The password MUST be their registered mobile number!
+      const hasCustom = Boolean(customer.hasCustomPassword);
+
+      let isMatch = false;
+      if (hasCustom) {
+        isMatch = customer.loginPassword === hashedPassword || customer.loginPassword === cleanPassword;
+      } else {
+        const matchesMobile =
+          cleanPassword === customerClean10 ||
+          cleanPassword === customerCleanPhone ||
+          cleanPassword === customer.mobile.trim() ||
+          (customer.loginPassword && (customer.loginPassword === hashedPassword || customer.loginPassword === cleanPassword));
+
+        isMatch = Boolean(matchesMobile);
+      }
 
       if (!isMatch) {
-        res.status(401).json({ success: false, error: 'Invalid password. Please check your credentials.' });
+        if (!hasCustom) {
+          res.status(401).json({
+            success: false,
+            error: 'Invalid password. For first-time login, please enter your registered 10-digit mobile number as password.',
+          });
+        } else {
+          res.status(401).json({
+            success: false,
+            error: 'Invalid password. Please enter the password you set.',
+          });
+        }
         return;
       }
+
+      // Auto-enable customer login state
+      customer.isLoginEnabled = true;
+      if (!customer.loginPassword) {
+        customer.loginPassword = hashPassword(customerClean10 || customerCleanPhone);
+      }
+      await customer.save();
+
+      // Sync into Admin collection for unified session
+      await Admin.findOneAndUpdate(
+        { $or: [{ customerId: String(customer._id) }, { username: customerClean10 }] },
+        {
+          username: customerClean10 || customer.mobile,
+          password: customer.loginPassword,
+          role: 'user',
+          customerName: customer.name,
+          customerId: String(customer._id),
+          mobile: customer.mobile,
+        },
+        { upsert: true, new: true }
+      );
 
       const token = crypto.randomBytes(32).toString('hex');
       res.status(200).json({
@@ -339,7 +371,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
         message: 'Customer login successful',
         token,
         user: {
-          username: customer.mobile || customer.name,
+          username: customerClean10 || customer.mobile,
           role: 'user',
           customerName: customer.name,
           customerId: String(customer._id),
@@ -349,7 +381,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
       return;
     }
 
-    res.status(401).json({ success: false, error: 'Invalid credentials. Please check your username and password.' });
+    res.status(401).json({ success: false, error: 'Invalid credentials. Mobile number not registered or incorrect password.' });
   } catch (error) {
     next(error);
   }
@@ -369,35 +401,46 @@ export const getMe = async (_req: Request, res: Response, next: NextFunction): P
  */
 export const customerChangePassword = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { customerId, newPassword } = req.body;
-
-    if (!customerId) {
-      res.status(400).json({ success: false, error: 'Customer ID is required' });
-      return;
-    }
+    const { customerId, mobile, newPassword } = req.body;
 
     if (!newPassword || String(newPassword).trim().length < 4) {
-      res.status(400).json({ success: false, error: 'Password must be at least 4 characters' });
+      res.status(400).json({ success: false, error: 'Password must be at least 4 characters long' });
       return;
     }
 
-    const customer = await Customer.findById(customerId);
+    let customer = null;
+    if (customerId) {
+      customer = await Customer.findById(customerId);
+    }
+    if (!customer && mobile) {
+      const cleanDigits = String(mobile).replace(/\D/g, '');
+      const clean10 = cleanDigits.slice(-10);
+      customer = await Customer.findOne({
+        $or: [
+          clean10.length >= 7 ? { mobile: { $regex: clean10 } } : null,
+          { name: String(mobile).trim() }
+        ].filter(Boolean) as any[]
+      });
+    }
+
     if (!customer) {
-      res.status(404).json({ success: false, error: 'Customer record not found' });
+      res.status(404).json({ success: false, error: 'Customer record not found. Please log in again.' });
       return;
     }
 
     const cleanPass = String(newPassword).trim();
     customer.loginPassword = hashPassword(cleanPass);
+    customer.hasCustomPassword = true;
     customer.isLoginEnabled = true;
     await customer.save();
 
     // Also sync in Admin collection
-    const cleanMobile = (customer.mobile || '').replace(/[^0-9]/g, '');
+    const cleanCustomerMobile = (customer.mobile || '').replace(/[^0-9]/g, '');
+    const clean10 = cleanCustomerMobile.slice(-10);
     await Admin.findOneAndUpdate(
-      { customerId: String(customer._id) },
+      { $or: [{ customerId: String(customer._id) }, { username: clean10 }] },
       {
-        username: cleanMobile || customer.mobile,
+        username: clean10 || customer.mobile,
         password: hashPassword(cleanPass),
         role: 'user',
         customerName: customer.name,
@@ -409,7 +452,8 @@ export const customerChangePassword = async (req: Request, res: Response, next: 
 
     res.status(200).json({
       success: true,
-      message: 'Password updated successfully! You can use this new password on your next login.',
+      message: 'Password updated successfully! Please use this new password on your next login.',
+      customerId: String(customer._id),
     });
   } catch (error) {
     next(error);

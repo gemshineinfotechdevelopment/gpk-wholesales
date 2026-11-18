@@ -68,19 +68,30 @@ export const CustomerPasswordModal: FC<CustomerPasswordModalProps> = ({
       return;
     }
 
-    if (!customerId) {
-      setErrorMsg('Customer ID is missing. Please re-login and try again.');
+    if (!customerId && !mobile) {
+      setErrorMsg('Customer identification is missing. Please re-login and try again.');
       return;
     }
 
     try {
       setLoading(true);
       const res = await AuthApi.customerChangePassword({
-        customerId,
+        customerId: customerId || undefined,
+        mobile: mobile || undefined,
         newPassword: newPassword.trim(),
       });
 
       if (res && res.success) {
+        if (res.customerId) {
+          try {
+            const raw = localStorage.getItem('gpk_auth_user');
+            if (raw) {
+              const parsed = JSON.parse(raw);
+              parsed.customerId = res.customerId;
+              localStorage.setItem('gpk_auth_user', JSON.stringify(parsed));
+            }
+          } catch {}
+        }
         setSuccessMsg(res.message || 'Password saved successfully! You can use this password to log in next time.');
         setTimeout(() => {
           handleClose();
