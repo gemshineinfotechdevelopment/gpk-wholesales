@@ -4,6 +4,7 @@ import { Performa, type IPerformaProductItem } from '../models/Performa';
 import { PerformaAudit } from '../models/PerformaAudit';
 import { Customer } from '../models/Customer';
 import { Company } from '../models/Company';
+import { Particular } from '../models/Particular';
 import { escapeRegex } from '../utils/ledgerUtils';
 import { getNextCustomerIdCode } from './customerController';
 import { getCustomerPerformaSummary } from '../services/performaConsumptionService';
@@ -463,9 +464,15 @@ export const updatePerforma = async (req: Request, res: Response, next: NextFunc
         };
       });
 
+      const totalUsed = existing.products.reduce((acc: number, p: any) => acc + (p.usedCases || 0), 0);
       existing.totalRequiredCases = totalReq;
-      existing.totalRemainingCases = Math.max(0, totalReq - existing.totalUsedCases);
+      existing.totalUsedCases = totalUsed;
+      existing.totalRemainingCases = Math.max(0, totalReq - totalUsed);
       existing.subtotal = Number(totalSub.toFixed(2));
+
+      if (existing.totalRemainingCases > 0 && existing.status === 'COMPLETED') {
+        existing.status = totalUsed > 0 ? 'PARTIALLY_USED' : 'ACTIVE';
+      }
     }
 
     // Recalculate discount, packing, tax, totalAllocatedAmount
@@ -732,7 +739,7 @@ export const getPendingCasesEndpoint = async (req: Request, res: Response, next:
       }>;
     }>();
 
-    // Company aggregation map
+    // Company aggregation map (strictly for explicitly selected supplier/manufacturer companies)
     const companyMap = new Map<string, {
       companyName: string;
       companyId?: string;
@@ -741,6 +748,13 @@ export const getPendingCasesEndpoint = async (req: Request, res: Response, next:
       avatarLetter?: string;
       avatarBg?: string;
       avatarColor?: string;
+      totalStockCases: number;
+      totalGivenCases: number;
+      totalBalanceCases: number;
+      totalStockAmount: number;
+      totalGivenAmount: number;
+      totalBalanceAmount: number;
+      deliveryPercentage: number;
       totalPendingCases: number;
       totalPendingAmount: number;
       customersWaiting: Set<string>;
@@ -748,15 +762,23 @@ export const getPendingCasesEndpoint = async (req: Request, res: Response, next:
         productName: string;
         productCode: string;
         category: string;
+        totalStockCases: number;
+        totalGivenCases: number;
+        totalBalanceCases: number;
         totalRemainingCases: number;
         totalRequiredCases: number;
         totalUsedCases: number;
         rate: number;
+        balanceAmount: number;
+        totalStockAmount: number;
         estimatedAmount: number;
         customers: Array<{
           customerName: string;
           customerPhone: string;
           performaNumber: string;
+          orderedCases: number;
+          givenCases: number;
+          balanceCases: number;
           remainingCases: number;
           date: string;
         }>;
@@ -771,10 +793,14 @@ export const getPendingCasesEndpoint = async (req: Request, res: Response, next:
         productName: string;
         productCode: string;
         category: string;
+        orderedCases: number;
+        givenCases: number;
+        balanceCases: number;
         remainingCases: number;
         requiredCases: number;
         usedCases: number;
         rate: number;
+        balanceAmount: number;
         remainingAmount: number;
       }>;
     }>();
@@ -785,6 +811,7 @@ export const getPendingCasesEndpoint = async (req: Request, res: Response, next:
     for (const perf of performas) {
       const custName = (perf.customerSnapshot?.name || 'Unknown Customer').trim();
       const custKey = custName.toLowerCase();
+      const custShopName = (perf.customerSnapshot?.companyName || '').trim().toLowerCase();
 
       if (!customerMap.has(custKey)) {
         customerMap.set(custKey, {
@@ -812,8 +839,6 @@ export const getPendingCasesEndpoint = async (req: Request, res: Response, next:
 
       for (const item of (perf.products || [])) {
         const remainingCases = Math.max(0, Number(item.remainingCases) || 0);
-        if (remainingCases <= 0) continue;
-
         const rate = Math.max(0, Number(item.rate) || 0);
         const remainingAmt = item.remainingAmount ? Number(item.remainingAmount) : remainingCases * rate;
         const requiredCases = Math.max(0, Number(item.requiredCases) || 0);
@@ -821,14 +846,44 @@ export const getPendingCasesEndpoint = async (req: Request, res: Response, next:
         const prodName = item.productSnapshot?.productName || 'Unknown Product';
         const prodCode = item.productSnapshot?.productCode || '';
         const category = item.productSnapshot?.category || '';
-        const itemCompany = (item.productSnapshot?.companyName?.trim() || perf.companyName?.trim() || 'General');
 
-        grandTotalPendingCases += remainingCases;
-        grandTotalPendingAmount += remainingAmt;
+        // Determine explicit supplier/manufacturer company
+        const rawItemCompany = (item.productSnapshot?.companyName || '').trim();
+        const rawPerfCompany = (perf.companyName || '').trim();
+        let itemSupplierCompany = '';
+
+        if (rawItemCompany && rawItemCompany.toLowerCase() !== 'general') {
+          // If product explicitly has a company, use it (unless it literally equals customer personal name AND is not a registered company)
+          if (rawItemCompany.toLowerCase() !== custKey || companyMetaMap.has(rawItemCompany.toLowerCase())) {
+            itemSupplierCompany = rawItemCompany;
+          }
+        }
+
+        if (!itemSupplierCompany && rawPerfCompany && rawPerfCompany.toLowerCase() !== 'general') {
+          if (rawPerfCompany.toLowerCase() !== custKey || companyMetaMap.has(rawPerfCompany.toLowerCase())) {
+            // If performa has comma-separated companies, take first one or clean name
+            itemSupplierCompany = rawPerfCompany.split(',')[0].trim();
+          }
+        }
+
+        // Check if matches registered company metadata to normalize naming
+        if (itemSupplierCompany) {
+          const matched = companyMetaMap.get(itemSupplierCompany.toLowerCase());
+          if (matched && matched.name) {
+            itemSupplierCompany = matched.name;
+          }
+        }
+
+        const displayCompany = itemSupplierCompany || (rawItemCompany && rawItemCompany.toLowerCase() !== 'general' ? rawItemCompany : (rawPerfCompany || 'General'));
+
+        if (remainingCases > 0) {
+          grandTotalPendingCases += remainingCases;
+          grandTotalPendingAmount += remainingAmt;
+          custEntry.totalPendingCases += remainingCases;
+          custEntry.totalPendingAmount += remainingAmt;
+        }
 
         // Add to customer entry
-        custEntry.totalPendingCases += remainingCases;
-        custEntry.totalPendingAmount += remainingAmt;
         custEntry.totalRequiredCases += requiredCases;
         custEntry.totalUsedCases += usedCases;
         custEntry.items.push({
@@ -839,7 +894,7 @@ export const getPendingCasesEndpoint = async (req: Request, res: Response, next:
           productName: prodName,
           productCode: prodCode,
           category,
-          companyName: itemCompany,
+          companyName: displayCompany,
           requiredCases,
           usedCases,
           remainingCases,
@@ -848,87 +903,302 @@ export const getPendingCasesEndpoint = async (req: Request, res: Response, next:
           remainingAmount: remainingAmt,
         });
 
-        // Add to company entry
-        const compKey = itemCompany.toLowerCase();
-        if (!companyMap.has(compKey)) {
-          const matchedComp = companyMetaMap.get(compKey);
-          companyMap.set(compKey, {
-            companyName: matchedComp?.name || itemCompany,
-            companyId: matchedComp?._id ? String(matchedComp._id) : undefined,
-            address: matchedComp?.address || '',
-            gstin: matchedComp?.gstin || '',
-            avatarLetter: matchedComp?.avatarLetter || itemCompany.charAt(0).toUpperCase(),
-            avatarBg: matchedComp?.avatarBg || '#DBEAFE',
-            avatarColor: matchedComp?.avatarColor || '#0B4DB7',
-            totalPendingCases: 0,
-            totalPendingAmount: 0,
-            customersWaiting: new Set<string>(),
-            productSummaries: new Map(),
-            items: [],
+        // Add to Company Cases if a valid supplier company was specified
+        if (itemSupplierCompany && itemSupplierCompany.toLowerCase() !== 'general') {
+          const compKey = itemSupplierCompany.toLowerCase();
+          const totalStockAmt = requiredCases * rate;
+          const givenAmt = usedCases * rate;
+          const balanceAmt = remainingAmt;
+
+          if (!companyMap.has(compKey)) {
+            const matchedComp = companyMetaMap.get(compKey);
+            companyMap.set(compKey, {
+              companyName: matchedComp?.name || itemSupplierCompany,
+              companyId: matchedComp?._id ? String(matchedComp._id) : undefined,
+              address: matchedComp?.address || '',
+              gstin: matchedComp?.gstin || '',
+              avatarLetter: matchedComp?.avatarLetter || itemSupplierCompany.charAt(0).toUpperCase(),
+              avatarBg: matchedComp?.avatarBg || '#DBEAFE',
+              avatarColor: matchedComp?.avatarColor || '#0B4DB7',
+              totalStockCases: 0,
+              totalGivenCases: 0,
+              totalBalanceCases: 0,
+              totalStockAmount: 0,
+              totalGivenAmount: 0,
+              totalBalanceAmount: 0,
+              deliveryPercentage: 0,
+              totalPendingCases: 0,
+              totalPendingAmount: 0,
+              customersWaiting: new Set<string>(),
+              productSummaries: new Map(),
+              items: [],
+            });
+          }
+
+          const compEntry = companyMap.get(compKey)!;
+          compEntry.totalStockCases += requiredCases;
+          compEntry.totalGivenCases += usedCases;
+          compEntry.totalBalanceCases += remainingCases;
+          compEntry.totalStockAmount += totalStockAmt;
+          compEntry.totalGivenAmount += givenAmt;
+          compEntry.totalBalanceAmount += balanceAmt;
+          compEntry.totalPendingCases += remainingCases;
+          compEntry.totalPendingAmount += balanceAmt;
+          if (remainingCases > 0) {
+            compEntry.customersWaiting.add(custName);
+          }
+
+          // Product summary under company
+          const prodKey = `${prodName.toLowerCase()}___${prodCode.toLowerCase()}`;
+          if (!compEntry.productSummaries.has(prodKey)) {
+            compEntry.productSummaries.set(prodKey, {
+              productName: prodName,
+              productCode: prodCode,
+              category,
+              totalStockCases: 0,
+              totalGivenCases: 0,
+              totalBalanceCases: 0,
+              totalRemainingCases: 0,
+              totalRequiredCases: 0,
+              totalUsedCases: 0,
+              rate,
+              balanceAmount: 0,
+              totalStockAmount: 0,
+              estimatedAmount: 0,
+              customers: [],
+            });
+          }
+          const prodSummary = compEntry.productSummaries.get(prodKey)!;
+          prodSummary.totalStockCases += requiredCases;
+          prodSummary.totalGivenCases += usedCases;
+          prodSummary.totalBalanceCases += remainingCases;
+          prodSummary.totalRemainingCases += remainingCases;
+          prodSummary.totalRequiredCases += requiredCases;
+          prodSummary.totalUsedCases += usedCases;
+          prodSummary.totalStockAmount += totalStockAmt;
+          prodSummary.balanceAmount += balanceAmt;
+          prodSummary.estimatedAmount += balanceAmt;
+          prodSummary.customers.push({
+            customerName: custName,
+            customerPhone: perf.customerSnapshot?.phone || '',
+            performaNumber: perf.performaNumber,
+            orderedCases: requiredCases,
+            givenCases: usedCases,
+            balanceCases: remainingCases,
+            remainingCases: remainingCases,
+            date: perf.date,
           });
-        }
 
-        const compEntry = companyMap.get(compKey)!;
-        compEntry.totalPendingCases += remainingCases;
-        compEntry.totalPendingAmount += remainingAmt;
-        compEntry.customersWaiting.add(custName);
-
-        // Product summary under company
-        const prodKey = `${prodName.toLowerCase()}___${prodCode.toLowerCase()}`;
-        if (!compEntry.productSummaries.has(prodKey)) {
-          compEntry.productSummaries.set(prodKey, {
+          // Raw item under company
+          compEntry.items.push({
+            performaId: String(perf._id),
+            performaNumber: perf.performaNumber,
+            performaDate: perf.date,
+            customerName: custName,
+            customerPhone: perf.customerSnapshot?.phone || '',
+            productId: item.productId ? String(item.productId) : undefined,
             productName: prodName,
             productCode: prodCode,
             category,
+            orderedCases: requiredCases,
+            givenCases: usedCases,
+            balanceCases: remainingCases,
+            remainingCases: remainingCases,
+            requiredCases: requiredCases,
+            usedCases: usedCases,
+            rate,
+            balanceAmount: balanceAmt,
+            remainingAmount: balanceAmt,
+          });
+        }
+      }
+    }
+
+    // Process Particulars bills (direct deliveries/bills created by admin)
+    const partFilter: any = {};
+    if (customerName && typeof customerName === 'string' && customerName.trim() !== '' && customerName.toLowerCase() !== 'all') {
+      partFilter.customerName = { $regex: new RegExp(`^${escapeRegex(customerName.trim())}$`, 'i') };
+    }
+    if (companyName && typeof companyName === 'string' && companyName.trim() !== '' && companyName.toLowerCase() !== 'all') {
+      partFilter.companyName = { $regex: new RegExp(`^${escapeRegex(companyName.trim())}$`, 'i') };
+    }
+    const particulars = await Particular.find(partFilter).sort({ date: -1, createdAt: -1 }).lean();
+
+    for (const part of particulars) {
+      // If this particular was already linked to a performa, it is already counted above
+      if (part.performaNumber || part.performaId) {
+        continue;
+      }
+
+      const pCustName = (part.customerName || 'Unknown Customer').trim();
+      const pCustKey = pCustName.toLowerCase();
+      const rawComp = (part.companyName || '').trim();
+
+      if (!rawComp || rawComp.toLowerCase() === 'general' || rawComp.toLowerCase() === pCustKey) {
+        continue;
+      }
+
+      let pCompany = rawComp;
+      const matched = companyMetaMap.get(rawComp.toLowerCase());
+      if (matched && matched.name) {
+        pCompany = matched.name;
+      }
+
+      const compKey = pCompany.toLowerCase();
+      if (!companyMap.has(compKey)) {
+        const matchedComp = companyMetaMap.get(compKey);
+        companyMap.set(compKey, {
+          companyName: matchedComp?.name || pCompany,
+          companyId: matchedComp?._id ? String(matchedComp._id) : undefined,
+          address: matchedComp?.address || '',
+          gstin: matchedComp?.gstin || '',
+          avatarLetter: matchedComp?.avatarLetter || pCompany.charAt(0).toUpperCase(),
+          avatarBg: matchedComp?.avatarBg || '#DBEAFE',
+          avatarColor: matchedComp?.avatarColor || '#0B4DB7',
+          totalStockCases: 0,
+          totalGivenCases: 0,
+          totalBalanceCases: 0,
+          totalStockAmount: 0,
+          totalGivenAmount: 0,
+          totalBalanceAmount: 0,
+          deliveryPercentage: 0,
+          totalPendingCases: 0,
+          totalPendingAmount: 0,
+          customersWaiting: new Set<string>(),
+          productSummaries: new Map(),
+          items: [],
+        });
+      }
+
+      const compEntry = companyMap.get(compKey)!;
+
+      // Extract products from particular
+      const prodList = (part.products && part.products.length > 0)
+        ? part.products
+        : [{
+            particular: 'Crackers Items',
+            quantity: part.caseCount || '1',
+            rate: part.amount || '0',
+            amount: part.total || part.amount || '0',
+          }];
+
+      for (const p of prodList) {
+        const cases = Math.max(0, parseFloat(String((p as any).quantity || part.caseCount || '1').replace(/[^0-9.]/g, '')) || 1);
+        const rate = Math.max(0, parseFloat(String((p as any).rate || '0').replace(/[^0-9.]/g, '')) || 0);
+        const amt = Math.max(0, parseFloat(String((p as any).amount || '0').replace(/[^0-9.]/g, '')) || (cases * rate));
+        const pName = (p as any).particular || 'Product Item';
+
+        compEntry.totalStockCases += cases;
+        compEntry.totalGivenCases += cases; // Stock given to customer!
+        compEntry.totalStockAmount += amt;
+        compEntry.totalGivenAmount += amt;
+
+        // Product summary under company
+        const prodKey = pName.toLowerCase();
+        if (!compEntry.productSummaries.has(prodKey)) {
+          compEntry.productSummaries.set(prodKey, {
+            productName: pName,
+            productCode: '',
+            category: '',
+            totalStockCases: 0,
+            totalGivenCases: 0,
+            totalBalanceCases: 0,
             totalRemainingCases: 0,
             totalRequiredCases: 0,
             totalUsedCases: 0,
             rate,
+            balanceAmount: 0,
+            totalStockAmount: 0,
             estimatedAmount: 0,
             customers: [],
           });
         }
         const prodSummary = compEntry.productSummaries.get(prodKey)!;
-        prodSummary.totalRemainingCases += remainingCases;
-        prodSummary.totalRequiredCases += requiredCases;
-        prodSummary.totalUsedCases += usedCases;
-        prodSummary.estimatedAmount += remainingAmt;
+        prodSummary.totalStockCases += cases;
+        prodSummary.totalGivenCases += cases;
+        prodSummary.totalRequiredCases += cases;
+        prodSummary.totalUsedCases += cases;
+        prodSummary.totalStockAmount += amt;
         prodSummary.customers.push({
-          customerName: custName,
-          customerPhone: perf.customerSnapshot?.phone || '',
-          performaNumber: perf.performaNumber,
-          remainingCases,
-          date: perf.date,
+          customerName: pCustName,
+          customerPhone: '',
+          performaNumber: part.billNo ? `Bill #${part.billNo}` : 'Particular Bill',
+          orderedCases: cases,
+          givenCases: cases,
+          balanceCases: 0,
+          remainingCases: 0,
+          date: part.date,
         });
 
-        // Raw item under company
+        // Item under company
         compEntry.items.push({
-          performaId: String(perf._id),
-          performaNumber: perf.performaNumber,
-          performaDate: perf.date,
-          customerName: custName,
-          customerPhone: perf.customerSnapshot?.phone || '',
-          productId: item.productId ? String(item.productId) : undefined,
-          productName: prodName,
-          productCode: prodCode,
-          category,
-          remainingCases,
-          requiredCases,
-          usedCases,
+          performaId: String(part._id),
+          performaNumber: part.billNo ? `Bill #${part.billNo}` : 'Particular Bill',
+          performaDate: part.date,
+          customerName: pCustName,
+          customerPhone: '',
+          productId: undefined,
+          productName: pName,
+          productCode: '',
+          category: '',
+          orderedCases: cases,
+          givenCases: cases,
+          balanceCases: 0,
+          remainingCases: 0,
+          requiredCases: cases,
+          usedCases: cases,
           rate,
-          remainingAmount: remainingAmt,
+          balanceAmount: 0,
+          remainingAmount: 0,
+        });
+
+        // Also track under customer map
+        if (!customerMap.has(pCustKey)) {
+          customerMap.set(pCustKey, {
+            customerId: undefined,
+            customerName: pCustName,
+            customerPhone: '',
+            customerCompany: '',
+            customerAddress: '',
+            customerGst: '',
+            totalPendingCases: 0,
+            totalPendingAmount: 0,
+            totalRequiredCases: 0,
+            totalUsedCases: 0,
+            performasCount: 0,
+            performaNumbers: [],
+            items: [],
+          });
+        }
+        const custEntry = customerMap.get(pCustKey)!;
+        custEntry.totalRequiredCases += cases;
+        custEntry.totalUsedCases += cases;
+        custEntry.items.push({
+          performaId: String(part._id),
+          performaNumber: part.billNo ? `Bill #${part.billNo}` : 'Particular Bill',
+          performaDate: part.date,
+          productName: pName,
+          productCode: '',
+          category: '',
+          companyName: pCompany,
+          requiredCases: cases,
+          usedCases: cases,
+          remainingCases: 0,
+          rate,
+          pktPerUnit: 1,
+          remainingAmount: 0,
         });
       }
     }
 
-    // Customer cases array (only customers with pending cases)
+    // Customer cases array (customers with pending, ordered, or delivered cases)
     let customerCases = Array.from(customerMap.values())
-      .filter((c) => c.totalPendingCases > 0)
-      .sort((a, b) => b.totalPendingCases - a.totalPendingCases);
+      .filter((c) => c.totalPendingCases > 0 || c.totalRequiredCases > 0 || c.totalUsedCases > 0)
+      .sort((a, b) => (b.totalPendingCases - a.totalPendingCases) || (b.totalUsedCases - a.totalUsedCases));
 
-    // Company cases array (only companies with pending cases)
+    // Company cases array (companies with stock ordered, given, or pending)
     let companyCases = Array.from(companyMap.values())
-      .filter((c) => c.totalPendingCases > 0)
+      .filter((c) => c.totalBalanceCases > 0 || c.totalStockCases > 0 || c.totalGivenCases > 0)
       .map((c) => ({
         companyName: c.companyName,
         companyId: c.companyId,
@@ -937,16 +1207,23 @@ export const getPendingCasesEndpoint = async (req: Request, res: Response, next:
         avatarLetter: c.avatarLetter,
         avatarBg: c.avatarBg,
         avatarColor: c.avatarColor,
-        totalPendingCases: c.totalPendingCases,
-        totalPendingAmount: c.totalPendingAmount,
+        totalStockCases: c.totalStockCases,
+        totalGivenCases: c.totalGivenCases,
+        totalBalanceCases: c.totalBalanceCases,
+        totalStockAmount: c.totalStockAmount,
+        totalGivenAmount: c.totalGivenAmount,
+        totalBalanceAmount: c.totalBalanceAmount,
+        deliveryPercentage: c.totalStockCases > 0 ? Math.round((c.totalGivenCases / c.totalStockCases) * 100) : (c.totalGivenCases > 0 ? 100 : 0),
+        totalPendingCases: c.totalBalanceCases,
+        totalPendingAmount: c.totalBalanceAmount,
         customersCount: c.customersWaiting.size,
         customersWaitingNames: Array.from(c.customersWaiting),
         productSummaries: Array.from(c.productSummaries.values()).sort(
-          (a, b) => b.totalRemainingCases - a.totalRemainingCases
+          (a, b) => (b.totalBalanceCases - a.totalBalanceCases) || (b.totalStockCases - a.totalStockCases)
         ),
-        items: c.items.sort((a, b) => b.remainingCases - a.remainingCases),
+        items: c.items.sort((a, b) => (b.balanceCases - a.balanceCases) || (b.givenCases - a.givenCases)),
       }))
-      .sort((a, b) => b.totalPendingCases - a.totalPendingCases);
+      .sort((a, b) => (b.totalBalanceCases - a.totalBalanceCases) || (b.totalStockCases - a.totalStockCases));
 
     // Filter by search term if provided
     if (search && typeof search === 'string' && search.trim() !== '') {

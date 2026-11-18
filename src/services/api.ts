@@ -247,15 +247,23 @@ export interface PendingProductSummary {
   productName: string;
   productCode: string;
   category: string;
+  totalStockCases?: number;
+  totalGivenCases?: number;
+  totalBalanceCases?: number;
   totalRemainingCases: number;
   totalRequiredCases: number;
   totalUsedCases: number;
   rate: number;
+  balanceAmount?: number;
+  totalStockAmount?: number;
   estimatedAmount: number;
   customers: Array<{
     customerName: string;
     customerPhone: string;
     performaNumber: string;
+    orderedCases?: number;
+    givenCases?: number;
+    balanceCases?: number;
     remainingCases: number;
     date: string;
   }>;
@@ -271,10 +279,14 @@ export interface PendingCompanyItem {
   productName: string;
   productCode: string;
   category: string;
+  orderedCases?: number;
+  givenCases?: number;
+  balanceCases?: number;
   remainingCases: number;
   requiredCases: number;
   usedCases: number;
   rate: number;
+  balanceAmount?: number;
   remainingAmount: number;
 }
 
@@ -286,6 +298,13 @@ export interface PendingCompanyGroup {
   avatarLetter?: string;
   avatarBg?: string;
   avatarColor?: string;
+  totalStockCases?: number;
+  totalGivenCases?: number;
+  totalBalanceCases?: number;
+  totalStockAmount?: number;
+  totalGivenAmount?: number;
+  totalBalanceAmount?: number;
+  deliveryPercentage?: number;
   totalPendingCases: number;
   totalPendingAmount: number;
   customersCount: number;
