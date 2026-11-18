@@ -190,14 +190,121 @@ export const PerformasApi = {
     request<any>(`/performas/customer/${encodeURIComponent(customerId)}/summary`),
   getCustomerAudit: (customerId: string) =>
     request<any[]>(`/performas/customer/${encodeURIComponent(customerId)}/audit`),
+  getPendingCases: (params?: { search?: string; companyName?: string; customerName?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.search) searchParams.append('search', params.search);
+    if (params?.companyName && params.companyName !== 'ALL') searchParams.append('companyName', params.companyName);
+    if (params?.customerName && params.customerName !== 'ALL') searchParams.append('customerName', params.customerName);
+    const queryStr = searchParams.toString();
+    return request<PendingCasesResponse>(`/performas/pending-cases${queryStr ? `?${queryStr}` : ''}`);
+  },
 };
 
+<<<<<<< HEAD
 export interface AuthUser {
   username: string;
   role: 'superadmin' | 'admin' | 'user';
   customerName?: string;
   customerId?: string;
   mobile?: string;
+=======
+export const PerformaApi = PerformasApi;
+
+export interface PendingCasesCustomerItem {
+  performaId: string;
+  performaNumber: string;
+  performaDate: string;
+  productId?: string;
+  productName: string;
+  productCode: string;
+  category: string;
+  companyName: string;
+  requiredCases: number;
+  usedCases: number;
+  remainingCases: number;
+  rate: number;
+  pktPerUnit: number;
+  remainingAmount: number;
+}
+
+export interface PendingCustomerGroup {
+  customerId?: string;
+  customerName: string;
+  customerPhone: string;
+  customerCompany: string;
+  customerAddress: string;
+  customerGst?: string;
+  totalPendingCases: number;
+  totalPendingAmount: number;
+  totalRequiredCases: number;
+  totalUsedCases: number;
+  performasCount: number;
+  performaNumbers: string[];
+  items: PendingCasesCustomerItem[];
+}
+
+export interface PendingProductSummary {
+  productName: string;
+  productCode: string;
+  category: string;
+  totalRemainingCases: number;
+  totalRequiredCases: number;
+  totalUsedCases: number;
+  rate: number;
+  estimatedAmount: number;
+  customers: Array<{
+    customerName: string;
+    customerPhone: string;
+    performaNumber: string;
+    remainingCases: number;
+    date: string;
+  }>;
+}
+
+export interface PendingCompanyItem {
+  performaId: string;
+  performaNumber: string;
+  performaDate: string;
+  customerName: string;
+  customerPhone: string;
+  productId?: string;
+  productName: string;
+  productCode: string;
+  category: string;
+  remainingCases: number;
+  requiredCases: number;
+  usedCases: number;
+  rate: number;
+  remainingAmount: number;
+}
+
+export interface PendingCompanyGroup {
+  companyName: string;
+  companyId?: string;
+  address?: string;
+  gstin?: string;
+  avatarLetter?: string;
+  avatarBg?: string;
+  avatarColor?: string;
+  totalPendingCases: number;
+  totalPendingAmount: number;
+  customersCount: number;
+  customersWaitingNames: string[];
+  productSummaries: PendingProductSummary[];
+  items: PendingCompanyItem[];
+}
+
+export interface PendingCasesResponse {
+  success: boolean;
+  summary: {
+    totalPendingCases: number;
+    totalPendingAmount: number;
+    totalCustomersWithPending: number;
+    totalCompaniesWithPending: number;
+  };
+  customerCases: PendingCustomerGroup[];
+  companyCases: PendingCompanyGroup[];
+>>>>>>> 580887dab9735ca61035988445d977ee93e3e932
 }
 
 // Auth API

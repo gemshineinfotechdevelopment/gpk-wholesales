@@ -11,7 +11,7 @@ import { AdminAccountModal } from './AdminAccountModal';
 import { CustomerPasswordModal } from './CustomerPasswordModal';
 import type { AuthUser } from '../services/api';
 
-export type NavTab = 'Customers' | 'Company' | 'Product' | 'Particulars' | 'All Customers' | 'Performa' | 'All Performa';
+export type NavTab = 'Customers' | 'Company' | 'Product' | 'Particulars' | 'All Customers' | 'Performa' | 'All Performa' | 'Pending Cases';
 
 interface NavbarProps {
   activeTab?: NavTab;
@@ -31,12 +31,11 @@ export const Navbar: FC<NavbarProps> = ({
   const isCustomer = user?.role === 'user';
 
   // Tabs tailored for customer vs admin/superadmin
-  const fullTabs: NavTab[] = ['Customers', 'Company', 'Product', 'Particulars', 'All Customers', 'Performa', 'All Performa'];
+  const fullTabs: NavTab[] = ['Customers', 'Company', 'Product', 'Particulars', 'All Customers', 'Performa', 'All Performa', 'Pending Cases'];
   const customerTabs: { label: string; tab: NavTab }[] = [
     { label: 'All Performa', tab: 'All Performa' },
     { label: 'Particulars', tab: 'Particulars' },
   ];
-
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [openAdminModal, setOpenAdminModal] = useState<boolean>(false);
   const [openCustomerPasswordModal, setOpenCustomerPasswordModal] = useState<boolean>(false);

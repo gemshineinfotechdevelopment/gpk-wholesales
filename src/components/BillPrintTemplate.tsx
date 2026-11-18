@@ -6,6 +6,7 @@ export interface BillPrintProduct {
   rate: string | number;
   pktUnit: string | number;
   amount: string | number;
+  isAdditional?: boolean;
 }
 
 export interface BillPrintData {
@@ -28,6 +29,7 @@ export interface BillPrintData {
   pdfData?: string;
   pdfUrl?: string;
   pdfName?: string;
+  performaNumber?: string;
 }
 
 interface BillPrintTemplateProps {

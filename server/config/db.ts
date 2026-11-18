@@ -12,16 +12,28 @@ export const connectDB = async (retryCount = 0): Promise<void> => {
   let uri =
     process.env.MONGODB_URI ||
     process.env.MONGO_URI ||
-    'mongodb+srv://heamanthprabhu59_db_user:Heamanth007@cluster0.txhuc3s.mongodb.net/dheeksha_trade?retryWrites=true&w=majority&appName=Cluster0';
+    'mongodb://127.0.0.1:27017/gpk_wholesales';
 
-  // Strip accidental angle brackets from Atlas connection strings if present
-  if (uri.includes('<') && uri.includes('>')) {
+  // Check if placeholder password hasn't been replaced yet
+  if (uri.includes('<db_password>') || uri.includes('<password>')) {
+    console.error('========================================================================');
+    console.error('[Database Warning] Found placeholder password in MONGODB_URI!');
+    console.error('Please replace <db_password> in server/.env with your actual Atlas password.');
+    console.error('========================================================================');
+  }
+
+  // Strip accidental angle brackets if user typed e.g. <mypassword>
+  if (uri.includes('<') && uri.includes('>') && !uri.includes('<db_password>') && !uri.includes('<password>')) {
     uri = uri.replace(/<([^>]+)>/g, '$1');
   }
 
-  // Ensure DB name is explicitly set to dheeksha_trade
-  if (uri.includes('cluster0.txhuc3s.mongodb.net/?')) {
-    uri = uri.replace('cluster0.txhuc3s.mongodb.net/?', 'cluster0.txhuc3s.mongodb.net/dheeksha_trade?');
+  // Ensure DB name is explicitly set to gpk_wholesales if not specified
+  if (uri.includes('.mongodb.net/?')) {
+    uri = uri.replace('.mongodb.net/?', '.mongodb.net/gpk_wholesales?');
+  } else if (uri.endsWith('.mongodb.net/')) {
+    uri = `${uri}gpk_wholesales?retryWrites=true&w=majority`;
+  } else if (uri.endsWith('.mongodb.net')) {
+    uri = `${uri}/gpk_wholesales?retryWrites=true&w=majority`;
   }
 
   try {

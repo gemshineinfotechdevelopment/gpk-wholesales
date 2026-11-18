@@ -12,6 +12,7 @@ import { ProductsPage } from './components/ProductsPage';
 import { ParticularsPage, type ParticularSubTab } from './components/ParticularsPage';
 import { PerformaPage } from './components/PerformaPage';
 import { AllPerformaPage } from './components/AllPerformaPage';
+import { PendingCasesPage } from './components/PendingCasesPage';
 import type { AuthUser } from './services/api';
 
 function App() {
@@ -38,6 +39,7 @@ function App() {
     const validTabs: NavTab[] = [
       'Performa',
       'All Performa',
+      'Pending Cases',
       'Particulars',
       'Product',
       'Company',
@@ -212,6 +214,13 @@ function App() {
             />
           )}
 
+          {/* Pending Cases Tab (Admin & Super Admin only) */}
+          {activeTab === 'Pending Cases' && currentUser?.role !== 'user' && (
+            <PendingCasesPage
+              onSelectCustomerForBill={handleCustomerSelectedForParticular}
+            />
+          )}
+
           {/* Particulars Tab (Customer views only their own ledger) */}
           {activeTab === 'Particulars' && (
             <ParticularsPage
@@ -268,6 +277,19 @@ function App() {
               )}
             </>
           )}
+          {/* Other Tabs */}
+          {activeTab !== 'Particulars' &&
+            activeTab !== 'Product' &&
+            activeTab !== 'Company' &&
+            activeTab !== 'All Customers' &&
+            activeTab !== 'Customers' &&
+            activeTab !== 'Performa' &&
+            activeTab !== 'All Performa' &&
+            activeTab !== 'Pending Cases' && (
+              <Box sx={{ p: 4, textAlign: 'center', color: '#64748B' }}>
+                {activeTab} content coming soon.
+              </Box>
+            )}
         </Box>
       </Box>
     </ThemeProvider>

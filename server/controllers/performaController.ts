@@ -3,8 +3,10 @@ import mongoose from 'mongoose';
 import { Performa, type IPerformaProductItem } from '../models/Performa';
 import { PerformaAudit } from '../models/PerformaAudit';
 import { Customer } from '../models/Customer';
+import { Company } from '../models/Company';
 import { escapeRegex } from '../utils/ledgerUtils';
 import { getNextCustomerIdCode } from './customerController';
+import { getCustomerPerformaSummary } from '../services/performaConsumptionService';
 
 export const getPerformas = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -161,28 +163,30 @@ export const getPerformaById = async (req: Request, res: Response, next: NextFun
       return;
     }
 
+    const summary = await getCustomerPerformaSummary(String(performa.customerId || performa.customerSnapshot?.name));
+
     const adv = Number((performa.advanceAmount || 0).toFixed(2));
     const performaTotalValue = Number((performa.totalAllocatedAmount || 0).toFixed(2));
-    const balanceAmount = Math.max(0, Number((performaTotalValue - adv).toFixed(2)));
+    const balanceAmount = summary?.balanceAmount !== undefined ? summary.balanceAmount : Math.max(0, Number((performaTotalValue - adv).toFixed(2)));
 
     res.status(200).json({
       success: true,
       data: {
         ...performa.toObject(),
-        initialAdvance: adv,
-        additionalCredits: 0,
-        totalAdvanceReceived: adv,
-        totalAvailableAmount: adv,
-        usedAmount: 0,
-        remainingAmount: adv,
-        advanceUsedAmount: 0,
-        remainingAdvanceAmount: adv,
+        initialAdvance: summary?.initialAdvance ?? adv,
+        additionalCredits: summary?.additionalCredits ?? 0,
+        totalAdvanceReceived: summary?.totalAdvanceReceived ?? adv,
+        totalAvailableAmount: summary?.availableAmount ?? adv,
+        usedAmount: summary?.totalAdvanceUsed ?? 0,
+        remainingAmount: summary?.availableAmount ?? adv,
+        advanceUsedAmount: summary?.totalAdvanceUsed ?? 0,
+        remainingAdvanceAmount: summary?.availableAmount ?? adv,
         balanceAmount,
-        customerPendingAmount: balanceAmount,
-        performaRemainingAmount: balanceAmount,
-        customerBills: [],
-        auditHistory: [],
-        transactionHistory: [],
+        customerPendingAmount: summary?.customerPendingAmount ?? 0,
+        performaRemainingAmount: summary?.performaRemainingAmount ?? 0,
+        customerBills: summary?.customerBills ?? [],
+        auditHistory: summary?.transactionHistory ?? [],
+        transactionHistory: summary?.transactionHistory ?? [],
       },
     });
   } catch (error) {
@@ -627,28 +631,10 @@ export const addCustomerAdvance = async (req: Request, res: Response, next: Next
 export const getCustomerSummaryEndpoint = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const customerId = String(req.params.customerId || '');
-    const query: any = {};
-    if (mongoose.Types.ObjectId.isValid(customerId)) {
-      query.customerId = customerId;
-    } else {
-      query['customerSnapshot.name'] = { $regex: new RegExp(`^${escapeRegex(customerId.trim())}$`, 'i') };
-    }
-    const performas = await Performa.find(query).sort({ createdAt: -1 }).lean();
-    const totalAdv = performas.reduce((sum, p) => sum + (p.advanceAmount || 0), 0);
-    const totalAlloc = performas.reduce((sum, p) => sum + (p.totalAllocatedAmount || 0), 0);
-    const balance = Math.max(0, totalAlloc - totalAdv);
-
+    const summary = await getCustomerPerformaSummary(customerId);
     res.status(200).json({
       success: true,
-      data: {
-        hasMasterPerforma: performas.length > 0,
-        masterPerforma: performas[0] || null,
-        activePerformas: performas.filter((p: any) => p.status === 'ACTIVE' || p.status === 'PARTIALLY_USED'),
-        availableAdvance: totalAdv,
-        availableAmount: totalAdv,
-        balanceAmount: balance,
-        customerPendingAmount: balance,
-      },
+      data: summary,
     });
   } catch (error) {
     next(error);
@@ -678,6 +664,324 @@ export const getCustomerAuditHistory = async (req: Request, res: Response, next:
     const audits = await PerformaAudit.find(query).sort({ date: -1, createdAt: -1 });
     res.status(200).json({ success: true, count: audits.length, data: audits });
   } catch (error) {
+    next(error);
+  }
+};
+
+export const getPendingCasesEndpoint = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const { search, companyName, customerName } = req.query;
+
+    // Performas that are active or partially used
+    const filter: any = {
+      status: { $in: ['ACTIVE', 'PARTIALLY_USED'] },
+    };
+
+    if (customerName && typeof customerName === 'string' && customerName.trim() !== '' && customerName.toLowerCase() !== 'all') {
+      filter['customerSnapshot.name'] = { $regex: new RegExp(`^${escapeRegex(customerName.trim())}$`, 'i') };
+    }
+
+    if (companyName && typeof companyName === 'string' && companyName.trim() !== '' && companyName.toLowerCase() !== 'all') {
+      const compRegex = new RegExp(escapeRegex(companyName.trim()), 'i');
+      filter.$or = [
+        { companyName: compRegex },
+        { 'products.productSnapshot.companyName': compRegex },
+      ];
+    }
+
+    const performas = await Performa.find(filter).sort({ date: -1, createdAt: -1 }).lean();
+
+    // Fetch registered companies to enrich company details (address, gstin, avatar)
+    const registeredCompanies = await Company.find({}).lean();
+    const companyMetaMap = new Map<string, any>();
+    for (const comp of registeredCompanies) {
+      if (comp.name) {
+        companyMetaMap.set(comp.name.trim().toLowerCase(), comp);
+      }
+    }
+
+    // Customer aggregation map
+    const customerMap = new Map<string, {
+      customerId?: string;
+      customerName: string;
+      customerPhone: string;
+      customerCompany: string;
+      customerAddress: string;
+      customerGst?: string;
+      totalPendingCases: number;
+      totalPendingAmount: number;
+      totalRequiredCases: number;
+      totalUsedCases: number;
+      performasCount: number;
+      performaNumbers: string[];
+      items: Array<{
+        performaId: string;
+        performaNumber: string;
+        performaDate: string;
+        productId?: string;
+        productName: string;
+        productCode: string;
+        category: string;
+        companyName: string;
+        requiredCases: number;
+        usedCases: number;
+        remainingCases: number;
+        rate: number;
+        pktPerUnit: number;
+        remainingAmount: number;
+      }>;
+    }>();
+
+    // Company aggregation map
+    const companyMap = new Map<string, {
+      companyName: string;
+      companyId?: string;
+      address?: string;
+      gstin?: string;
+      avatarLetter?: string;
+      avatarBg?: string;
+      avatarColor?: string;
+      totalPendingCases: number;
+      totalPendingAmount: number;
+      customersWaiting: Set<string>;
+      productSummaries: Map<string, {
+        productName: string;
+        productCode: string;
+        category: string;
+        totalRemainingCases: number;
+        totalRequiredCases: number;
+        totalUsedCases: number;
+        rate: number;
+        estimatedAmount: number;
+        customers: Array<{
+          customerName: string;
+          customerPhone: string;
+          performaNumber: string;
+          remainingCases: number;
+          date: string;
+        }>;
+      }>;
+      items: Array<{
+        performaId: string;
+        performaNumber: string;
+        performaDate: string;
+        customerName: string;
+        customerPhone: string;
+        productId?: string;
+        productName: string;
+        productCode: string;
+        category: string;
+        remainingCases: number;
+        requiredCases: number;
+        usedCases: number;
+        rate: number;
+        remainingAmount: number;
+      }>;
+    }>();
+
+    let grandTotalPendingCases = 0;
+    let grandTotalPendingAmount = 0;
+
+    for (const perf of performas) {
+      const custName = (perf.customerSnapshot?.name || 'Unknown Customer').trim();
+      const custKey = custName.toLowerCase();
+
+      if (!customerMap.has(custKey)) {
+        customerMap.set(custKey, {
+          customerId: perf.customerId ? String(perf.customerId) : undefined,
+          customerName: custName,
+          customerPhone: perf.customerSnapshot?.phone || '',
+          customerCompany: perf.customerSnapshot?.companyName || '',
+          customerAddress: perf.customerSnapshot?.address || '',
+          customerGst: perf.customerSnapshot?.gst || '',
+          totalPendingCases: 0,
+          totalPendingAmount: 0,
+          totalRequiredCases: 0,
+          totalUsedCases: 0,
+          performasCount: 0,
+          performaNumbers: [],
+          items: [],
+        });
+      }
+
+      const custEntry = customerMap.get(custKey)!;
+      if (!custEntry.performaNumbers.includes(perf.performaNumber)) {
+        custEntry.performaNumbers.push(perf.performaNumber);
+        custEntry.performasCount++;
+      }
+
+      for (const item of (perf.products || [])) {
+        const remainingCases = Math.max(0, Number(item.remainingCases) || 0);
+        if (remainingCases <= 0) continue;
+
+        const rate = Math.max(0, Number(item.rate) || 0);
+        const remainingAmt = item.remainingAmount ? Number(item.remainingAmount) : remainingCases * rate;
+        const requiredCases = Math.max(0, Number(item.requiredCases) || 0);
+        const usedCases = Math.max(0, Number(item.usedCases) || 0);
+        const prodName = item.productSnapshot?.productName || 'Unknown Product';
+        const prodCode = item.productSnapshot?.productCode || '';
+        const category = item.productSnapshot?.category || '';
+        const itemCompany = (item.productSnapshot?.companyName?.trim() || perf.companyName?.trim() || 'General');
+
+        grandTotalPendingCases += remainingCases;
+        grandTotalPendingAmount += remainingAmt;
+
+        // Add to customer entry
+        custEntry.totalPendingCases += remainingCases;
+        custEntry.totalPendingAmount += remainingAmt;
+        custEntry.totalRequiredCases += requiredCases;
+        custEntry.totalUsedCases += usedCases;
+        custEntry.items.push({
+          performaId: String(perf._id),
+          performaNumber: perf.performaNumber,
+          performaDate: perf.date,
+          productId: item.productId ? String(item.productId) : undefined,
+          productName: prodName,
+          productCode: prodCode,
+          category,
+          companyName: itemCompany,
+          requiredCases,
+          usedCases,
+          remainingCases,
+          rate,
+          pktPerUnit: Number(item.pktPerUnit) || 1,
+          remainingAmount: remainingAmt,
+        });
+
+        // Add to company entry
+        const compKey = itemCompany.toLowerCase();
+        if (!companyMap.has(compKey)) {
+          const matchedComp = companyMetaMap.get(compKey);
+          companyMap.set(compKey, {
+            companyName: matchedComp?.name || itemCompany,
+            companyId: matchedComp?._id ? String(matchedComp._id) : undefined,
+            address: matchedComp?.address || '',
+            gstin: matchedComp?.gstin || '',
+            avatarLetter: matchedComp?.avatarLetter || itemCompany.charAt(0).toUpperCase(),
+            avatarBg: matchedComp?.avatarBg || '#DBEAFE',
+            avatarColor: matchedComp?.avatarColor || '#0B4DB7',
+            totalPendingCases: 0,
+            totalPendingAmount: 0,
+            customersWaiting: new Set<string>(),
+            productSummaries: new Map(),
+            items: [],
+          });
+        }
+
+        const compEntry = companyMap.get(compKey)!;
+        compEntry.totalPendingCases += remainingCases;
+        compEntry.totalPendingAmount += remainingAmt;
+        compEntry.customersWaiting.add(custName);
+
+        // Product summary under company
+        const prodKey = `${prodName.toLowerCase()}___${prodCode.toLowerCase()}`;
+        if (!compEntry.productSummaries.has(prodKey)) {
+          compEntry.productSummaries.set(prodKey, {
+            productName: prodName,
+            productCode: prodCode,
+            category,
+            totalRemainingCases: 0,
+            totalRequiredCases: 0,
+            totalUsedCases: 0,
+            rate,
+            estimatedAmount: 0,
+            customers: [],
+          });
+        }
+        const prodSummary = compEntry.productSummaries.get(prodKey)!;
+        prodSummary.totalRemainingCases += remainingCases;
+        prodSummary.totalRequiredCases += requiredCases;
+        prodSummary.totalUsedCases += usedCases;
+        prodSummary.estimatedAmount += remainingAmt;
+        prodSummary.customers.push({
+          customerName: custName,
+          customerPhone: perf.customerSnapshot?.phone || '',
+          performaNumber: perf.performaNumber,
+          remainingCases,
+          date: perf.date,
+        });
+
+        // Raw item under company
+        compEntry.items.push({
+          performaId: String(perf._id),
+          performaNumber: perf.performaNumber,
+          performaDate: perf.date,
+          customerName: custName,
+          customerPhone: perf.customerSnapshot?.phone || '',
+          productId: item.productId ? String(item.productId) : undefined,
+          productName: prodName,
+          productCode: prodCode,
+          category,
+          remainingCases,
+          requiredCases,
+          usedCases,
+          rate,
+          remainingAmount: remainingAmt,
+        });
+      }
+    }
+
+    // Customer cases array (only customers with pending cases)
+    let customerCases = Array.from(customerMap.values())
+      .filter((c) => c.totalPendingCases > 0)
+      .sort((a, b) => b.totalPendingCases - a.totalPendingCases);
+
+    // Company cases array (only companies with pending cases)
+    let companyCases = Array.from(companyMap.values())
+      .filter((c) => c.totalPendingCases > 0)
+      .map((c) => ({
+        companyName: c.companyName,
+        companyId: c.companyId,
+        address: c.address,
+        gstin: c.gstin,
+        avatarLetter: c.avatarLetter,
+        avatarBg: c.avatarBg,
+        avatarColor: c.avatarColor,
+        totalPendingCases: c.totalPendingCases,
+        totalPendingAmount: c.totalPendingAmount,
+        customersCount: c.customersWaiting.size,
+        customersWaitingNames: Array.from(c.customersWaiting),
+        productSummaries: Array.from(c.productSummaries.values()).sort(
+          (a, b) => b.totalRemainingCases - a.totalRemainingCases
+        ),
+        items: c.items.sort((a, b) => b.remainingCases - a.remainingCases),
+      }))
+      .sort((a, b) => b.totalPendingCases - a.totalPendingCases);
+
+    // Filter by search term if provided
+    if (search && typeof search === 'string' && search.trim() !== '') {
+      const q = search.trim().toLowerCase();
+      customerCases = customerCases.filter((c) =>
+        c.customerName.toLowerCase().includes(q) ||
+        c.customerPhone.toLowerCase().includes(q) ||
+        c.customerCompany.toLowerCase().includes(q) ||
+        c.items.some((item) =>
+          item.productName.toLowerCase().includes(q) ||
+          item.productCode.toLowerCase().includes(q) ||
+          item.companyName.toLowerCase().includes(q) ||
+          item.performaNumber.toLowerCase().includes(q)
+        )
+      );
+
+      companyCases = companyCases.filter((c) =>
+        c.companyName.toLowerCase().includes(q) ||
+        c.productSummaries.some((p) => p.productName.toLowerCase().includes(q) || p.productCode.toLowerCase().includes(q)) ||
+        c.items.some((i) => i.customerName.toLowerCase().includes(q) || i.performaNumber.toLowerCase().includes(q))
+      );
+    }
+
+    res.status(200).json({
+      success: true,
+      summary: {
+        totalPendingCases: grandTotalPendingCases,
+        totalPendingAmount: grandTotalPendingAmount,
+        totalCustomersWithPending: customerCases.length,
+        totalCompaniesWithPending: companyCases.length,
+      },
+      customerCases,
+      companyCases,
+    });
+  } catch (error: any) {
     next(error);
   }
 };

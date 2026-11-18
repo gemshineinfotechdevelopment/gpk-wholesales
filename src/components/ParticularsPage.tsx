@@ -37,12 +37,15 @@ import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
 import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
+import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
+import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
 import {
   CustomersApi,
   CompaniesApi,
   ProductsApi,
   ParticularsApi,
   AccountsApi,
+  PerformasApi,
 } from '../services/api';
 import { BillPrintModal } from './BillPrintModal';
 import type { BillPrintData } from './BillPrintTemplate';
@@ -77,6 +80,7 @@ interface ProductRowItem {
   rate: string;
   pktUnit: string;
   amount: string;
+  isAdditional?: boolean;
 }
 
 interface ParticularsPageProps {
@@ -148,6 +152,41 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
     pktUnit: string;
   }>({ particular: '', quantity: '', rate: '', pktUnit: '' });
   const [createLoading, setCreateLoading] = useState(false);
+
+  // Customer Active Performa Summary State
+  const [performaSummary, setPerformaSummary] = useState<any | null>(null);
+  const [_loadingPerforma, setLoadingPerforma] = useState<boolean>(false);
+
+  // Warning Dialog State for Additional Product / Exceeded Cases
+  const [warningDialog, setWarningDialog] = useState<{
+    open: boolean;
+    type: 'NEW_PRODUCT' | 'EXCEEDED_CASES';
+    productName: string;
+    quantity: string;
+    rate: string;
+    pkt: string;
+    performaNumber: string;
+    remainingCases: number;
+    extraCases: number;
+    pendingRowData?: {
+      particular: string;
+      quantity: string;
+      rate: string;
+      pktUnit: string;
+      isEdit?: boolean;
+      editId?: string;
+    };
+  }>({
+    open: false,
+    type: 'NEW_PRODUCT',
+    productName: '',
+    quantity: '',
+    rate: '',
+    pkt: '',
+    performaNumber: '',
+    remainingCases: 0,
+    extraCases: 0,
+  });
 
   // Subtab 3: Account Details State
   const [accountDetails, setAccountDetails] = useState<any[]>([]);
@@ -273,6 +312,33 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
     }
   }, [activeSubTab]);
 
+  // Fetch Customer Performa Summary whenever customer changes
+  useEffect(() => {
+    if (!currentCustomerName || currentCustomerName === 'ALL' || currentCustomerName === 'All Customers') {
+      setPerformaSummary(null);
+      return;
+    }
+    let isMounted = true;
+    const loadPerforma = async () => {
+      try {
+        setLoadingPerforma(true);
+        const res = await PerformasApi.getCustomerSummary(currentCustomerName);
+        if (isMounted) {
+          setPerformaSummary(res);
+        }
+      } catch (err) {
+        console.warn('Failed to fetch customer performa summary:', err);
+        if (isMounted) setPerformaSummary(null);
+      } finally {
+        if (isMounted) setLoadingPerforma(false);
+      }
+    };
+    loadPerforma();
+    return () => {
+      isMounted = false;
+    };
+  }, [currentCustomerName]);
+
   // Load Dropdown Options
   useEffect(() => {
     const loadOptions = async () => {
@@ -397,30 +463,208 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
     setActiveSubTab('Create Particular');
   };
 
-  // Subtab 2: Product Line Addition
-  const handleAddProductRow = () => {
-    if (!selectedProduct || !quantity || !rate) {
-      alert('Please select Product, enter Case and Rate');
-      return;
-    }
-    const caseVal = parseFloat(quantity) || 0;
-    const piecesPerCase = parseFloat(pkt) || 1;
-    const totalPieces = caseVal * piecesPerCase;
-    const lineAmt = (totalPieces * (parseFloat(rate) || 0)).toFixed(2);
+  // Helper to add product row to state
+  const executeAddProductRow = (
+    prodName: string,
+    qty: string,
+    rt: string,
+    pktUnitVal: string,
+    isAdditional: boolean
+  ) => {
+    const caseVal = parseFloat(qty) || 0;
+    const piecesPerCase = parseFloat(pktUnitVal) || 1;
+    const totalPieces = caseVal * (piecesPerCase > 0 ? piecesPerCase : 1);
+    const lineAmt = (totalPieces * (parseFloat(rt) || 0)).toFixed(2);
 
     const newRow: ProductRowItem = {
       id: Date.now().toString(),
-      particular: selectedProduct,
-      quantity,
-      rate,
-      pktUnit: pkt ? pkt : '-',
+      particular: prodName,
+      quantity: qty,
+      rate: rt,
+      pktUnit: pktUnitVal && pktUnitVal !== '' ? pktUnitVal : '-',
       amount: lineAmt,
+      isAdditional,
     };
     setProductRows((prev) => [...prev, newRow]);
     setSelectedProduct('');
     setQuantity('');
     setRate('');
     setPkt('');
+  };
+
+  // Helper to save edited row to state
+  const executeSaveEditRow = (
+    id: string,
+    prodName: string,
+    qty: string,
+    rt: string,
+    pktUnitVal: string,
+    isAdditional: boolean
+  ) => {
+    const caseVal = parseFloat(qty) || 0;
+    const piecesPerCase = parseFloat(pktUnitVal) || 1;
+    const totalPieces = caseVal * (piecesPerCase > 0 ? piecesPerCase : 1);
+    const lineAmt = (totalPieces * (parseFloat(rt) || 0)).toFixed(2);
+
+    setProductRows((prev) =>
+      prev.map((row) =>
+        row.id === id
+          ? {
+              ...row,
+              particular: prodName.trim(),
+              quantity: qty.trim(),
+              rate: rt.trim(),
+              pktUnit: pktUnitVal.trim() !== '' ? pktUnitVal.trim() : '-',
+              amount: lineAmt,
+              isAdditional,
+            }
+          : row
+      )
+    );
+    setEditingRowId(null);
+  };
+
+  // Confirm adding product from Warning Dialog
+  const handleConfirmWarningAdd = () => {
+    if (warningDialog.pendingRowData) {
+      const { particular, quantity, rate, pktUnit, isEdit, editId } = warningDialog.pendingRowData;
+      if (isEdit && editId) {
+        executeSaveEditRow(editId, particular, quantity, rate, pktUnit, true);
+      } else {
+        executeAddProductRow(particular, quantity, rate, pktUnit, true);
+      }
+    }
+    setWarningDialog((prev) => ({ ...prev, open: false }));
+  };
+
+  // Quick-import all remaining performa items
+  const handleImportAllPerformaProducts = () => {
+    if (!performaSummary?.masterPerforma?.products) return;
+    const activeProducts = performaSummary.masterPerforma.products.filter(
+      (p: any) => (p.remainingCases || 0) > 0
+    );
+    if (activeProducts.length === 0) {
+      alert('All products in this performa quotation have already been fulfilled/consumed!');
+      return;
+    }
+
+    const importedRows: ProductRowItem[] = activeProducts.map((p: any, idx: number) => {
+      const caseVal = p.remainingCases || 1;
+      const piecesPerCase = parseFloat(p.pktPerUnit) || 1;
+      const totalPieces = caseVal * piecesPerCase;
+      const lineAmt = (totalPieces * (parseFloat(p.rate) || 0)).toFixed(2);
+      return {
+        id: (Date.now() + idx).toString(),
+        particular: p.productName,
+        quantity: String(p.remainingCases),
+        rate: String(p.rate),
+        pktUnit: String(p.pktPerUnit || '-'),
+        amount: lineAmt,
+        isAdditional: false,
+      };
+    });
+
+    setProductRows((prev) => [...prev, ...importedRows]);
+    if (performaSummary.masterPerforma.companyName && !company) {
+      setCompany(performaSummary.masterPerforma.companyName);
+    }
+  };
+
+  // Quick-select a performa product to fill the form inputs
+  const handleQuickSelectPerformaProduct = (p: any) => {
+    setSelectedProduct(p.productName);
+    setQuantity(String(p.remainingCases > 0 ? p.remainingCases : p.requiredCases || 1));
+    setRate(String(p.rate || ''));
+    setPkt(String(p.pktPerUnit || ''));
+  };
+
+  // Subtab 2: Product Line Addition with Performa Validation
+  const handleAddProductRow = () => {
+    if (!selectedProduct || !quantity || !rate) {
+      alert('Please select Product, enter Case and Rate');
+      return;
+    }
+    const caseVal = parseFloat(quantity) || 0;
+    if (caseVal <= 0) {
+      alert('Please enter a valid Case quantity greater than 0');
+      return;
+    }
+
+    const activeMasterPerforma = performaSummary?.hasMasterPerforma ? performaSummary.masterPerforma : null;
+    const isPerformaActive =
+      activeMasterPerforma &&
+      (activeMasterPerforma.status === 'ACTIVE' || activeMasterPerforma.status === 'PARTIALLY_USED') &&
+      activeMasterPerforma.products &&
+      activeMasterPerforma.products.length > 0;
+
+    if (isPerformaActive) {
+      const normInput = selectedProduct.trim().toLowerCase();
+      const matchedP = activeMasterPerforma.products.find((p: any) => {
+        const pName = (p.productName || '').trim().toLowerCase();
+        const pCode = (p.productCode || '').trim().toLowerCase();
+        return pName === normInput || (pCode && pCode === normInput);
+      });
+
+      if (!matchedP) {
+        // Warning: Product not in performa quotation
+        setWarningDialog({
+          open: true,
+          type: 'NEW_PRODUCT',
+          productName: selectedProduct.trim(),
+          quantity: quantity.trim(),
+          rate: rate.trim(),
+          pkt: pkt ? pkt.trim() : '-',
+          performaNumber: activeMasterPerforma.performaNumber,
+          remainingCases: 0,
+          extraCases: caseVal,
+          pendingRowData: {
+            particular: selectedProduct.trim(),
+            quantity: quantity.trim(),
+            rate: rate.trim(),
+            pktUnit: pkt ? pkt.trim() : '-',
+            isEdit: false,
+          },
+        });
+        return;
+      }
+
+      // Check cases against performa remaining quota
+      const existingCasesInTable = productRows
+        .filter((r) => {
+          const rName = r.particular.trim().toLowerCase();
+          return rName === normInput || (matchedP.productCode && rName === matchedP.productCode.trim().toLowerCase());
+        })
+        .reduce((sum, r) => sum + (parseFloat(r.quantity) || 0), 0);
+
+      const totalWillBe = existingCasesInTable + caseVal;
+      const remCases = matchedP.remainingCases || 0;
+
+      if (totalWillBe > remCases) {
+        const extra = Number((totalWillBe - remCases).toFixed(2));
+        setWarningDialog({
+          open: true,
+          type: 'EXCEEDED_CASES',
+          productName: selectedProduct.trim(),
+          quantity: quantity.trim(),
+          rate: rate.trim(),
+          pkt: pkt ? pkt.trim() : '-',
+          performaNumber: activeMasterPerforma.performaNumber,
+          remainingCases: remCases,
+          extraCases: extra,
+          pendingRowData: {
+            particular: selectedProduct.trim(),
+            quantity: quantity.trim(),
+            rate: rate.trim(),
+            pktUnit: pkt ? pkt.trim() : '-',
+            isEdit: false,
+          },
+        });
+        return;
+      }
+    }
+
+    // Direct add (within quota or no active performa)
+    executeAddProductRow(selectedProduct.trim(), quantity.trim(), rate.trim(), pkt ? pkt.trim() : '-', false);
   };
 
   // Start editing a product row
@@ -434,32 +678,102 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
     });
   };
 
-  // Save edited product row
+  // Save edited product row with Performa Validation
   const handleSaveEditRow = (id: string) => {
     if (!editRowData.particular || !editRowData.quantity || !editRowData.rate) {
       alert('Please enter Product, Cases, and Rate');
       return;
     }
     const caseVal = parseFloat(editRowData.quantity) || 0;
-    const piecesPerCase = parseFloat(editRowData.pktUnit) || 1;
-    const totalPieces = caseVal * (piecesPerCase > 0 ? piecesPerCase : 1);
-    const lineAmt = (totalPieces * (parseFloat(editRowData.rate) || 0)).toFixed(2);
+    if (caseVal <= 0) {
+      alert('Please enter a valid Case quantity greater than 0');
+      return;
+    }
 
-    setProductRows((prev) =>
-      prev.map((row) =>
-        row.id === id
-          ? {
-              ...row,
-              particular: editRowData.particular.trim(),
-              quantity: editRowData.quantity.trim(),
-              rate: editRowData.rate.trim(),
-              pktUnit: editRowData.pktUnit.trim() !== '' ? editRowData.pktUnit.trim() : '-',
-              amount: lineAmt,
-            }
-          : row
-      )
+    const activeMasterPerforma = performaSummary?.hasMasterPerforma ? performaSummary.masterPerforma : null;
+    const isPerformaActive =
+      activeMasterPerforma &&
+      (activeMasterPerforma.status === 'ACTIVE' || activeMasterPerforma.status === 'PARTIALLY_USED') &&
+      activeMasterPerforma.products &&
+      activeMasterPerforma.products.length > 0;
+
+    if (isPerformaActive) {
+      const normInput = editRowData.particular.trim().toLowerCase();
+      const matchedP = activeMasterPerforma.products.find((p: any) => {
+        const pName = (p.productName || '').trim().toLowerCase();
+        const pCode = (p.productCode || '').trim().toLowerCase();
+        return pName === normInput || (pCode && pCode === normInput);
+      });
+
+      if (!matchedP) {
+        setWarningDialog({
+          open: true,
+          type: 'NEW_PRODUCT',
+          productName: editRowData.particular.trim(),
+          quantity: editRowData.quantity.trim(),
+          rate: editRowData.rate.trim(),
+          pkt: editRowData.pktUnit ? editRowData.pktUnit.trim() : '-',
+          performaNumber: activeMasterPerforma.performaNumber,
+          remainingCases: 0,
+          extraCases: caseVal,
+          pendingRowData: {
+            particular: editRowData.particular.trim(),
+            quantity: editRowData.quantity.trim(),
+            rate: editRowData.rate.trim(),
+            pktUnit: editRowData.pktUnit ? editRowData.pktUnit.trim() : '-',
+            isEdit: true,
+            editId: id,
+          },
+        });
+        return;
+      }
+
+      // Check cases excluding current row being edited
+      const otherCasesInTable = productRows
+        .filter(
+          (r) =>
+            r.id !== id &&
+            (r.particular.trim().toLowerCase() === normInput ||
+              (matchedP.productCode && r.particular.trim().toLowerCase() === matchedP.productCode.trim().toLowerCase()))
+        )
+        .reduce((sum, r) => sum + (parseFloat(r.quantity) || 0), 0);
+
+      const totalWillBe = otherCasesInTable + caseVal;
+      const remCases = matchedP.remainingCases || 0;
+
+      if (totalWillBe > remCases) {
+        const extra = Number((totalWillBe - remCases).toFixed(2));
+        setWarningDialog({
+          open: true,
+          type: 'EXCEEDED_CASES',
+          productName: editRowData.particular.trim(),
+          quantity: editRowData.quantity.trim(),
+          rate: editRowData.rate.trim(),
+          pkt: editRowData.pktUnit ? editRowData.pktUnit.trim() : '-',
+          performaNumber: activeMasterPerforma.performaNumber,
+          remainingCases: remCases,
+          extraCases: extra,
+          pendingRowData: {
+            particular: editRowData.particular.trim(),
+            quantity: editRowData.quantity.trim(),
+            rate: editRowData.rate.trim(),
+            pktUnit: editRowData.pktUnit ? editRowData.pktUnit.trim() : '-',
+            isEdit: true,
+            editId: id,
+          },
+        });
+        return;
+      }
+    }
+
+    executeSaveEditRow(
+      id,
+      editRowData.particular.trim(),
+      editRowData.quantity.trim(),
+      editRowData.rate.trim(),
+      editRowData.pktUnit ? editRowData.pktUnit.trim() : '-',
+      false
     );
-    setEditingRowId(null);
   };
 
   // Cancel editing product row
@@ -542,6 +856,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
         total: finalTotalAmount,
         date: date,
         products: productRows,
+        performaId: performaSummary?.masterPerforma?._id,
+        performaNumber: performaSummary?.masterPerforma?.performaNumber,
       });
 
       const assignedBillNo = created?.billNo || billNo.trim();
@@ -549,7 +865,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
         billNo: assignedBillNo,
         customerName: currentCustomerName || 'General',
         companyName: company ? company.trim() : '',
-        preparedBy: 'S.Nagaraj',
+        preparedBy: 'Admin',
         phone: '+91 98765 43210',
         email: 'info@gpkcrackers.com',
         website: 'www.gpkcrackers.com',
@@ -562,12 +878,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
           rate: p.rate,
           pktUnit: p.pktUnit,
           amount: p.amount,
+          isAdditional: p.isAdditional,
         })),
         amount: subtotalAmount.toFixed(2),
         discount: discount || '0',
         packing: packing || '0',
         tax: tax || '0',
         total: finalTotalAmount,
+        performaNumber: performaSummary?.masterPerforma?.performaNumber || created?.performaNumber,
       };
 
       const successMsg = `Particular bill #${assignedBillNo}${company && company.trim() ? ` for ${company.trim()}` : ''} created successfully!`;
@@ -584,6 +902,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
       setTax('');
       fetchAccounts(filterCustomer);
       fetchParticulars();
+      if (currentCustomerName) {
+        PerformasApi.getCustomerSummary(currentCustomerName)
+          .then((res) => setPerformaSummary(res))
+          .catch(() => {});
+      }
 
       setActiveSubTab('Particular Details');
 
@@ -1269,6 +1592,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                   </Button>
                 </Box>
               </Box>
+
+
             </Box>
           </Box>
         </Paper>
@@ -1401,6 +1726,81 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                   />
                 </Box>
               </Box>
+
+              {/* Linked Active Performa Card */}
+              {performaSummary?.masterPerforma && (
+                <Box
+                  sx={{
+                    backgroundColor: '#F0FDF4',
+                    border: '1px solid #BBF7D0',
+                    borderRadius: '8px',
+                    p: 1.4,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 1,
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                      <Chip
+                        size="small"
+                        label={performaSummary.masterPerforma.performaNumber}
+                        sx={{
+                          fontWeight: 800,
+                          backgroundColor: '#DCFCE7',
+                          color: '#166534',
+                          fontSize: '11.5px',
+                        }}
+                      />
+                      <Typography sx={{ fontSize: '12px', fontWeight: 700, color: '#166534' }}>
+                        Linked Performa Active
+                      </Typography>
+                    </Box>
+                    <Chip
+                      size="small"
+                      label={performaSummary.masterPerforma.status}
+                      sx={{
+                        fontWeight: 700,
+                        fontSize: '10.5px',
+                        backgroundColor:
+                          performaSummary.masterPerforma.status === 'ACTIVE' ? '#DBEAFE' : '#FEF3C7',
+                        color:
+                          performaSummary.masterPerforma.status === 'ACTIVE' ? '#1E40AF' : '#92400E',
+                      }}
+                    />
+                  </Box>
+                  <Box
+                    sx={{
+                      display: 'grid',
+                      gridTemplateColumns: '1fr 1fr',
+                      gap: 1,
+                      backgroundColor: '#FFFFFF',
+                      p: 1,
+                      borderRadius: '6px',
+                      border: '1px solid #DCFCE7',
+                    }}
+                  >
+                    <Box>
+                      <Typography sx={{ fontSize: '10.5px', color: '#64748B', fontWeight: 600 }}>
+                        Available Advance
+                      </Typography>
+                      <Typography sx={{ fontSize: '13px', fontWeight: 800, color: '#16A34A' }}>
+                        ₹{(performaSummary.availableAmount || 0).toLocaleString('en-IN', {
+                          minimumFractionDigits: 2,
+                        })}
+                      </Typography>
+                    </Box>
+                    <Box>
+                      <Typography sx={{ fontSize: '10.5px', color: '#64748B', fontWeight: 600 }}>
+                        Remaining Cases
+                      </Typography>
+                      <Typography sx={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
+                        {performaSummary.masterPerforma.totalRemainingCases || 0} Cases
+                      </Typography>
+                    </Box>
+                  </Box>
+                </Box>
+              )}
 
               <Box sx={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 1.5 }}>
                 <Box>
@@ -1580,6 +1980,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                 </Box>
               </Box>
 
+
+
               <Box
                 sx={{
                   backgroundColor: '#F8FAFC',
@@ -1631,6 +2033,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                 </Box>
               </Box>
 
+
+
               <Box sx={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 1.5, mt: 0.5 }}>
                 <Box>
                   <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
@@ -1668,6 +2072,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                   </Button>
                 </Box>
               </Box>
+
+
             </Box>
           </Paper>
 
@@ -1705,6 +2111,82 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                 Product Entry
               </Typography>
             </Box>
+
+            {/* Quick Pick Performa Products Bar */}
+            {performaSummary?.masterPerforma && performaSummary.masterPerforma.products && (
+              <Box
+                sx={{
+                  backgroundColor: '#F8FAFC',
+                  borderBottom: '1px solid #E2E8F0',
+                  px: 2,
+                  py: 1.2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 1,
+                }}
+              >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', flex: 1 }}>
+                  <Typography
+                    sx={{
+                      fontSize: '11.5px',
+                      fontWeight: 700,
+                      color: '#475569',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 0.5,
+                    }}
+                  >
+                    <Inventory2RoundedIcon sx={{ fontSize: 16, color: '#0B4DB7' }} />
+                    Quotation Items:
+                  </Typography>
+                  {performaSummary.masterPerforma.products.map((p: any, idx: number) => {
+                    const isFulfilled = (p.remainingCases || 0) <= 0;
+                    return (
+                      <Chip
+                        key={idx}
+                        size="small"
+                        clickable={!isFulfilled}
+                        onClick={() => !isFulfilled && handleQuickSelectPerformaProduct(p)}
+                        label={`${p.productName} (${p.remainingCases || 0} rem @ ₹${p.rate})`}
+                        sx={{
+                          fontSize: '11px',
+                          fontWeight: 600,
+                          backgroundColor: isFulfilled ? '#F1F5F9' : '#EFF6FF',
+                          color: isFulfilled ? '#94A3B8' : '#1D4ED8',
+                          border: isFulfilled ? '1px dashed #CBD5E1' : '1px solid #BFDBFE',
+                          cursor: isFulfilled ? 'default' : 'pointer',
+                          '&:hover': isFulfilled ? {} : { backgroundColor: '#DBEAFE' },
+                        }}
+                      />
+                    );
+                  })}
+                </Box>
+                <Button
+                  size="small"
+                  variant="outlined"
+                  onClick={handleImportAllPerformaProducts}
+                  startIcon={<AddRoundedIcon sx={{ fontSize: 16 }} />}
+                  sx={{
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    borderColor: '#0B4DB7',
+                    color: '#0B4DB7',
+                    borderRadius: '6px',
+                    py: 0.4,
+                    px: 1.2,
+                    '&:hover': {
+                      backgroundColor: '#EFF6FF',
+                      borderColor: '#083B8D',
+                    },
+                  }}
+                >
+                  Import All Remaining
+                </Button>
+              </Box>
+            )}
 
             <Box
               sx={{
@@ -2024,7 +2506,38 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                                 sx={{ minWidth: '140px' }}
                               />
                             ) : (
-                              row.particular
+                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                                <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>
+                                  {row.particular}
+                                </Typography>
+                                {row.isAdditional ? (
+                                  <Chip
+                                    label="Additional"
+                                    size="small"
+                                    sx={{
+                                      fontSize: '10px',
+                                      fontWeight: 700,
+                                      backgroundColor: '#FEF3C7',
+                                      color: '#92400E',
+                                      border: '1px solid #FDE68A',
+                                      height: '20px',
+                                    }}
+                                  />
+                                ) : performaSummary?.masterPerforma ? (
+                                  <Chip
+                                    label="Performa"
+                                    size="small"
+                                    sx={{
+                                      fontSize: '10px',
+                                      fontWeight: 700,
+                                      backgroundColor: '#EFF6FF',
+                                      color: '#1D4ED8',
+                                      border: '1px solid #BFDBFE',
+                                      height: '20px',
+                                    }}
+                                  />
+                                ) : null}
+                              </Box>
                             )}
                           </TableCell>
 
@@ -4041,6 +4554,149 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
             }}
           >
             {editBillLoading ? 'Saving...' : 'Save Bill Changes'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Additional Product / Exceeded Cases Warning Dialog */}
+      <Dialog
+        open={warningDialog.open}
+        onClose={() => setWarningDialog((prev) => ({ ...prev, open: false }))}
+        maxWidth="sm"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            borderRadius: '12px',
+            overflow: 'hidden',
+          },
+        }}
+      >
+        <DialogTitle
+          sx={{
+            backgroundColor: '#FEF3C7',
+            borderBottom: '1px solid #FDE68A',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1.5,
+            py: 2,
+          }}
+        >
+          <Box
+            sx={{
+              backgroundColor: '#F59E0B',
+              color: '#FFFFFF',
+              width: '36px',
+              height: '36px',
+              borderRadius: '50%',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <WarningAmberRoundedIcon sx={{ fontSize: 24 }} />
+          </Box>
+          <Box>
+            <Typography sx={{ fontSize: '16px', fontWeight: 800, color: '#92400E' }}>
+              {warningDialog.type === 'NEW_PRODUCT'
+                ? 'Additional Product Warning'
+                : 'Exceeded Performa Cases Warning'}
+            </Typography>
+            <Typography sx={{ fontSize: '12px', color: '#B45309', fontWeight: 500 }}>
+              Active Performa Linked: <strong>{warningDialog.performaNumber}</strong>
+            </Typography>
+          </Box>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 3, pt: 3 }}>
+          {warningDialog.type === 'NEW_PRODUCT' ? (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Alert severity="warning" sx={{ borderRadius: '8px', fontSize: '13px', fontWeight: 500 }}>
+                The product <strong>&quot;{warningDialog.productName}&quot;</strong> is NOT listed in customer&apos;s active Performa quotation (<strong>{warningDialog.performaNumber}</strong>).
+              </Alert>
+
+              <Typography sx={{ fontSize: '13.5px', color: '#334155', lineHeight: 1.6 }}>
+                Adding this item will be treated as an <strong>Additional Product</strong> outside the performa quotation. It will be billed on this particular invoice, but will not deduct cases from the performa quotation.
+              </Typography>
+
+              <Box sx={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', p: 2 }}>
+                <Typography sx={{ fontSize: '12px', fontWeight: 700, color: '#64748B', mb: 1, textTransform: 'uppercase' }}>
+                  Product Details
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5, fontSize: '13px' }}>
+                  <Box>
+                    <Typography sx={{ fontSize: '11px', color: '#64748B' }}>Cases</Typography>
+                    <Typography sx={{ fontWeight: 700, color: '#0F172A' }}>{warningDialog.quantity}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontSize: '11px', color: '#64748B' }}>Rate / Pkt</Typography>
+                    <Typography sx={{ fontWeight: 700, color: '#0F172A' }}>₹{warningDialog.rate}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontSize: '11px', color: '#64748B' }}>Estimated Line Total</Typography>
+                    <Typography sx={{ fontWeight: 700, color: '#0B4DB7' }}>
+                      ₹{(
+                        (parseFloat(warningDialog.quantity) || 0) *
+                        (parseFloat(warningDialog.pkt) || 1) *
+                        (parseFloat(warningDialog.rate) || 0)
+                      ).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </Typography>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          ) : (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              <Alert severity="warning" sx={{ borderRadius: '8px', fontSize: '13px', fontWeight: 500 }}>
+                Performa <strong>{warningDialog.performaNumber}</strong> has only <strong>{warningDialog.remainingCases} remaining cases</strong> for &quot;{warningDialog.productName}&quot;, but you entered <strong>{warningDialog.quantity} cases</strong>.
+              </Alert>
+
+              <Typography sx={{ fontSize: '13.5px', color: '#334155', lineHeight: 1.6 }}>
+                The extra <strong>{warningDialog.extraCases} cases</strong> will be billed as additional items beyond the quotation.
+              </Typography>
+
+              <Box sx={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', p: 2 }}>
+                <Typography sx={{ fontSize: '12px', fontWeight: 700, color: '#64748B', mb: 1, textTransform: 'uppercase' }}>
+                  Case Allocation Breakdown
+                </Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 1.5, fontSize: '13px' }}>
+                  <Box>
+                    <Typography sx={{ fontSize: '11px', color: '#166534' }}>Performa Quota</Typography>
+                    <Typography sx={{ fontWeight: 700, color: '#166534' }}>{warningDialog.remainingCases} cases</Typography>
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontSize: '11px', color: '#B45309' }}>Extra / Additional</Typography>
+                    <Typography sx={{ fontWeight: 700, color: '#B45309' }}>+{warningDialog.extraCases} cases</Typography>
+                  </Box>
+                  <Box>
+                    <Typography sx={{ fontSize: '11px', color: '#0F172A' }}>Total Being Added</Typography>
+                    <Typography sx={{ fontWeight: 700, color: '#0F172A' }}>{warningDialog.quantity} cases</Typography>
+                  </Box>
+                </Box>
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2.5, backgroundColor: '#F8FAFC', borderTop: '1px solid #E2E8F0', gap: 1 }}>
+          <Button
+            onClick={() => setWarningDialog((prev) => ({ ...prev, open: false }))}
+            sx={{ textTransform: 'none', color: '#64748B', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            disableElevation
+            onClick={handleConfirmWarningAdd}
+            sx={{
+              backgroundColor: '#D97706',
+              textTransform: 'none',
+              fontWeight: 700,
+              px: 2.5,
+              '&:hover': { backgroundColor: '#B45309' },
+            }}
+          >
+            Proceed &amp; Add Product
           </Button>
         </DialogActions>
       </Dialog>
