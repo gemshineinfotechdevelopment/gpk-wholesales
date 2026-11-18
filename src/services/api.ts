@@ -200,14 +200,14 @@ export const PerformasApi = {
   },
 };
 
-<<<<<<< HEAD
 export interface AuthUser {
   username: string;
   role: 'superadmin' | 'admin' | 'user';
   customerName?: string;
   customerId?: string;
   mobile?: string;
-=======
+}
+
 export const PerformaApi = PerformasApi;
 
 export interface PendingCasesCustomerItem {
@@ -304,7 +304,6 @@ export interface PendingCasesResponse {
   };
   customerCases: PendingCustomerGroup[];
   companyCases: PendingCompanyGroup[];
->>>>>>> 580887dab9735ca61035988445d977ee93e3e932
 }
 
 // Auth API

@@ -72,7 +72,7 @@ interface AllPerformaPageProps {
 
 export const AllPerformaPage: FC<AllPerformaPageProps> = ({
   onAddNewPerforma,
-  onSelectCustomerForBill: _onSelectCustomerForBill,
+  onSelectCustomerForBill,
   customerFilter,
   userRole = 'superadmin',
 }) => {
