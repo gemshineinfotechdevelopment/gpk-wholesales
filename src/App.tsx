@@ -226,6 +226,10 @@ function App() {
           {activeTab === 'Pending Cases' && currentUser?.role !== 'user' && (
             <PendingCasesPage
               onSelectCustomerForBill={handleCustomerSelectedForParticular}
+              onNavigateToCustomerPerforma={(custName) => {
+                setSelectedCustomerName(custName);
+                setActiveTab('Performa');
+              }}
             />
           )}
 

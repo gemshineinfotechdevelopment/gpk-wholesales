@@ -195,6 +195,19 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
   // Subtab 4: Particular Details State
   const [particularDetails, setParticularDetails] = useState<any[]>([]);
   const [particularLoading, setParticularLoading] = useState(false);
+  const [filterParticularCompany, setFilterParticularCompany] = useState<string>('ALL');
+
+  const filteredParticularRows = useMemo(() => {
+    return particularDetails.filter((row) => {
+      if (filterParticularCompany && filterParticularCompany !== 'ALL') {
+        const rowComp = (row.companyName || '').trim().toLowerCase();
+        if (rowComp !== filterParticularCompany.toLowerCase()) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [particularDetails, filterParticularCompany]);
 
   // Subtab 5: Add Credit Form State
   const [addCreditCustomerName, setAddCreditCustomerName] = useState<string>('');
@@ -901,8 +914,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
       setTransport('');
       setPacking('');
       setTax('');
-      fetchAccounts(filterCustomer);
-      fetchParticulars();
+
+      const createdCustomer = currentCustomerName || 'General';
+      setFilterCustomer(createdCustomer);
+      setParticularCustomerInput(createdCustomer);
+      setAccountCustomerInput(createdCustomer);
+      setFilterParticularCompany('ALL');
+      fetchAccounts(createdCustomer);
+      fetchParticulars(createdCustomer);
       if (currentCustomerName) {
         PerformasApi.getCustomerSummary(currentCustomerName)
           .then((res) => setPerformaSummary(res))
@@ -3312,8 +3331,44 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                   )}
                 />
               )}
+
+              {!isCustomer && (
+                <Autocomplete
+                  size="small"
+                  autoHighlight
+                  options={[{ id: 'ALL', name: 'All Companies' }, ...companyOptions]}
+                  getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
+                  isOptionEqualToValue={(option, val) => option.name === val.name}
+                  value={
+                    filterParticularCompany && filterParticularCompany !== 'ALL'
+                      ? companyOptions.find((c) => c.name === filterParticularCompany) || { id: filterParticularCompany, name: filterParticularCompany }
+                      : { id: 'ALL', name: 'All Companies' }
+                  }
+                  onChange={(_, val) => {
+                    setFilterParticularCompany(val ? (val.id === 'ALL' ? 'ALL' : val.name) : 'ALL');
+                  }}
+                  sx={{ width: 180 }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Filter Company..."
+                      sx={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '6px',
+                        '& .MuiOutlinedInput-root': {
+                          height: '34px',
+                          borderRadius: '6px',
+                          fontSize: '12.5px',
+                          fontWeight: 600,
+                          py: 0,
+                        },
+                      }}
+                    />
+                  )}
+                />
+              )}
               <Chip
-                label={`${particularDetails.length} Bills`}
+                label={`${filteredParticularRows.length} Bills`}
                 size="small"
                 sx={{
                   backgroundColor: 'rgba(255,255,255,0.2)',
@@ -3416,14 +3471,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                       <CircularProgress size={32} sx={{ color: '#0B4DB7' }} />
                     </TableCell>
                   </TableRow>
-                ) : particularDetails.length === 0 ? (
+                ) : filteredParticularRows.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={12} align="center" sx={{ py: 6, color: '#64748B' }}>
-                      No particular bills found {filterCustomer !== 'ALL' ? `for ${filterCustomer}` : ''}.
+                      No particular bills found {filterCustomer !== 'ALL' ? `for ${filterCustomer}` : ''}{filterParticularCompany !== 'ALL' ? ` under ${filterParticularCompany}` : ''}.
                     </TableCell>
                   </TableRow>
                 ) : (
-                  particularDetails.map((row, index) => {
+                  filteredParticularRows.map((row, index) => {
                     const isLast = index === particularDetails.length - 1;
                     const rowId = row._id || row.id || '';
                     const subtotalNum = parseFloat(String(row.amount || row.total || '0').replace(/,/g, '')) || 0;

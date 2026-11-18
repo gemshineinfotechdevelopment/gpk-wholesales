@@ -4,6 +4,7 @@ import { Performa, type IPerformaProductItem } from '../models/Performa';
 import { PerformaAudit } from '../models/PerformaAudit';
 import { Customer } from '../models/Customer';
 import { Company } from '../models/Company';
+import { Particular } from '../models/Particular';
 import { escapeRegex } from '../utils/ledgerUtils';
 import { getNextCustomerIdCode } from './customerController';
 import { getCustomerPerformaSummary, calculatePendingCasesData } from '../services/performaConsumptionService';
@@ -430,7 +431,6 @@ export const updatePerforma = async (req: Request, res: Response, next: NextFunc
 
     if (products && Array.isArray(products)) {
       let totalReq = 0;
-      let totalUsed = 0;
       let totalSub = 0;
 
       existing.products = products.map((item: any) => {
@@ -442,7 +442,6 @@ export const updatePerforma = async (req: Request, res: Response, next: NextFunc
         const usedAmt = parseFloat(item.usedAmount) || 0;
 
         totalReq += reqCases;
-        totalUsed += usedCases;
         totalSub += allocated;
 
         return {
@@ -465,10 +464,15 @@ export const updatePerforma = async (req: Request, res: Response, next: NextFunc
         };
       });
 
+      const totalUsed = existing.products.reduce((acc: number, p: any) => acc + (p.usedCases || 0), 0);
       existing.totalRequiredCases = totalReq;
       existing.totalUsedCases = totalUsed;
       existing.totalRemainingCases = Math.max(0, totalReq - totalUsed);
       existing.subtotal = Number(totalSub.toFixed(2));
+
+      if (existing.totalRemainingCases > 0 && existing.status === 'COMPLETED') {
+        existing.status = totalUsed > 0 ? 'PARTIALLY_USED' : 'ACTIVE';
+      }
     }
 
     // Recalculate discount, packing, tax, totalAllocatedAmount
@@ -680,6 +684,7 @@ export const getPendingCasesEndpoint = async (req: Request, res: Response, next:
       companyName: typeof companyName === 'string' ? companyName : undefined,
       customerName: typeof customerName === 'string' ? customerName : undefined,
     });
+
 
     res.status(200).json({
       success: true,

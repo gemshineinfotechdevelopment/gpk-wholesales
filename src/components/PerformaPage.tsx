@@ -31,6 +31,7 @@ import {
   InputAdornment,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import RestartAltRoundedIcon from '@mui/icons-material/RestartAltRounded';
 import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded';
@@ -170,7 +171,40 @@ export const PerformaPage: FC<PerformaPageProps> = ({
   const [editTax, setEditTax] = useState<string>('');
   const [editProducts, setEditProducts] = useState<EditProductItem[]>([]);
 
+  // Extra Quantity Dialog State
+  const [extraQtyDialog, setExtraQtyDialog] = useState<{
+    open: boolean;
+    targetId: string;
+    productName: string;
+    companyName: string;
+    existingCases: number;
+    extraCases: number | string;
+    rate: number;
+    pktUnit: number;
+    isEditModal: boolean;
+    mode: 'button' | 'duplicate_detected';
+    pendingNewRow?: ProductRowItem | EditProductItem;
+  }>({
+    open: false,
+    targetId: '',
+    productName: '',
+    companyName: '',
+    existingCases: 0,
+    extraCases: '',
+    rate: 0,
+    pktUnit: 1,
+    isEditModal: false,
+    mode: 'button',
+  });
 
+  // Edit Performa: New product entry row state
+  const [editNewProductObj, setEditNewProductObj] = useState<any | null>(null);
+  const [editNewProductName, setEditNewProductName] = useState<string>('');
+  const [editNewProductCode, setEditNewProductCode] = useState<string>('');
+  const [editNewProductCompany, setEditNewProductCompany] = useState<string>('');
+  const [editNewCases, setEditNewCases] = useState<string>('');
+  const [editNewRate, setEditNewRate] = useState<string>('');
+  const [editNewPktUnit, setEditNewPktUnit] = useState<string>('1');
 
   // Print Modal & Toast
   const [printModalOpen, setPrintModalOpen] = useState(false);
@@ -307,6 +341,104 @@ export const PerformaPage: FC<PerformaPageProps> = ({
     }
   };
 
+  // Open Extra Quantity Dialog
+  const handleOpenExtraQtyDialog = (
+    item: {
+      id: string;
+      productName: string;
+      companyName?: string;
+      requiredCases: number | string;
+      rate: number | string;
+      pktUnit?: number | string;
+      pktPerUnit?: number | string;
+    },
+    isEditModal: boolean = false
+  ) => {
+    const existingCasesNum = parseFloat(String(item.requiredCases)) || 0;
+    const rateNum = parseFloat(String(item.rate)) || 0;
+    const pktNum = parseFloat(String(item.pktUnit || item.pktPerUnit || '1')) || 1;
+
+    setExtraQtyDialog({
+      open: true,
+      targetId: item.id,
+      productName: item.productName,
+      companyName: item.companyName || '',
+      existingCases: existingCasesNum,
+      extraCases: '',
+      rate: rateNum,
+      pktUnit: pktNum,
+      isEditModal,
+      mode: 'button',
+    });
+  };
+
+  // Confirm Extra Quantity Update
+  const handleConfirmExtraQty = () => {
+    const extraVal = parseFloat(String(extraQtyDialog.extraCases)) || 0;
+    if (extraVal <= 0) {
+      setToast({ open: true, message: 'Please enter a valid extra quantity > 0', severity: 'error' });
+      return;
+    }
+
+    const newTotalCases = extraQtyDialog.existingCases + extraVal;
+
+    if (extraQtyDialog.isEditModal) {
+      setEditProducts((prev) =>
+        prev.map((p) => {
+          if (p.id !== extraQtyDialog.targetId) return p;
+          const rt = parseFloat(String(p.rate)) || 0;
+          const pkt = parseFloat(String(p.pktPerUnit)) || 1;
+          const newAllocated = (newTotalCases * rt * pkt).toFixed(2);
+          const used = p.usedCases || 0;
+          return {
+            ...p,
+            requiredCases: newTotalCases,
+            remainingCases: Math.max(0, newTotalCases - used),
+            allocatedAmount: newAllocated,
+          };
+        })
+      );
+      if (extraQtyDialog.mode === 'duplicate_detected') {
+        setEditNewProductObj(null);
+        setEditNewProductName('');
+        setEditNewProductCode('');
+        setEditNewCases('');
+        setEditNewRate('');
+        setEditNewPktUnit('1');
+      }
+    } else {
+      setProductRows((prev) =>
+        prev.map((r) => {
+          if (r.id !== extraQtyDialog.targetId) return r;
+          const rt = parseFloat(String(r.rate)) || 0;
+          const pkt = parseFloat(String(r.pktUnit)) || 1;
+          const newAllocated = (newTotalCases * rt * pkt).toFixed(2);
+          return {
+            ...r,
+            requiredCases: String(newTotalCases),
+            allocatedAmount: newAllocated,
+          };
+        })
+      );
+      if (extraQtyDialog.mode === 'duplicate_detected') {
+        setSelectedProductObj(null);
+        setProductName('');
+        setProductCode('');
+        setRequiredCases('');
+        setRate('');
+        setPktUnit('1');
+      }
+    }
+
+    setToast({
+      open: true,
+      message: `Added +${extraVal} extra cases to ${extraQtyDialog.productName}. Total Cases: ${newTotalCases} Cases!`,
+      severity: 'success',
+    });
+
+    setExtraQtyDialog((prev) => ({ ...prev, open: false }));
+  };
+
   // Add Product Row
   const handleAddProductRow = () => {
     const trimmedName = productName.trim();
@@ -333,6 +465,14 @@ export const PerformaPage: FC<PerformaPageProps> = ({
       (selectedCustomer?.companyName && selectedCustomer.companyName.toLowerCase() !== 'general' ? selectedCustomer.companyName : '') ||
       '';
 
+    // Check if product with same name (and compatible company) already exists in productRows
+    const existingRow = productRows.find((r) => {
+      const nameMatch = r.productName.trim().toLowerCase() === trimmedName.toLowerCase();
+      if (!nameMatch) return false;
+      if (!rowCompany || !r.companyName) return true;
+      return r.companyName.trim().toLowerCase() === rowCompany.toLowerCase();
+    });
+
     const newRow: ProductRowItem = {
       id: Date.now().toString(),
       productId: selectedProductObj?._id,
@@ -345,6 +485,24 @@ export const PerformaPage: FC<PerformaPageProps> = ({
       pktUnit: String(unitsVal),
       allocatedAmount: allocatedAmt,
     };
+
+    if (existingRow) {
+      const existingCasesNum = parseFloat(existingRow.requiredCases) || 0;
+      setExtraQtyDialog({
+        open: true,
+        targetId: existingRow.id,
+        productName: existingRow.productName,
+        companyName: existingRow.companyName || rowCompany,
+        existingCases: existingCasesNum,
+        extraCases: casesVal,
+        rate: rateVal || parseFloat(existingRow.rate) || 0,
+        pktUnit: unitsVal,
+        isEditModal: false,
+        mode: 'duplicate_detected',
+        pendingNewRow: newRow,
+      });
+      return;
+    }
 
     setProductRows((prev) => [...prev, newRow]);
 
@@ -719,6 +877,85 @@ export const PerformaPage: FC<PerformaPageProps> = ({
 
   const handleRemoveEditProductRow = (id: string) => {
     setEditProducts((prev) => prev.filter((p) => p.id !== id));
+  };
+
+  // Filter products for Edit Modal by chosen brand
+  const filteredEditModalProducts = useMemo(() => {
+    const comp = (editNewProductCompany || editCompanyName || '').trim().toLowerCase();
+    if (!comp || comp === 'general') return products;
+    const matched = products.filter(
+      (p: any) => p.companyName && p.companyName.trim().toLowerCase() === comp
+    );
+    return matched.length > 0 ? matched : products;
+  }, [products, editNewProductCompany, editCompanyName]);
+
+  // Add Product or Extra Quantity in Edit Modal
+  const handleAddProductToEditList = () => {
+    const trimmed = editNewProductName.trim();
+    if (!trimmed) {
+      setToast({ open: true, message: 'Please select or type a product name', severity: 'error' });
+      return;
+    }
+    const casesVal = parseFloat(editNewCases) || 0;
+    if (casesVal <= 0) {
+      setToast({ open: true, message: 'Enter a valid case quantity > 0', severity: 'error' });
+      return;
+    }
+    const rateVal = parseFloat(editNewRate) || 0;
+    if (rateVal <= 0) {
+      setToast({ open: true, message: 'Enter a valid rate > 0', severity: 'error' });
+      return;
+    }
+    const unitsVal = parseFloat(editNewPktUnit) || 1;
+    const allocatedAmt = (casesVal * rateVal * unitsVal).toFixed(2);
+    const rowCompany = editNewProductCompany.trim() || (editCompanyName && editCompanyName.toLowerCase() !== 'general' ? editCompanyName.trim() : '') || '';
+
+    const existingItem = editProducts.find(
+      (p) =>
+        p.productName.trim().toLowerCase() === trimmed.toLowerCase() &&
+        (!rowCompany || !p.companyName || p.companyName.trim().toLowerCase() === rowCompany.toLowerCase())
+    );
+
+    const newItem: EditProductItem = {
+      id: Date.now().toString(),
+      productId: editNewProductObj?._id,
+      productCode: editNewProductCode.trim() || `SKU-${Date.now().toString().slice(-4)}`,
+      productName: trimmed,
+      companyName: rowCompany,
+      category: editNewProductObj?.category || 'Trading',
+      requiredCases: casesVal,
+      usedCases: 0,
+      remainingCases: casesVal,
+      rate: rateVal,
+      pktPerUnit: unitsVal,
+      allocatedAmount: allocatedAmt,
+    };
+
+    if (existingItem) {
+      const existingCasesNum = parseFloat(String(existingItem.requiredCases)) || 0;
+      setExtraQtyDialog({
+        open: true,
+        targetId: existingItem.id,
+        productName: existingItem.productName,
+        companyName: existingItem.companyName || rowCompany,
+        existingCases: existingCasesNum,
+        extraCases: casesVal,
+        rate: rateVal || parseFloat(String(existingItem.rate)) || 0,
+        pktUnit: unitsVal,
+        isEditModal: true,
+        mode: 'duplicate_detected',
+        pendingNewRow: newItem,
+      });
+      return;
+    }
+
+    setEditProducts((prev) => [...prev, newItem]);
+    setEditNewProductObj(null);
+    setEditNewProductName('');
+    setEditNewProductCode('');
+    setEditNewCases('');
+    setEditNewRate('');
+    setEditNewPktUnit('1');
   };
 
   const editTotalCases = useMemo(() => {
@@ -1572,7 +1809,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                               <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>
                                 CUSTOMER PRODUCT REQUIRED
                               </TableCell>
-                              <TableCell sx={{ fontWeight: 800, textAlign: 'center', color: '#64748B', width: '130px', fontSize: '11px', textTransform: 'uppercase' }}>
+                              <TableCell sx={{ fontWeight: 800, textAlign: 'center', color: '#64748B', width: '140px', fontSize: '11px', textTransform: 'uppercase' }}>
                                 REQUIRED CASES
                               </TableCell>
                               <TableCell sx={{ fontWeight: 800, textAlign: 'right', color: '#64748B', width: '110px', fontSize: '11px', textTransform: 'uppercase' }}>
@@ -1584,7 +1821,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                               <TableCell sx={{ fontWeight: 800, textAlign: 'right', color: '#64748B', width: '130px', fontSize: '11px', textTransform: 'uppercase' }}>
                                 AMOUNT (₹)
                               </TableCell>
-                              <TableCell sx={{ fontWeight: 800, textAlign: 'center', width: '80px', fontSize: '11px', textTransform: 'uppercase' }}>
+                              <TableCell sx={{ fontWeight: 800, textAlign: 'center', width: '130px', fontSize: '11px', textTransform: 'uppercase' }}>
                                 ACTION
                               </TableCell>
                             </TableRow>
@@ -1611,15 +1848,42 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                                   ₹{parseFloat(row.allocatedAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                                 </TableCell>
                                 <TableCell sx={{ textAlign: 'center' }}>
-                                  <Tooltip title="Remove item">
-                                    <IconButton
-                                      size="small"
-                                      onClick={() => handleRemoveProductRow(row.id)}
-                                      sx={{ color: '#EF4444', '&:hover': { backgroundColor: '#FEE2E2' } }}
-                                    >
-                                      <DeleteOutlineRoundedIcon sx={{ fontSize: 18 }} />
-                                    </IconButton>
-                                  </Tooltip>
+                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8 }}>
+                                    <Tooltip title="Add Extra Quantity (Live Total Cases Preview)">
+                                      <Button
+                                        size="small"
+                                        variant="outlined"
+                                        onClick={() => handleOpenExtraQtyDialog(row, false)}
+                                        startIcon={<AddCircleOutlineRoundedIcon sx={{ fontSize: 13 }} />}
+                                        sx={{
+                                          fontSize: '11px',
+                                          fontWeight: 700,
+                                          py: 0.3,
+                                          px: 1,
+                                          borderRadius: '6px',
+                                          textTransform: 'none',
+                                          borderColor: '#93C5FD',
+                                          color: '#1D4ED8',
+                                          backgroundColor: '#EFF6FF',
+                                          '&:hover': {
+                                            borderColor: '#3B82F6',
+                                            backgroundColor: '#DBEAFE',
+                                          },
+                                        }}
+                                      >
+                                        + Extra
+                                      </Button>
+                                    </Tooltip>
+                                    <Tooltip title="Remove item">
+                                      <IconButton
+                                        size="small"
+                                        onClick={() => handleRemoveProductRow(row.id)}
+                                        sx={{ color: '#EF4444', '&:hover': { backgroundColor: '#FEE2E2' } }}
+                                      >
+                                        <DeleteOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                                      </IconButton>
+                                    </Tooltip>
+                                  </Box>
                                 </TableCell>
                               </TableRow>
                             ))}
@@ -2707,15 +2971,101 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   </Box>
                 </Box>
 
+                {/* Add new product line / extra quantity row in Edit Modal */}
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: { xs: '1fr', sm: '1.5fr 1fr 1fr 1fr 0.8fr auto' },
+                    gap: 1.5,
+                    alignItems: 'center',
+                    backgroundColor: '#F8FAFC',
+                    p: 1.5,
+                    borderRadius: '8px',
+                    border: '1px solid #EEF2F6',
+                    mb: 2,
+                  }}
+                >
+                  <Autocomplete
+                    options={filteredEditModalProducts}
+                    getOptionLabel={(o) => {
+                      if (typeof o === 'string') return o;
+                      return `${o.name || ''} ${o.code ? `(${o.code})` : ''} ${o.companyName ? `• ${o.companyName}` : ''}`.trim();
+                    }}
+                    value={editNewProductObj}
+                    onChange={(_e, val) => {
+                      setEditNewProductObj(val);
+                      if (val) {
+                        setEditNewProductName(val.name || '');
+                        setEditNewProductCode(val.code || val.idCode || '');
+                        setEditNewProductCompany(val.companyName || editCompanyName || '');
+                        setEditNewRate(val.rate ? String(val.rate) : '');
+                        setEditNewPktUnit(val.pktUnit ? String(val.pktUnit) : '1');
+                      }
+                    }}
+                    freeSolo
+                    onInputChange={(_e, val) => setEditNewProductName(val || '')}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Add Product / Extra Qty" placeholder="Select or type product..." size="small" />
+                    )}
+                  />
+
+                  <Autocomplete
+                    freeSolo
+                    options={companies.map((c) => c.name).filter(Boolean)}
+                    value={editNewProductCompany}
+                    onChange={(_e, val) => setEditNewProductCompany(val || '')}
+                    onInputChange={(_e, val) => setEditNewProductCompany(val || '')}
+                    renderInput={(params) => (
+                      <TextField {...params} label="Company / Brand" size="small" placeholder="Brand name" />
+                    )}
+                  />
+
+                  <TextField
+                    label="Req Cases"
+                    type="number"
+                    size="small"
+                    value={editNewCases}
+                    onChange={(e) => setEditNewCases(e.target.value)}
+                    placeholder="e.g. 10"
+                  />
+
+                  <TextField
+                    label="Rate (₹)"
+                    type="number"
+                    size="small"
+                    value={editNewRate}
+                    onChange={(e) => setEditNewRate(e.target.value)}
+                    placeholder="e.g. 5000"
+                  />
+
+                  <TextField
+                    label="Pkt/Unit"
+                    type="number"
+                    size="small"
+                    value={editNewPktUnit}
+                    onChange={(e) => setEditNewPktUnit(e.target.value)}
+                  />
+
+                  <Button
+                    variant="contained"
+                    disableElevation
+                    onClick={handleAddProductToEditList}
+                    startIcon={<AddRoundedIcon />}
+                    sx={{ backgroundColor: '#0B4DB7', textTransform: 'none', fontWeight: 700, height: '40px', px: 2 }}
+                  >
+                    + Add
+                  </Button>
+                </Box>
+
                 <TableContainer sx={{ border: '1px solid #E2E8F0', borderRadius: '8px' }}>
                   <Table size="small">
                     <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
                       <TableRow>
                         <TableCell sx={{ fontWeight: 800 }}>Product Name & Code</TableCell>
                         <TableCell sx={{ fontWeight: 800 }}>Company / Brand</TableCell>
-                        <TableCell sx={{ fontWeight: 800, width: '130px' }}>Req Cases</TableCell>
-                        <TableCell sx={{ fontWeight: 800, width: '130px' }}>Rate (₹)</TableCell>
-                        <TableCell sx={{ fontWeight: 800, width: '90px' }}>Pkt/Unit</TableCell>
+                        <TableCell sx={{ fontWeight: 800, width: '200px' }}>Req Cases</TableCell>
+                        <TableCell sx={{ fontWeight: 800, width: '110px' }}>Rate (₹)</TableCell>
+                        <TableCell sx={{ fontWeight: 800, width: '80px' }}>Pkt/Unit</TableCell>
                         <TableCell sx={{ fontWeight: 800, textAlign: 'right' }}>Allocated (₹)</TableCell>
                         <TableCell sx={{ fontWeight: 800, width: '50px', textAlign: 'center' }}>Remove</TableCell>
                       </TableRow>
@@ -2736,13 +3086,41 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                             />
                           </TableCell>
                           <TableCell>
-                            <TextField
-                              type="number"
-                              size="small"
-                              value={p.requiredCases}
-                              onChange={(e) => handleEditProductChange(p.id, 'requiredCases', e.target.value)}
-                              sx={{ width: '100px' }}
-                            />
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <TextField
+                                type="number"
+                                size="small"
+                                value={p.requiredCases}
+                                onChange={(e) => handleEditProductChange(p.id, 'requiredCases', e.target.value)}
+                                sx={{ width: '85px' }}
+                              />
+                              <Tooltip title="Add Extra Quantity (Live Total Cases Preview)">
+                                <Button
+                                  size="small"
+                                  variant="outlined"
+                                  onClick={() => handleOpenExtraQtyDialog(p, true)}
+                                  startIcon={<AddCircleOutlineRoundedIcon sx={{ fontSize: 13 }} />}
+                                  sx={{
+                                    fontSize: '11px',
+                                    fontWeight: 700,
+                                    py: 0.3,
+                                    px: 0.8,
+                                    borderRadius: '6px',
+                                    textTransform: 'none',
+                                    whiteSpace: 'nowrap',
+                                    borderColor: '#93C5FD',
+                                    color: '#1D4ED8',
+                                    backgroundColor: '#EFF6FF',
+                                    '&:hover': {
+                                      borderColor: '#3B82F6',
+                                      backgroundColor: '#DBEAFE',
+                                    },
+                                  }}
+                                >
+                                  + Extra
+                                </Button>
+                              </Tooltip>
+                            </Box>
                           </TableCell>
                           <TableCell>
                             <TextField
@@ -2750,7 +3128,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                               size="small"
                               value={p.rate}
                               onChange={(e) => handleEditProductChange(p.id, 'rate', e.target.value)}
-                              sx={{ width: '100px' }}
+                              sx={{ width: '90px' }}
                             />
                           </TableCell>
                           <TableCell>
@@ -2759,7 +3137,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                               size="small"
                               value={p.pktPerUnit}
                               onChange={(e) => handleEditProductChange(p.id, 'pktPerUnit', e.target.value)}
-                              sx={{ width: '70px' }}
+                              sx={{ width: '65px' }}
                             />
                           </TableCell>
                           <TableCell sx={{ textAlign: 'right', fontWeight: 700 }}>
@@ -2793,6 +3171,295 @@ export const PerformaPage: FC<PerformaPageProps> = ({
           >
             {editLoading ? 'Saving...' : 'Save Changes'}
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Extra Quantity Dialog */}
+      <Dialog
+        open={extraQtyDialog.open}
+        onClose={() => setExtraQtyDialog((prev) => ({ ...prev, open: false }))}
+        maxWidth="sm"
+        fullWidth
+        sx={{ '& .MuiDialog-paper': { borderRadius: '14px', overflow: 'hidden' } }}
+      >
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            backgroundColor: '#0F172A',
+            color: '#FFFFFF',
+            py: 1.8,
+            px: 2.5,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
+            <AddCircleOutlineRoundedIcon sx={{ color: '#38BDF8', fontSize: 24 }} />
+            <Box>
+              <Typography sx={{ fontWeight: 800, fontSize: '16px', lineHeight: 1.2 }}>
+                {extraQtyDialog.mode === 'duplicate_detected'
+                  ? 'Product Already Exists - Add Extra Quantity'
+                  : 'Add Extra Quantity to Product'}
+              </Typography>
+              <Typography sx={{ fontSize: '11.5px', color: '#94A3B8', mt: 0.2 }}>
+                {extraQtyDialog.productName} {extraQtyDialog.companyName ? `• ${extraQtyDialog.companyName}` : ''}
+              </Typography>
+            </Box>
+          </Box>
+          <IconButton
+            size="small"
+            onClick={() => setExtraQtyDialog((prev) => ({ ...prev, open: false }))}
+            sx={{ color: '#94A3B8', '&:hover': { color: '#FFFFFF' } }}
+          >
+            <CloseRoundedIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent sx={{ p: 2.5, backgroundColor: '#F8FAFC' }}>
+          {extraQtyDialog.mode === 'duplicate_detected' && (
+            <Alert severity="info" sx={{ mb: 2, borderRadius: '8px', fontSize: '12.5px', fontWeight: 600 }}>
+              <strong>{extraQtyDialog.productName}</strong> is already in this performa! You can add extra quantity to update the total cases seamlessly.
+            </Alert>
+          )}
+
+          {/* Product & Current Status Card */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              mb: 2,
+              borderRadius: '10px',
+              border: '1px solid #E2E8F0',
+              backgroundColor: '#FFFFFF',
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1 }}>
+              <Box>
+                <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                  Product & Brand
+                </Typography>
+                <Typography sx={{ fontSize: '15px', fontWeight: 800, color: '#0F172A' }}>
+                  {extraQtyDialog.productName}
+                </Typography>
+                {extraQtyDialog.companyName && (
+                  <Chip
+                    label={extraQtyDialog.companyName}
+                    size="small"
+                    sx={{ height: '20px', fontSize: '10.5px', fontWeight: 700, mt: 0.5, backgroundColor: '#EFF6FF', color: '#0B4DB7' }}
+                  />
+                )}
+              </Box>
+              <Box sx={{ textAlign: 'right' }}>
+                <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                  Current Requirement
+                </Typography>
+                <Typography sx={{ fontSize: '16px', fontWeight: 900, color: '#0B4DB7' }}>
+                  {extraQtyDialog.existingCases} Cases
+                </Typography>
+                <Typography sx={{ fontSize: '11.5px', color: '#64748B', fontWeight: 600 }}>
+                  @ ₹{extraQtyDialog.rate.toLocaleString('en-IN')} (Unit: {extraQtyDialog.pktUnit})
+                </Typography>
+              </Box>
+            </Box>
+          </Paper>
+
+          {/* Extra Quantity Input Section */}
+          <Paper
+            elevation={0}
+            sx={{
+              p: 2,
+              mb: 2,
+              borderRadius: '10px',
+              border: '1px solid #BFDBFE',
+              backgroundColor: '#F0F7FF',
+            }}
+          >
+            <Typography sx={{ fontSize: '12px', fontWeight: 800, color: '#1E40AF', mb: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+              Extra Cases to Add
+            </Typography>
+
+            <Box sx={{ display: 'flex', gap: 1.5, alignItems: 'center', flexWrap: 'wrap', mb: 1.5 }}>
+              <TextField
+                autoFocus
+                type="number"
+                size="small"
+                placeholder="Enter extra cases (e.g. 5)"
+                value={extraQtyDialog.extraCases}
+                onChange={(e) =>
+                  setExtraQtyDialog((prev) => ({ ...prev, extraCases: e.target.value }))
+                }
+                sx={{ flex: 1, minWidth: '180px', backgroundColor: '#FFFFFF', borderRadius: '8px' }}
+                slotProps={{
+                  input: {
+                    endAdornment: <InputAdornment position="end">Cases</InputAdornment>,
+                  },
+                }}
+              />
+            </Box>
+
+            {/* Quick Add Chips */}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+              <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B' }}>
+                Quick Add:
+              </Typography>
+              {[1, 2, 5, 10, 20, 50].map((inc) => (
+                <Chip
+                  key={inc}
+                  label={`+${inc}`}
+                  size="small"
+                  clickable
+                  onClick={() => {
+                    const current = parseFloat(String(extraQtyDialog.extraCases)) || 0;
+                    setExtraQtyDialog((prev) => ({
+                      ...prev,
+                      extraCases: String(current + inc),
+                    }));
+                  }}
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: '11px',
+                    backgroundColor: '#FFFFFF',
+                    color: '#0B4DB7',
+                    border: '1px solid #93C5FD',
+                    '&:hover': {
+                      backgroundColor: '#DBEAFE',
+                    },
+                  }}
+                />
+              ))}
+            </Box>
+          </Paper>
+
+          {/* TOTAL CASES CALCULATION PREVIEW BANNER */}
+          {(() => {
+            const extraNum = parseFloat(String(extraQtyDialog.extraCases)) || 0;
+            const totalCasesNum = extraQtyDialog.existingCases + extraNum;
+            const currentAmount = extraQtyDialog.existingCases * extraQtyDialog.rate * extraQtyDialog.pktUnit;
+            const extraAmount = extraNum * extraQtyDialog.rate * extraQtyDialog.pktUnit;
+            const newTotalAmount = totalCasesNum * extraQtyDialog.rate * extraQtyDialog.pktUnit;
+
+            return (
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2.2,
+                  borderRadius: '10px',
+                  border: '2px solid #16A34A',
+                  backgroundColor: '#F0FDF4',
+                }}
+              >
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1.5 }}>
+                  <Typography sx={{ fontSize: '12px', fontWeight: 800, color: '#166534', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                    Total Cases Calculation
+                  </Typography>
+                  <Chip
+                    label="Live Preview"
+                    size="small"
+                    sx={{ height: '20px', fontSize: '10px', fontWeight: 800, backgroundColor: '#DCFCE7', color: '#15803D' }}
+                  />
+                </Box>
+
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: { xs: 1, sm: 2 }, py: 1, backgroundColor: '#FFFFFF', borderRadius: '8px', border: '1px solid #BBF7D0', mb: 1.5 }}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography sx={{ fontSize: '11px', color: '#64748B', fontWeight: 700 }}>Existing Cases</Typography>
+                    <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>
+                      {extraQtyDialog.existingCases}
+                    </Typography>
+                  </Box>
+
+                  <Typography sx={{ fontSize: '20px', fontWeight: 900, color: '#0B4DB7' }}>+</Typography>
+
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Typography sx={{ fontSize: '11px', color: '#1D4ED8', fontWeight: 700 }}>Extra Added</Typography>
+                    <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#2563EB' }}>
+                      {extraNum}
+                    </Typography>
+                  </Box>
+
+                  <Typography sx={{ fontSize: '20px', fontWeight: 900, color: '#16A34A' }}>=</Typography>
+
+                  <Box sx={{ textAlign: 'center', px: 1.5, py: 0.5, borderRadius: '6px', backgroundColor: '#DCFCE7' }}>
+                    <Typography sx={{ fontSize: '11px', color: '#166534', fontWeight: 800, textTransform: 'uppercase' }}>Total Cases</Typography>
+                    <Typography sx={{ fontSize: '22px', fontWeight: 900, color: '#15803D' }}>
+                      {totalCasesNum} Cases
+                    </Typography>
+                  </Box>
+                </Box>
+
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#334155', fontWeight: 600, flexWrap: 'wrap', gap: 1 }}>
+                  <span>Previous Amt: ₹{currentAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  <span>+ Extra: ₹{extraAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</span>
+                  <span style={{ color: '#15803D', fontWeight: 800 }}>
+                    New Total: ₹{newTotalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </span>
+                </Box>
+              </Paper>
+            );
+          })()}
+        </DialogContent>
+
+        <DialogActions sx={{ p: 2, backgroundColor: '#FFFFFF', borderTop: '1px solid #E2E8F0', justifyContent: 'space-between' }}>
+          <Button
+            onClick={() => setExtraQtyDialog((prev) => ({ ...prev, open: false }))}
+            sx={{ textTransform: 'none', color: '#64748B', fontWeight: 600 }}
+          >
+            Cancel
+          </Button>
+
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            {extraQtyDialog.mode === 'duplicate_detected' && extraQtyDialog.pendingNewRow && (
+              <Button
+                variant="outlined"
+                onClick={() => {
+                  if (extraQtyDialog.isEditModal) {
+                    setEditProducts((prev) => [...prev, extraQtyDialog.pendingNewRow as EditProductItem]);
+                    setEditNewProductObj(null);
+                    setEditNewProductName('');
+                    setEditNewProductCode('');
+                    setEditNewCases('');
+                    setEditNewRate('');
+                    setEditNewPktUnit('1');
+                  } else {
+                    setProductRows((prev) => [...prev, extraQtyDialog.pendingNewRow as ProductRowItem]);
+                    setSelectedProductObj(null);
+                    setProductName('');
+                    setProductCode('');
+                    setRequiredCases('');
+                    setRate('');
+                    setPktUnit('1');
+                  }
+                  setExtraQtyDialog((prev) => ({ ...prev, open: false }));
+                  setToast({ open: true, message: 'Added as separate row', severity: 'info' });
+                }}
+                sx={{ textTransform: 'none', fontWeight: 600, borderColor: '#CBD5E1', color: '#475569' }}
+              >
+                Add as Separate Row
+              </Button>
+            )}
+
+            {(() => {
+              const extraNum = parseFloat(String(extraQtyDialog.extraCases)) || 0;
+              const totalCasesNum = extraQtyDialog.existingCases + extraNum;
+              return (
+                <Button
+                  variant="contained"
+                  disableElevation
+                  disabled={extraNum <= 0}
+                  onClick={handleConfirmExtraQty}
+                  sx={{
+                    backgroundColor: '#16A34A',
+                    color: '#FFFFFF',
+                    fontWeight: 800,
+                    textTransform: 'none',
+                    px: 2.5,
+                    '&:hover': { backgroundColor: '#15803D' },
+                  }}
+                >
+                  Confirm & Update Total ({totalCasesNum} Cases)
+                </Button>
+              );
+            })()}
+          </Box>
         </DialogActions>
       </Dialog>
 
