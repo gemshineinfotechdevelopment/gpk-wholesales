@@ -53,37 +53,19 @@ export const LoginPage: FC<LoginPageProps> = ({ onLoginSuccess }) => {
         onLoginSuccess(res.user);
       }
     } catch (err: any) {
-      console.error('Login failed, attempting local fallback:', err);
+      console.error('Login failed:', err);
       const u = username.trim().toLowerCase();
       const p = password.trim();
 
-      // Local offline verification fallback
+      // Only allow emergency offline bypass for superadmin if backend server is completely unreachable
+      const isNetworkError = err.message?.includes('Failed to fetch') || err.message?.includes('NetworkError');
       if (
-        (u === 'superadmin' && (p === 'superadmin123' || p === 'gpk123' || p === 'admin123')) ||
-        (u === 'gpk' && (p === 'gpk123' || p === 'admin123'))
+        isNetworkError &&
+        ((u === 'superadmin' && (p === 'superadmin123' || p === 'gpk123')) ||
+         (u === 'gpk' && p === 'gpk123'))
       ) {
         const user: AuthUser = { username: 'superadmin', role: 'superadmin' };
         localStorage.setItem('gpk_auth_token', 'local-superadmin-token');
-        localStorage.setItem('gpk_auth_user', JSON.stringify(user));
-        onLoginSuccess(user);
-      } else if (u === 'admin' && (p === 'admin123' || p === 'admin')) {
-        const user: AuthUser = { username: 'admin', role: 'admin' };
-        localStorage.setItem('gpk_auth_token', 'local-admin-token');
-        localStorage.setItem('gpk_auth_user', JSON.stringify(user));
-        onLoginSuccess(user);
-      } else if (
-        u === 'user' ||
-        p === 'user123' ||
-        p === '123456' ||
-        /^\d{10}$/.test(u)
-      ) {
-        const customerName = u === 'user' ? 'Sample Customer' : username.trim();
-        const user: AuthUser = {
-          username: username.trim(),
-          role: 'user',
-          customerName,
-        };
-        localStorage.setItem('gpk_auth_token', 'local-user-token');
         localStorage.setItem('gpk_auth_user', JSON.stringify(user));
         onLoginSuccess(user);
       } else {

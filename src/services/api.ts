@@ -333,6 +333,13 @@ export const AuthApi = {
       body: JSON.stringify(credentials),
     }),
   getMe: () => request<any>('/auth/me'),
+  getSuperAdminAccount: () =>
+    request<{ success: boolean; data: { username: string; role: string } }>('/auth/superadmin-account'),
+  updateSuperAdminAccount: (data: { newUsername?: string; newPassword?: string }) =>
+    request<{ success: boolean; message: string; data?: any }>('/auth/superadmin-account', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
   getAdminAccount: () =>
     request<{ success: boolean; data: { username: string; role: string } }>('/auth/admin-account'),
   updateAdminAccount: (data: { newUsername?: string; newPassword?: string }) =>
@@ -357,10 +364,44 @@ export const AuthApi = {
       method: 'POST',
       body: JSON.stringify(data),
     }),
-  customerChangePassword: (data: { customerId: string; newPassword: string }) =>
-    request<{ success: boolean; message: string }>('/auth/customer-change-password', {
+  customerChangePassword: (data: { customerId?: string; mobile?: string; newPassword: string }) =>
+    request<{ success: boolean; message: string; customerId?: string }>('/auth/customer-change-password', {
       method: 'POST',
       body: JSON.stringify(data),
+    }),
+};
+
+// System & Business Settings API
+export interface AppSettings {
+  _id?: string;
+  companyName: string;
+  tagline: string;
+  logoUrl?: string;
+  phone?: string;
+  email?: string;
+  address?: string;
+  city?: string;
+  pincode?: string;
+  gstin?: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  branchName?: string;
+  upiId?: string;
+  billTerms?: string;
+}
+
+export const SettingsApi = {
+  get: () => request<{ success: boolean; data: AppSettings }>('/settings'),
+  update: (data: Partial<AppSettings>) =>
+    request<{ success: boolean; message: string; data: AppSettings }>('/settings', {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
+  uploadLogo: (imageBase64: string) =>
+    request<{ success: boolean; message: string; data: { logoUrl: string } }>('/settings/logo', {
+      method: 'POST',
+      body: JSON.stringify({ imageBase64 }),
     }),
 };
 

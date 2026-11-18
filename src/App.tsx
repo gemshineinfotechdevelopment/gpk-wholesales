@@ -13,6 +13,7 @@ import { ParticularsPage, type ParticularSubTab } from './components/Particulars
 import { PerformaPage } from './components/PerformaPage';
 import { AllPerformaPage } from './components/AllPerformaPage';
 import { PendingCasesPage } from './components/PendingCasesPage';
+import { SettingsPage } from './components/SettingsPage';
 import type { AuthUser } from './services/api';
 
 function App() {
@@ -45,9 +46,13 @@ function App() {
       'Company',
       'All Customers',
       'Customers',
+      'Settings',
     ];
     if (isCustomer) {
       return saved === 'All Performa' ? 'All Performa' : 'Particulars';
+    }
+    if (saved === 'Settings' && currentUser?.role !== 'superadmin') {
+      return 'Customers';
     }
     return validTabs.includes(saved) ? saved : 'Customers';
   });
@@ -108,6 +113,9 @@ function App() {
 
   const handleSelectTab = (tab: NavTab) => {
     if (currentUser?.role === 'user' && tab !== 'Particulars' && tab !== 'All Performa') {
+      return;
+    }
+    if (tab === 'Settings' && currentUser?.role !== 'superadmin') {
       return;
     }
     setActiveTab(tab);
@@ -281,6 +289,12 @@ function App() {
               )}
             </>
           )}
+
+          {/* Settings Tab (Super Admin only) */}
+          {activeTab === 'Settings' && currentUser?.role === 'superadmin' && (
+            <SettingsPage currentUser={currentUser} />
+          )}
+
           {/* Other Tabs */}
           {activeTab !== 'Particulars' &&
             activeTab !== 'Product' &&
@@ -289,7 +303,8 @@ function App() {
             activeTab !== 'Customers' &&
             activeTab !== 'Performa' &&
             activeTab !== 'All Performa' &&
-            activeTab !== 'Pending Cases' && (
+            activeTab !== 'Pending Cases' &&
+            activeTab !== 'Settings' && (
               <Box sx={{ p: 4, textAlign: 'center', color: '#64748B' }}>
                 {activeTab} content coming soon.
               </Box>

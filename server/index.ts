@@ -17,6 +17,7 @@ import particularRoutes from './routes/particularRoutes';
 import accountRoutes from './routes/accountRoutes';
 import authRoutes from './routes/authRoutes';
 import performaRoutes from './routes/performaRoutes';
+import settingRoutes from './routes/settingRoutes';
 import { seedDefaultAdmin } from './controllers/authController';
 
 const app: Application = express();
@@ -86,7 +87,7 @@ app.use(express.urlencoded({ extended: true, limit: '15mb' }));
 app.get('/api/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'OK',
-    message: 'Dheeksha Trade API Server is running smoothly',
+    message: 'GPK Crackers API Server is running smoothly',
     port: PORT,
     timestamp: new Date().toISOString(),
   });
@@ -95,7 +96,7 @@ app.get('/api/health', (_req: Request, res: Response) => {
 app.get('/', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'OK',
-    service: 'Dheeksha Trade Backend API',
+    service: 'GPK Crackers Backend API',
     health: '/api/health',
   });
 });
@@ -108,6 +109,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/particulars', particularRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/performas', performaRoutes);
+app.use('/api/settings', settingRoutes);
 
 // Global Error Handler
 app.use(errorHandler);

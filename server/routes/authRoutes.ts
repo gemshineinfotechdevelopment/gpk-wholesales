@@ -2,6 +2,8 @@ import { Router } from 'express';
 import {
   login,
   getMe,
+  getSuperAdminAccount,
+  updateSuperAdminAccount,
   getAdminAccount,
   updateAdminAccount,
   getCustomerLogin,
@@ -13,6 +15,10 @@ const router = Router();
 
 router.post('/login', login);
 router.get('/me', getMe);
+
+// Super Admin: Super Admin Account Credentials
+router.get('/superadmin-account', getSuperAdminAccount);
+router.put('/superadmin-account', updateSuperAdminAccount);
 
 // Super Admin: Admin Account Credentials
 router.get('/admin-account', getAdminAccount);

@@ -1,17 +1,15 @@
-import { useState, type FC, type MouseEvent } from 'react';
+import { useState, useEffect, type FC, type MouseEvent } from 'react';
 import { Box, Typography, Menu, MenuItem, ListItemIcon, Divider, Chip } from '@mui/material';
 import PersonOutlineRoundedIcon from '@mui/icons-material/PersonOutlineRounded';
 import LogoutRoundedIcon from '@mui/icons-material/LogoutRounded';
 import ShieldRoundedIcon from '@mui/icons-material/ShieldRounded';
 import AdminPanelSettingsRoundedIcon from '@mui/icons-material/AdminPanelSettingsRounded';
 import AccountCircleRoundedIcon from '@mui/icons-material/AccountCircleRounded';
-import VpnKeyRoundedIcon from '@mui/icons-material/VpnKeyRounded';
 import LockResetRoundedIcon from '@mui/icons-material/LockResetRounded';
-import { AdminAccountModal } from './AdminAccountModal';
 import { CustomerPasswordModal } from './CustomerPasswordModal';
-import type { AuthUser } from '../services/api';
+import { SettingsApi, type AuthUser } from '../services/api';
 
-export type NavTab = 'Customers' | 'Company' | 'Product' | 'Particulars' | 'All Customers' | 'Performa' | 'All Performa' | 'Pending Cases';
+export type NavTab = 'Customers' | 'Company' | 'Product' | 'Particulars' | 'All Customers' | 'Performa' | 'All Performa' | 'Pending Cases' | 'Settings';
 
 interface NavbarProps {
   activeTab?: NavTab;
@@ -29,16 +27,33 @@ export const Navbar: FC<NavbarProps> = ({
   user,
 }) => {
   const isCustomer = user?.role === 'user';
+  const isSuperAdmin = user?.role === 'superadmin';
 
-  // Tabs tailored for customer vs admin/superadmin
-  const fullTabs: NavTab[] = ['Customers', 'Company', 'Product', 'Particulars', 'All Customers', 'Performa', 'All Performa', 'Pending Cases'];
+  // Tabs tailored for customer vs admin vs superadmin
+  const baseTabs: NavTab[] = ['Customers', 'Company', 'Product', 'Particulars', 'All Customers', 'Performa', 'All Performa', 'Pending Cases'];
+  const fullTabs: NavTab[] = isSuperAdmin ? [...baseTabs, 'Settings'] : baseTabs;
+
   const customerTabs: { label: string; tab: NavTab }[] = [
     { label: 'All Performa', tab: 'All Performa' },
     { label: 'Particulars', tab: 'Particulars' },
   ];
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [openAdminModal, setOpenAdminModal] = useState<boolean>(false);
   const [openCustomerPasswordModal, setOpenCustomerPasswordModal] = useState<boolean>(false);
+
+  const [customLogo, setCustomLogo] = useState<string>(() => {
+    return localStorage.getItem('gpk_custom_logo') || '';
+  });
+
+  useEffect(() => {
+    SettingsApi.get()
+      .then((res) => {
+        if (res?.data?.logoUrl) {
+          setCustomLogo(res.data.logoUrl);
+          localStorage.setItem('gpk_custom_logo', res.data.logoUrl);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   const handleTabClick = (tab: NavTab) => {
     if (onSelectTab) {
@@ -84,25 +99,39 @@ export const Navbar: FC<NavbarProps> = ({
         onClick={() => handleTabClick(isCustomer ? 'Particulars' : 'Customers')}
         sx={{ display: 'flex', alignItems: 'center', gap: 1.5, cursor: 'pointer' }}
       >
-        {/* Stylized GPK Firecracker Logo Badge */}
-        <Box
-          sx={{
-            width: 36,
-            height: 36,
-            borderRadius: '9px',
-            background: 'linear-gradient(135deg, #DC2626 0%, #EA580C 50%, #CA8A04 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 2px 6px rgba(220, 38, 38, 0.25)',
-            color: '#FFFFFF',
-            fontWeight: 900,
-            fontSize: '13px',
-            letterSpacing: '0.04em',
-          }}
-        >
-          GPK
-        </Box>
+        {/* Stylized GPK Firecracker Logo Badge or Custom Uploaded Logo */}
+        {customLogo ? (
+          <Box
+            component="img"
+            src={customLogo}
+            alt="GPK Logo"
+            sx={{
+              height: 38,
+              maxWidth: 110,
+              objectFit: 'contain',
+              borderRadius: '6px',
+            }}
+          />
+        ) : (
+          <Box
+            sx={{
+              width: 36,
+              height: 36,
+              borderRadius: '9px',
+              background: 'linear-gradient(135deg, #DC2626 0%, #EA580C 50%, #CA8A04 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 2px 6px rgba(220, 38, 38, 0.25)',
+              color: '#FFFFFF',
+              fontWeight: 900,
+              fontSize: '13px',
+              letterSpacing: '0.04em',
+            }}
+          >
+            GPK
+          </Box>
+        )}
 
         <Box>
           <Typography
@@ -347,30 +376,6 @@ export const Navbar: FC<NavbarProps> = ({
               </Typography>
             </Box>
           </MenuItem>
-          {user?.role === 'superadmin' && (
-            <>
-              <Divider sx={{ my: 0.5 }} />
-              <MenuItem
-                onClick={() => {
-                  handleCloseMenu();
-                  setOpenAdminModal(true);
-                }}
-                sx={{ py: 1 }}
-              >
-                <ListItemIcon>
-                  <VpnKeyRoundedIcon sx={{ fontSize: 18, color: '#0B4DB7' }} />
-                </ListItemIcon>
-                <Box>
-                  <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
-                    Change Admin Credentials
-                  </Typography>
-                  <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
-                    Manage store admin username/pass
-                  </Typography>
-                </Box>
-              </MenuItem>
-            </>
-          )}
 
           {user?.role === 'user' && (
             <>
@@ -407,14 +412,6 @@ export const Navbar: FC<NavbarProps> = ({
             </Typography>
           </MenuItem>
         </Menu>
-
-        {/* Super Admin Dialog for Changing Admin Credentials */}
-        {user?.role === 'superadmin' && (
-          <AdminAccountModal
-            open={openAdminModal}
-            onClose={() => setOpenAdminModal(false)}
-          />
-        )}
 
         {/* Customer Dialog for Setting / Changing Password */}
         {user?.role === 'user' && (

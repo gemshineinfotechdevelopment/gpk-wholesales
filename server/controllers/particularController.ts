@@ -23,8 +23,59 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
       filter.customerName = { $regex: new RegExp(`^${escapeRegex(targetName)}$`, 'i') };
     }
 
-    const particulars = await Particular.find(filter).sort({ createdAt: -1, _id: -1 });
-    res.status(200).json({ success: true, count: particulars.length, data: particulars });
+    const particulars = await Particular.find(filter).sort({ createdAt: -1, _id: -1 }).lean();
+
+    // Use unified pending cases calculation to guarantee exact synchronization with Pending Cases dashboard
+    const { calculatePendingCasesData } = await import('../services/performaConsumptionService');
+    const { customerPendingMap, performaPendingMap } = await calculatePendingCasesData();
+
+    const enriched = particulars.map((p: any) => {
+      const pCustName = (p.customerName || '').trim();
+      const pCustKey = pCustName.toLowerCase();
+      const pCleanDigits = pCustName.replace(/[^0-9]/g, '');
+      const pPfNum = (p.performaNumber || '').trim().toUpperCase();
+      const pPfId = p.performaId ? String(p.performaId).trim() : '';
+
+      let pending = 0;
+
+      // 1. Direct customer pending cases match (matches customer card in Pending Cases)
+      if (customerPendingMap.has(pCustKey)) {
+        pending = customerPendingMap.get(pCustKey) || 0;
+      } else if (pCleanDigits.length >= 7 && customerPendingMap.has(pCleanDigits)) {
+        pending = customerPendingMap.get(pCleanDigits) || 0;
+      } else if (p.customerId && customerPendingMap.has(String(p.customerId))) {
+        pending = customerPendingMap.get(String(p.customerId)) || 0;
+      } else {
+        // 2. Fuzzy / partial substring match across customer map
+        for (const [key, val] of customerPendingMap.entries()) {
+          if (key.length > 2 && (pCustKey.includes(key) || key.includes(pCustKey))) {
+            pending = val;
+            break;
+          }
+        }
+      }
+
+      // 3. Fallback to performa pending map if linked performa still has remaining cases
+      if (pending === 0) {
+        if (pPfNum && performaPendingMap.has(pPfNum)) {
+          pending = performaPendingMap.get(pPfNum) || 0;
+        } else if (pPfId && performaPendingMap.has(pPfId)) {
+          pending = performaPendingMap.get(pPfId) || 0;
+        }
+      }
+
+      const computedBillCases = (p.caseCount && p.caseCount !== '0')
+        ? p.caseCount
+        : (p.products || []).reduce((sum: number, pr: any) => sum + (parseFloat(pr.quantity) || 0), 0).toString();
+
+      return {
+        ...p,
+        caseCount: computedBillCases,
+        pendingCaseCount: pending,
+      };
+    });
+
+    res.status(200).json({ success: true, count: enriched.length, data: enriched });
   } catch (error) {
     next(error);
   }
