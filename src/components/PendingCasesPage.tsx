@@ -26,7 +26,6 @@ import {
   InputLabel,
   InputAdornment,
   Avatar,
-  LinearProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -47,6 +46,7 @@ import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import TableRowsRoundedIcon from '@mui/icons-material/TableRowsRounded';
 import GridViewRoundedIcon from '@mui/icons-material/GridViewRounded';
+import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
 import {
   PerformaApi,
   type PendingCasesResponse,
@@ -87,6 +87,9 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
     company: PendingCompanyGroup | null;
     tab: 'product' | 'order';
   }>({ open: false, company: null, tab: 'product' });
+
+  // In-modal search for full-page views
+  const [modalItemSearch, setModalItemSearch] = useState<string>('');
 
   // Edit Performa Modal
   const [editModal, setEditModal] = useState<{
@@ -1214,12 +1217,6 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                       <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase' }}>
                         Balance Value
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>
-                        Waiting
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', width: '130px', fontSize: '11px', textTransform: 'uppercase' }}>
-                        Fulfillment
-                      </TableCell>
                       <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', width: '120px', fontSize: '11px', textTransform: 'uppercase' }}>
                         Actions
                       </TableCell>
@@ -1232,7 +1229,6 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                       const totalGiven = company.totalGivenCases ?? 0;
                       const totalBalance = company.totalBalanceCases ?? company.totalPendingCases;
                       const balanceAmt = company.totalBalanceAmount ?? company.totalPendingAmount;
-                      const pct = company.deliveryPercentage ?? (totalStock > 0 ? Math.round((totalGiven / totalStock) * 100) : 0);
 
                       return (
                         <TableRow
@@ -1316,42 +1312,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                             ₹{balanceAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                           </TableCell>
 
-                          {/* 7. Customers Waiting */}
-                          <TableCell sx={{ textAlign: 'center' }}>
-                            <Chip
-                              label={`${company.customersCount} Waiting`}
-                              size="small"
-                              sx={{
-                                height: 20,
-                                fontSize: '10.5px',
-                                fontWeight: 700,
-                                backgroundColor: '#EFF6FF',
-                                color: '#1D4ED8',
-                              }}
-                            />
-                          </TableCell>
-
-                          {/* 8. Fulfillment / Delivery Progress */}
-                          <TableCell sx={{ textAlign: 'center' }}>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <LinearProgress
-                                variant="determinate"
-                                value={pct}
-                                sx={{
-                                  flex: 1,
-                                  height: 6,
-                                  borderRadius: 3,
-                                  backgroundColor: '#E2E8F0',
-                                  '& .MuiLinearProgress-bar': { backgroundColor: pct === 100 ? '#10B981' : '#7C3AED' },
-                                }}
-                              />
-                              <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#475569', minWidth: '28px' }}>
-                                {pct}%
-                              </Typography>
-                            </Box>
-                          </TableCell>
-
-                          {/* 9. Actions */}
+                          {/* 7. Actions */}
                           <TableCell sx={{ textAlign: 'center' }}>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.6 }}>
                               {/* View Stock Breakdown */}
@@ -1419,146 +1380,128 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* 1. CUSTOMER PENDING DETAILS MODAL (Full itemized breakdown dialog)        */}
+      {/* 1. CUSTOMER PENDING DETAILS FULL PAGE VIEW                                */}
       {/* ========================================================================= */}
       <Dialog
+        fullScreen
         open={customerModal.open}
-        onClose={() => setCustomerModal({ open: false, customer: null })}
-        maxWidth="md"
-        fullWidth
-        sx={{ '& .MuiDialog-paper': { borderRadius: '12px' } }}
+        onClose={() => {
+          setCustomerModal({ open: false, customer: null });
+          setModalItemSearch('');
+        }}
+        sx={{
+          '& .MuiDialog-paper': {
+            backgroundColor: '#F8FAFC',
+          },
+        }}
       >
-        <DialogTitle
+        {/* Full-width Top App Bar / Header */}
+        <Box
           sx={{
             display: 'flex',
-            justifyContent: 'space-between',
             alignItems: 'center',
+            justifyContent: 'space-between',
+            px: { xs: 2, md: 4 },
+            py: 1.8,
             backgroundColor: '#0F172A',
             color: '#FFFFFF',
-            py: 1.8,
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
           }}
         >
-          <Box>
-            <Typography sx={{ fontWeight: 800, fontSize: '16px' }}>
-              Pending Items - {customerModal.customer?.customerName}
-            </Typography>
-            <Typography sx={{ fontSize: '12px', color: '#94A3B8' }}>
-              {customerModal.customer?.customerCompany ? `${customerModal.customer.customerCompany} • ` : ''}
-              {customerModal.customer?.customerPhone || ''}
-            </Typography>
-          </Box>
-          <IconButton
-            size="small"
-            onClick={() => setCustomerModal({ open: false, customer: null })}
-            sx={{ color: '#94A3B8', '&:hover': { color: '#FFFFFF' } }}
-          >
-            <CloseRoundedIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-        </DialogTitle>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Tooltip title="Back to Pending Cases">
+              <IconButton
+                onClick={() => {
+                  setCustomerModal({ open: false, customer: null });
+                  setModalItemSearch('');
+                }}
+                sx={{
+                  color: '#FFFFFF',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.2)' },
+                  width: 40,
+                  height: 40,
+                }}
+              >
+                <ArrowBackRoundedIcon />
+              </IconButton>
+            </Tooltip>
 
-        <DialogContent sx={{ p: 2.5, backgroundColor: '#F8FAFC' }}>
-          {customerModal.customer && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {/* Summary Strip */}
-              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+            <Avatar
+              sx={{
+                bgcolor: '#3B82F6',
+                color: '#FFFFFF',
+                fontWeight: 800,
+                width: 42,
+                height: 42,
+                fontSize: '18px',
+              }}
+            >
+              {customerModal.customer?.customerName.charAt(0).toUpperCase() || 'C'}
+            </Avatar>
+
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flexWrap: 'wrap' }}>
+                <Typography sx={{ fontWeight: 800, fontSize: '18px', color: '#FFFFFF', letterSpacing: '-0.01em' }}>
+                  {customerModal.customer?.customerName}
+                </Typography>
                 <Chip
-                  label={`Total Ordered: ${customerModal.customer.totalRequiredCases} cs`}
-                  sx={{ fontWeight: 700, backgroundColor: '#F1F5F9', color: '#475569' }}
-                />
-                <Chip
-                  label={`Delivered: ${customerModal.customer.totalUsedCases} cs`}
-                  sx={{ fontWeight: 700, backgroundColor: '#DCFCE7', color: '#15803D' }}
-                />
-                <Chip
-                  label={`Balance Pending: ${customerModal.customer.totalPendingCases} Cases`}
-                  sx={{ fontWeight: 800, backgroundColor: '#FEF3C7', color: '#B45309' }}
-                />
-                <Chip
-                  label={`Pending Amount: ₹${customerModal.customer.totalPendingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`}
-                  sx={{ fontWeight: 800, backgroundColor: '#EFF6FF', color: '#1D4ED8' }}
+                  label="Customer Pending Breakdown"
+                  size="small"
+                  sx={{
+                    height: 22,
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    backgroundColor: '#1E293B',
+                    color: '#93C5FD',
+                    border: '1px solid #334155',
+                  }}
                 />
               </Box>
-
-              {/* Items Table */}
-              <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #E2E8F0', borderRadius: '8px' }}>
-                <Table size="small">
-                  <TableHead sx={{ backgroundColor: '#F1F5F9' }}>
-                    <TableRow>
-                      <TableCell sx={{ fontWeight: 800, color: '#475569', width: '40px' }}>#</TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#475569' }}>Product Name</TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#475569' }}>Brand / Company</TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#475569', textAlign: 'center' }}>Ordered</TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#16A34A', textAlign: 'center' }}>Delivered</TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#B45309', textAlign: 'center' }}>Pending</TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#475569', textAlign: 'right' }}>Rate</TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#475569', textAlign: 'right' }}>Pending Amt</TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#475569', textAlign: 'center' }}>Performa</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {customerModal.customer.items.map((item, idx) => (
-                      <TableRow key={idx} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                        <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>{idx + 1}</TableCell>
-                        <TableCell>
-                          <Typography sx={{ fontWeight: 700, fontSize: '13px', color: '#0F172A' }}>
-                            {item.productName}
-                          </Typography>
-                          {item.productCode && (
-                            <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>{item.productCode}</Typography>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Chip label={item.companyName} size="small" sx={{ height: 20, fontSize: '10.5px', fontWeight: 600 }} />
-                        </TableCell>
-                        <TableCell sx={{ textAlign: 'center', color: '#64748B' }}>{item.requiredCases}</TableCell>
-                        <TableCell sx={{ textAlign: 'center', color: '#16A34A', fontWeight: 700 }}>{item.usedCases}</TableCell>
-                        <TableCell sx={{ textAlign: 'center' }}>
-                          <Chip
-                            label={`${item.remainingCases} cs`}
-                            size="small"
-                            sx={{
-                              height: 22,
-                              fontWeight: 800,
-                              backgroundColor: item.remainingCases > 0 ? '#FEE2E2' : '#F1F5F9',
-                              color: item.remainingCases > 0 ? '#B91C1C' : '#64748B',
-                            }}
-                          />
-                        </TableCell>
-                        <TableCell sx={{ textAlign: 'right', color: '#334155' }}>
-                          ₹{item.rate.toLocaleString('en-IN')}
-                        </TableCell>
-                        <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: '#0F172A' }}>
-                          ₹{item.remainingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                        </TableCell>
-                        <TableCell sx={{ textAlign: 'center' }}>
-                          <Typography sx={{ fontWeight: 700, fontSize: '12px', color: '#0B4DB7' }}>
-                            {item.performaNumber}
-                          </Typography>
-                          <Typography sx={{ fontSize: '10.5px', color: '#94A3B8' }}>{item.performaDate}</Typography>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </TableContainer>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.3, flexWrap: 'wrap' }}>
+                {customerModal.customer?.customerCompany && (
+                  <Typography sx={{ fontSize: '12px', color: '#94A3B8' }}>
+                    Shop / Firm: <strong style={{ color: '#E2E8F0' }}>{customerModal.customer.customerCompany}</strong>
+                  </Typography>
+                )}
+                {customerModal.customer?.customerPhone && (
+                  <Typography sx={{ fontSize: '12px', color: '#94A3B8' }}>
+                    Phone: <strong style={{ color: '#E2E8F0' }}>{customerModal.customer.customerPhone}</strong>
+                  </Typography>
+                )}
+                {customerModal.customer?.customerAddress && (
+                  <Typography sx={{ fontSize: '12px', color: '#94A3B8' }}>
+                    Address: {customerModal.customer.customerAddress}
+                  </Typography>
+                )}
+              </Box>
             </Box>
-          )}
-        </DialogContent>
+          </Box>
 
-        <DialogActions sx={{ p: 2, backgroundColor: '#FFFFFF', borderTop: '1px solid #E2E8F0', justifyContent: 'space-between' }}>
-          <Button onClick={() => setCustomerModal({ open: false, customer: null })} sx={{ textTransform: 'none', color: '#64748B', fontWeight: 600 }}>
-            Close
-          </Button>
-
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          {/* Header Action Buttons */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             {customerModal.customer && (
               <Button
                 variant="outlined"
                 startIcon={<WhatsAppIcon />}
                 onClick={() => handleCopyCustomerWhatsApp(customerModal.customer!)}
-                sx={{ textTransform: 'none', fontWeight: 700, color: '#10B981', borderColor: '#A7F3D0' }}
+                sx={{
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '12.5px',
+                  color: '#10B981',
+                  borderColor: '#059669',
+                  backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                  '&:hover': {
+                    backgroundColor: 'rgba(16, 185, 129, 0.16)',
+                    borderColor: '#10B981',
+                  },
+                }}
               >
-                Copy for WhatsApp
+                Share on WhatsApp
               </Button>
             )}
 
@@ -1570,230 +1513,708 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                 onClick={() => {
                   const cust = customerModal.customer!.customerName;
                   setCustomerModal({ open: false, customer: null });
+                  setModalItemSearch('');
                   onSelectCustomerForBill(cust);
                 }}
-                sx={{ backgroundColor: '#0B4DB7', textTransform: 'none', fontWeight: 700 }}
+                sx={{
+                  backgroundColor: '#0B4DB7',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '12.5px',
+                  '&:hover': { backgroundColor: '#093C8F' },
+                }}
               >
                 Create Particular Bill
               </Button>
             )}
-          </Box>
-        </DialogActions>
-      </Dialog>
 
-      {/* ========================================================================= */}
-      {/* 2. COMPANY STOCK BREAKDOWN MODAL                                         */}
-      {/* ========================================================================= */}
-      <Dialog
-        open={companyModal.open}
-        onClose={() => setCompanyModal({ open: false, company: null, tab: 'product' })}
-        maxWidth="lg"
-        fullWidth
-        sx={{ '& .MuiDialog-paper': { borderRadius: '12px' } }}
-      >
-        <DialogTitle
-          sx={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            backgroundColor: '#0F172A',
-            color: '#FFFFFF',
-            py: 1.8,
-          }}
-        >
-          <Box>
-            <Typography sx={{ fontWeight: 800, fontSize: '16px' }}>
-              Company Stock Breakdown - {companyModal.company?.companyName}
-            </Typography>
-            <Typography sx={{ fontSize: '12px', color: '#94A3B8' }}>
-              {companyModal.company?.gstin ? `GSTIN: ${companyModal.company.gstin} • ` : ''}
-              {companyModal.company?.customersCount} Customers Waiting
-            </Typography>
+            <Tooltip title="Close Full Page View">
+              <IconButton
+                onClick={() => {
+                  setCustomerModal({ open: false, customer: null });
+                  setModalItemSearch('');
+                }}
+                sx={{
+                  color: '#94A3B8',
+                  '&:hover': { color: '#FFFFFF', backgroundColor: 'rgba(255,255,255,0.1)' },
+                }}
+              >
+                <CloseRoundedIcon />
+              </IconButton>
+            </Tooltip>
           </Box>
-          <IconButton
-            size="small"
-            onClick={() => setCompanyModal({ open: false, company: null, tab: 'product' })}
-            sx={{ color: '#94A3B8', '&:hover': { color: '#FFFFFF' } }}
-          >
-            <CloseRoundedIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-        </DialogTitle>
+        </Box>
 
-        <DialogContent sx={{ p: 2.5, backgroundColor: '#F8FAFC' }}>
-          {companyModal.company && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {/* Tab Selector inside Modal */}
-              <Box sx={{ display: 'flex', gap: 1 }}>
-                <Button
-                  size="small"
-                  variant={companyModal.tab === 'product' ? 'contained' : 'outlined'}
-                  onClick={() => setCompanyModal((prev) => ({ ...prev, tab: 'product' }))}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    backgroundColor: companyModal.tab === 'product' ? '#7C3AED' : 'transparent',
-                    borderColor: '#CBD5E1',
-                    color: companyModal.tab === 'product' ? '#FFFFFF' : '#475569',
-                  }}
-                >
-                  Stock by Product Summary ({companyModal.company.productSummaries.length})
-                </Button>
-                <Button
-                  size="small"
-                  variant={companyModal.tab === 'order' ? 'contained' : 'outlined'}
-                  onClick={() => setCompanyModal((prev) => ({ ...prev, tab: 'order' }))}
-                  sx={{
-                    textTransform: 'none',
-                    fontWeight: 700,
-                    backgroundColor: companyModal.tab === 'order' ? '#7C3AED' : 'transparent',
-                    borderColor: '#CBD5E1',
-                    color: companyModal.tab === 'order' ? '#FFFFFF' : '#475569',
-                  }}
-                >
-                  Customer Orders Sheet ({companyModal.company.items.length})
-                </Button>
+        {/* Content Area */}
+        <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: '1600px', mx: 'auto', width: '100%', boxSizing: 'border-box' }}>
+          {customerModal.customer && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Summary Metric Cards Strip */}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(5, 1fr)' },
+                  gap: 2,
+                }}
+              >
+                <Card sx={{ borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: 'none', backgroundColor: '#FFFFFF' }}>
+                  <CardContent sx={{ p: '16px !important' }}>
+                    <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                      Total Ordered
+                    </Typography>
+                    <Typography sx={{ fontSize: '24px', fontWeight: 900, color: '#334155', mt: 0.5 }}>
+                      {customerModal.customer.totalRequiredCases || 0} <span style={{ fontSize: '14px', fontWeight: 600 }}>cs</span>
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>Sum of required cases</Typography>
+                  </CardContent>
+                </Card>
+
+                <Card sx={{ borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: 'none', backgroundColor: '#FFFFFF' }}>
+                  <CardContent sx={{ p: '16px !important' }}>
+                    <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#16A34A', textTransform: 'uppercase' }}>
+                      Delivered
+                    </Typography>
+                    <Typography sx={{ fontSize: '24px', fontWeight: 900, color: '#16A34A', mt: 0.5 }}>
+                      {customerModal.customer.totalUsedCases || 0} <span style={{ fontSize: '14px', fontWeight: 600 }}>cs</span>
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>Already given to customer</Typography>
+                  </CardContent>
+                </Card>
+
+                <Card sx={{ borderRadius: '12px', border: '1.5px solid #FCD34D', boxShadow: 'none', backgroundColor: '#FFFDF5' }}>
+                  <CardContent sx={{ p: '16px !important' }}>
+                    <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#B45309', textTransform: 'uppercase' }}>
+                      Balance Pending
+                    </Typography>
+                    <Typography sx={{ fontSize: '24px', fontWeight: 900, color: '#DC2626', mt: 0.5 }}>
+                      {customerModal.customer.totalPendingCases || 0} <span style={{ fontSize: '14px', fontWeight: 600 }}>cs</span>
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#B45309' }}>Yet to be delivered</Typography>
+                  </CardContent>
+                </Card>
+
+                <Card sx={{ borderRadius: '12px', border: '1px solid #BFDBFE', boxShadow: 'none', backgroundColor: '#F0F7FF' }}>
+                  <CardContent sx={{ p: '16px !important' }}>
+                    <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#1D4ED8', textTransform: 'uppercase' }}>
+                      Pending Amount
+                    </Typography>
+                    <Typography sx={{ fontSize: '24px', fontWeight: 900, color: '#0B4DB7', mt: 0.5 }}>
+                      ₹{(customerModal.customer.totalPendingAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#3B82F6' }}>Balance order value</Typography>
+                  </CardContent>
+                </Card>
+
+                <Card sx={{ borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: 'none', backgroundColor: '#FFFFFF' }}>
+                  <CardContent sx={{ p: '16px !important' }}>
+                    <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                      Performa Orders
+                    </Typography>
+                    <Typography sx={{ fontSize: '24px', fontWeight: 900, color: '#7C3AED', mt: 0.5 }}>
+                      {customerModal.customer.performaNumbers?.length || 0}
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>Active booking refs</Typography>
+                  </CardContent>
+                </Card>
               </Box>
 
-              {/* View 1: Product Summary Table */}
-              {companyModal.tab === 'product' && (
-                <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #E2E8F0', borderRadius: '8px' }}>
-                  <Table size="small">
-                    <TableHead sx={{ backgroundColor: '#F1F5F9' }}>
+              {/* Items Table Panel with Search */}
+              <Paper elevation={0} sx={{ border: '1px solid #E2E8F0', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+                <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, borderBottom: '1px solid #E2E8F0', backgroundColor: '#FAFAFA' }}>
+                  <Box>
+                    <Typography sx={{ fontWeight: 800, fontSize: '15px', color: '#0F172A' }}>
+                      Itemized Pending Products Breakdown
+                    </Typography>
+                    <Typography sx={{ fontSize: '12px', color: '#64748B' }}>
+                      Showing all pending items across performa bookings for {customerModal.customer.customerName}
+                    </Typography>
+                  </Box>
+
+                  <TextField
+                    placeholder="Search product, company, performa #..."
+                    size="small"
+                    value={modalItemSearch}
+                    onChange={(e) => setModalItemSearch(e.target.value)}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchRoundedIcon sx={{ color: '#94A3B8', fontSize: 18 }} />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                    sx={{ minWidth: 280, '& .MuiOutlinedInput-root': { borderRadius: '8px', backgroundColor: '#FFFFFF' } }}
+                  />
+                </Box>
+
+                <TableContainer>
+                  <Table>
+                    <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
                       <TableRow>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569', width: '40px' }}>#</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569' }}>Product Name</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569', textAlign: 'center' }}>Total Stock</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#16A34A', textAlign: 'center' }}>Delivered</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#7C3AED', textAlign: 'center' }}>Balance Stock</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569', textAlign: 'right' }}>Rate</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569', textAlign: 'right' }}>Balance Amt</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569' }}>Customer Orders</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: '#64748B', width: '50px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>#</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>Product Details</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>Brand / Company</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Ordered</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: '#16A34A', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Delivered</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: '#B45309', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Pending Cases</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase' }}>Unit Rate (₹)</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: '#0F172A', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase' }}>Pending Value</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Performa Ref</TableCell>
                       </TableRow>
                     </TableHead>
                     <TableBody>
-                      {companyModal.company.productSummaries.map((prod, idx) => {
-                        const pTotal = prod.totalStockCases ?? prod.totalRequiredCases;
-                        const pGiven = prod.totalGivenCases ?? prod.totalUsedCases;
-                        const pBal = prod.totalBalanceCases ?? prod.totalRemainingCases;
-                        const pBalAmt = prod.balanceAmount ?? (pBal * prod.rate);
-
-                        return (
-                          <TableRow key={idx} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                            <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>{idx + 1}</TableCell>
+                      {customerModal.customer.items
+                        .filter((item) => {
+                          if (!modalItemSearch.trim()) return true;
+                          const q = modalItemSearch.trim().toLowerCase();
+                          return (
+                            item.productName.toLowerCase().includes(q) ||
+                            item.productCode.toLowerCase().includes(q) ||
+                            item.companyName.toLowerCase().includes(q) ||
+                            item.performaNumber.toLowerCase().includes(q)
+                          );
+                        })
+                        .map((item, idx) => (
+                          <TableRow key={idx} hover sx={{ '&:hover': { backgroundColor: '#F8FAFC' }, '&:last-child td': { borderBottom: 0 } }}>
+                            <TableCell sx={{ color: '#64748B', fontWeight: 600, textAlign: 'center', fontSize: '13px' }}>{idx + 1}</TableCell>
                             <TableCell>
-                              <Typography sx={{ fontWeight: 700, fontSize: '13px', color: '#0F172A' }}>
-                                {prod.productName}
+                              <Typography sx={{ fontWeight: 800, fontSize: '14px', color: '#0F172A' }}>
+                                {item.productName}
                               </Typography>
-                              {prod.productCode && (
-                                <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>{prod.productCode}</Typography>
+                              {item.productCode && (
+                                <Typography sx={{ fontSize: '11.5px', color: '#64748B', fontWeight: 500 }}>
+                                  Code: {item.productCode}
+                                </Typography>
                               )}
                             </TableCell>
-                            <TableCell sx={{ textAlign: 'center', color: '#64748B' }}>{pTotal} cs</TableCell>
-                            <TableCell sx={{ textAlign: 'center', color: '#16A34A', fontWeight: 700 }}>{pGiven} cs</TableCell>
-                            <TableCell sx={{ textAlign: 'center' }}>
+                            <TableCell>
                               <Chip
-                                label={`${pBal} cs`}
+                                label={item.companyName}
                                 size="small"
                                 sx={{
-                                  height: 22,
-                                  fontWeight: 800,
-                                  backgroundColor: pBal > 0 ? '#F5F3FF' : '#F1F5F9',
-                                  color: pBal > 0 ? '#7C3AED' : '#64748B',
+                                  height: 24,
+                                  fontSize: '11.5px',
+                                  fontWeight: 700,
+                                  backgroundColor: '#F1F5F9',
+                                  color: '#334155',
+                                  border: '1px solid #E2E8F0',
                                 }}
                               />
                             </TableCell>
-                            <TableCell sx={{ textAlign: 'right', color: '#334155' }}>
-                              ₹{prod.rate.toLocaleString('en-IN')}
+                            <TableCell sx={{ textAlign: 'center', color: '#475569', fontWeight: 600, fontSize: '13.5px' }}>
+                              {item.requiredCases} cs
                             </TableCell>
-                            <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: '#0F172A' }}>
-                              ₹{pBalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            <TableCell sx={{ textAlign: 'center', color: '#16A34A', fontWeight: 800, fontSize: '13.5px' }}>
+                              {item.usedCases} cs
                             </TableCell>
-                            <TableCell>
-                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                                {prod.customers.map((c, cIdx) => (
-                                  <Chip
-                                    key={cIdx}
-                                    label={`${c.customerName}: ${c.balanceCases ?? c.remainingCases} cs`}
-                                    size="small"
-                                    sx={{ height: 20, fontSize: '10px', backgroundColor: '#FEF3C7', color: '#92400E', fontWeight: 600 }}
-                                  />
-                                ))}
-                              </Box>
+                            <TableCell sx={{ textAlign: 'center' }}>
+                              <Chip
+                                label={`${item.remainingCases} Cases`}
+                                size="small"
+                                sx={{
+                                  height: 26,
+                                  fontWeight: 800,
+                                  fontSize: '12px',
+                                  backgroundColor: item.remainingCases > 0 ? '#FEF2F2' : '#F1F5F9',
+                                  color: item.remainingCases > 0 ? '#DC2626' : '#64748B',
+                                  border: item.remainingCases > 0 ? '1px solid #FECACA' : 'none',
+                                }}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ textAlign: 'right', color: '#334155', fontWeight: 600, fontSize: '13.5px' }}>
+                              ₹{(item.rate || 0).toLocaleString('en-IN')}
+                            </TableCell>
+                            <TableCell sx={{ textAlign: 'right', fontWeight: 900, color: '#0F172A', fontSize: '14px' }}>
+                              ₹{(item.remainingAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                            </TableCell>
+                            <TableCell sx={{ textAlign: 'center' }}>
+                              <Chip
+                                label={item.performaNumber}
+                                size="small"
+                                sx={{
+                                  height: 22,
+                                  fontSize: '11px',
+                                  fontWeight: 800,
+                                  backgroundColor: '#EFF6FF',
+                                  color: '#1D4ED8',
+                                  border: '1px solid #BFDBFE',
+                                }}
+                              />
+                              {item.performaDate && (
+                                <Typography sx={{ fontSize: '11px', color: '#94A3B8', mt: 0.3 }}>
+                                  {item.performaDate}
+                                </Typography>
+                              )}
                             </TableCell>
                           </TableRow>
-                        );
-                      })}
+                        ))}
                     </TableBody>
                   </Table>
                 </TableContainer>
-              )}
-
-              {/* View 2: Customer Orders Sheet */}
-              {companyModal.tab === 'order' && (
-                <TableContainer component={Paper} elevation={0} sx={{ border: '1px solid #E2E8F0', borderRadius: '8px' }}>
-                  <Table size="small">
-                    <TableHead sx={{ backgroundColor: '#F1F5F9' }}>
-                      <TableRow>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569', width: '40px' }}>#</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569' }}>Customer Name</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569' }}>Product Name</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569', textAlign: 'center' }}>Ordered</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#16A34A', textAlign: 'center' }}>Delivered</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#7C3AED', textAlign: 'center' }}>Balance</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569', textAlign: 'right' }}>Rate</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569', textAlign: 'right' }}>Amount</TableCell>
-                        <TableCell sx={{ fontWeight: 800, color: '#475569', textAlign: 'center' }}>Performa</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {companyModal.company.items.map((item, idx) => (
-                        <TableRow key={idx} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                          <TableCell sx={{ color: '#64748B', fontWeight: 600 }}>{idx + 1}</TableCell>
-                          <TableCell sx={{ fontWeight: 700, color: '#0F172A' }}>{item.customerName}</TableCell>
-                          <TableCell sx={{ fontWeight: 600 }}>{item.productName}</TableCell>
-                          <TableCell sx={{ textAlign: 'center', color: '#64748B' }}>{item.orderedCases ?? item.requiredCases} cs</TableCell>
-                          <TableCell sx={{ textAlign: 'center', color: '#16A34A', fontWeight: 700 }}>{item.givenCases ?? item.usedCases} cs</TableCell>
-                          <TableCell sx={{ textAlign: 'center' }}>
-                            <Chip
-                              label={`${item.balanceCases ?? item.remainingCases} cs`}
-                              size="small"
-                              sx={{ height: 22, fontWeight: 800, backgroundColor: '#F5F3FF', color: '#7C3AED' }}
-                            />
-                          </TableCell>
-                          <TableCell sx={{ textAlign: 'right', color: '#334155' }}>₹{item.rate.toLocaleString('en-IN')}</TableCell>
-                          <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: '#0F172A' }}>
-                            ₹{(item.balanceAmount ?? item.remainingAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                          </TableCell>
-                          <TableCell sx={{ textAlign: 'center', fontSize: '11px', color: '#0B4DB7', fontWeight: 700 }}>
-                            {item.performaNumber}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
-              )}
+              </Paper>
             </Box>
           )}
-        </DialogContent>
+        </Box>
+      </Dialog>
 
-        <DialogActions sx={{ p: 2, backgroundColor: '#FFFFFF', borderTop: '1px solid #E2E8F0', justifyContent: 'space-between' }}>
-          <Button onClick={() => setCompanyModal({ open: false, company: null, tab: 'product' })} sx={{ textTransform: 'none', color: '#64748B', fontWeight: 600 }}>
-            Close
-          </Button>
+      {/* ========================================================================= */}
+      {/* 2. COMPANY STOCK BREAKDOWN FULL PAGE VIEW                                 */}
+      {/* ========================================================================= */}
+      <Dialog
+        fullScreen
+        open={companyModal.open}
+        onClose={() => {
+          setCompanyModal({ open: false, company: null, tab: 'product' });
+          setModalItemSearch('');
+        }}
+        sx={{
+          '& .MuiDialog-paper': {
+            backgroundColor: '#F8FAFC',
+          },
+        }}
+      >
+        {/* Full-width Top App Bar / Header */}
+        <Box
+          sx={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            px: { xs: 2, md: 4 },
+            py: 1.8,
+            backgroundColor: '#0F172A',
+            color: '#FFFFFF',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+          }}
+        >
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+            <Tooltip title="Back to Pending Cases">
+              <IconButton
+                onClick={() => {
+                  setCompanyModal({ open: false, company: null, tab: 'product' });
+                  setModalItemSearch('');
+                }}
+                sx={{
+                  color: '#FFFFFF',
+                  backgroundColor: 'rgba(255,255,255,0.1)',
+                  '&:hover': { backgroundColor: 'rgba(255,255,255,0.2)' },
+                  width: 40,
+                  height: 40,
+                }}
+              >
+                <ArrowBackRoundedIcon />
+              </IconButton>
+            </Tooltip>
 
-          {companyModal.company && (
-            <Button
-              variant="contained"
-              disableElevation
-              startIcon={<ContentCopyRoundedIcon />}
-              onClick={() => handleCopyCompanySupplierOrder(companyModal.company!)}
-              sx={{ backgroundColor: '#7C3AED', textTransform: 'none', fontWeight: 700, '&:hover': { backgroundColor: '#6D28D9' } }}
+            <Avatar
+              sx={{
+                bgcolor: companyModal.company?.avatarBg || '#7C3AED',
+                color: companyModal.company?.avatarColor || '#FFFFFF',
+                fontWeight: 800,
+                width: 42,
+                height: 42,
+                fontSize: '18px',
+              }}
             >
-              Copy Supplier Purchase Order
-            </Button>
+              {companyModal.company?.avatarLetter || companyModal.company?.companyName.charAt(0).toUpperCase() || 'B'}
+            </Avatar>
+
+            <Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flexWrap: 'wrap' }}>
+                <Typography sx={{ fontWeight: 800, fontSize: '18px', color: '#FFFFFF', letterSpacing: '-0.01em' }}>
+                  {companyModal.company?.companyName}
+                </Typography>
+                <Chip
+                  label="Company Stock & Order Sheet"
+                  size="small"
+                  sx={{
+                    height: 22,
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    backgroundColor: '#2E1065',
+                    color: '#DDD6FE',
+                    border: '1px solid #5B21B6',
+                  }}
+                />
+              </Box>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mt: 0.3, flexWrap: 'wrap' }}>
+                {companyModal.company?.gstin && (
+                  <Typography sx={{ fontSize: '12px', color: '#94A3B8' }}>
+                    GSTIN: <strong style={{ color: '#E2E8F0' }}>{companyModal.company.gstin}</strong>
+                  </Typography>
+                )}
+                {companyModal.company?.address && (
+                  <Typography sx={{ fontSize: '12px', color: '#94A3B8' }}>
+                    Address: {companyModal.company.address}
+                  </Typography>
+                )}
+                <Typography sx={{ fontSize: '12px', color: '#A78BFA' }}>
+                  {companyModal.company?.customersCount || 0} Customers Waiting
+                </Typography>
+              </Box>
+            </Box>
+          </Box>
+
+          {/* Header Action Buttons */}
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            {companyModal.company && (
+              <Button
+                variant="contained"
+                disableElevation
+                startIcon={<ContentCopyRoundedIcon />}
+                onClick={() => handleCopyCompanySupplierOrder(companyModal.company!)}
+                sx={{
+                  backgroundColor: '#7C3AED',
+                  textTransform: 'none',
+                  fontWeight: 700,
+                  fontSize: '12.5px',
+                  '&:hover': { backgroundColor: '#6D28D9' },
+                }}
+              >
+                Copy Supplier Purchase Order
+              </Button>
+            )}
+
+            <Tooltip title="Close Full Page View">
+              <IconButton
+                onClick={() => {
+                  setCompanyModal({ open: false, company: null, tab: 'product' });
+                  setModalItemSearch('');
+                }}
+                sx={{
+                  color: '#94A3B8',
+                  '&:hover': { color: '#FFFFFF', backgroundColor: 'rgba(255,255,255,0.1)' },
+                }}
+              >
+                <CloseRoundedIcon />
+              </IconButton>
+            </Tooltip>
+          </Box>
+        </Box>
+
+        {/* Content Area */}
+        <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: '1600px', mx: 'auto', width: '100%', boxSizing: 'border-box' }}>
+          {companyModal.company && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
+              {/* Summary Metric Cards Strip */}
+              <Box
+                sx={{
+                  display: 'grid',
+                  gridTemplateColumns: { xs: 'repeat(2, 1fr)', md: 'repeat(5, 1fr)' },
+                  gap: 2,
+                }}
+              >
+                <Card sx={{ borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: 'none', backgroundColor: '#FFFFFF' }}>
+                  <CardContent sx={{ p: '16px !important' }}>
+                    <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                      Total Stock Ordered
+                    </Typography>
+                    <Typography sx={{ fontSize: '24px', fontWeight: 900, color: '#334155', mt: 0.5 }}>
+                      {companyModal.company.totalStockCases ?? (companyModal.company.totalPendingCases + (companyModal.company.totalGivenCases || 0))} <span style={{ fontSize: '14px', fontWeight: 600 }}>cs</span>
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>Overall bookings</Typography>
+                  </CardContent>
+                </Card>
+
+                <Card sx={{ borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: 'none', backgroundColor: '#FFFFFF' }}>
+                  <CardContent sx={{ p: '16px !important' }}>
+                    <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#16A34A', textTransform: 'uppercase' }}>
+                      Given To Customers
+                    </Typography>
+                    <Typography sx={{ fontSize: '24px', fontWeight: 900, color: '#16A34A', mt: 0.5 }}>
+                      {companyModal.company.totalGivenCases ?? 0} <span style={{ fontSize: '14px', fontWeight: 600 }}>cs</span>
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>Delivered via Particulars</Typography>
+                  </CardContent>
+                </Card>
+
+                <Card sx={{ borderRadius: '12px', border: '1.5px solid #DDD6FE', boxShadow: 'none', backgroundColor: '#F5F3FF' }}>
+                  <CardContent sx={{ p: '16px !important' }}>
+                    <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#7C3AED', textTransform: 'uppercase' }}>
+                      Balance in Company
+                    </Typography>
+                    <Typography sx={{ fontSize: '24px', fontWeight: 900, color: '#6D28D9', mt: 0.5 }}>
+                      {companyModal.company.totalBalanceCases ?? companyModal.company.totalPendingCases} <span style={{ fontSize: '14px', fontWeight: 600 }}>cs</span>
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#7C3AED' }}>Remaining stock to supply</Typography>
+                  </CardContent>
+                </Card>
+
+                <Card sx={{ borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: 'none', backgroundColor: '#FFFFFF' }}>
+                  <CardContent sx={{ p: '16px !important' }}>
+                    <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                      Balance Stock Value
+                    </Typography>
+                    <Typography sx={{ fontSize: '24px', fontWeight: 900, color: '#0F172A', mt: 0.5 }}>
+                      ₹{(companyModal.company.totalBalanceAmount ?? companyModal.company.totalPendingAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>Estimated value of balance</Typography>
+                  </CardContent>
+                </Card>
+
+                <Card sx={{ borderRadius: '12px', border: '1px solid #E2E8F0', boxShadow: 'none', backgroundColor: '#FFFFFF' }}>
+                  <CardContent sx={{ p: '16px !important' }}>
+                    <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
+                      Waiting Customers
+                    </Typography>
+                    <Typography sx={{ fontSize: '24px', fontWeight: 900, color: '#D97706', mt: 0.5 }}>
+                      {companyModal.company.customersCount}
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>Accounts awaiting balance</Typography>
+                  </CardContent>
+                </Card>
+              </Box>
+
+              {/* Tab Selector & Search Header */}
+              <Paper elevation={0} sx={{ border: '1px solid #E2E8F0', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#FFFFFF' }}>
+                <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 1.5, borderBottom: '1px solid #E2E8F0', backgroundColor: '#FAFAFA' }}>
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant={companyModal.tab === 'product' ? 'contained' : 'outlined'}
+                      onClick={() => setCompanyModal((prev) => ({ ...prev, tab: 'product' }))}
+                      sx={{
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        fontSize: '13px',
+                        backgroundColor: companyModal.tab === 'product' ? '#7C3AED' : 'transparent',
+                        borderColor: '#CBD5E1',
+                        color: companyModal.tab === 'product' ? '#FFFFFF' : '#475569',
+                        '&:hover': { backgroundColor: companyModal.tab === 'product' ? '#6D28D9' : '#F1F5F9' },
+                      }}
+                    >
+                      Stock by Product Summary ({companyModal.company.productSummaries.length})
+                    </Button>
+                    <Button
+                      variant={companyModal.tab === 'order' ? 'contained' : 'outlined'}
+                      onClick={() => setCompanyModal((prev) => ({ ...prev, tab: 'order' }))}
+                      sx={{
+                        textTransform: 'none',
+                        fontWeight: 700,
+                        fontSize: '13px',
+                        backgroundColor: companyModal.tab === 'order' ? '#7C3AED' : 'transparent',
+                        borderColor: '#CBD5E1',
+                        color: companyModal.tab === 'order' ? '#FFFFFF' : '#475569',
+                        '&:hover': { backgroundColor: companyModal.tab === 'order' ? '#6D28D9' : '#F1F5F9' },
+                      }}
+                    >
+                      Customer Orders Sheet ({companyModal.company.items.length})
+                    </Button>
+                  </Box>
+
+                  <TextField
+                    placeholder="Search product, customer, code..."
+                    size="small"
+                    value={modalItemSearch}
+                    onChange={(e) => setModalItemSearch(e.target.value)}
+                    slotProps={{
+                      input: {
+                        startAdornment: (
+                          <InputAdornment position="start">
+                            <SearchRoundedIcon sx={{ color: '#94A3B8', fontSize: 18 }} />
+                          </InputAdornment>
+                        ),
+                      },
+                    }}
+                    sx={{ minWidth: 280, '& .MuiOutlinedInput-root': { borderRadius: '8px', backgroundColor: '#FFFFFF' } }}
+                  />
+                </Box>
+
+                {/* View 1: Stock by Product Summary */}
+                {companyModal.tab === 'product' && (
+                  <TableContainer>
+                    <Table>
+                      <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', width: '50px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>#</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>Product Name</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Total Stock</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#16A34A', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Delivered</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#7C3AED', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Balance Stock</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase' }}>Rate (₹)</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#0F172A', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase' }}>Balance Amount</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>Customer Orders Breakdown</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {companyModal.company.productSummaries
+                          .filter((prod) => {
+                            if (!modalItemSearch.trim()) return true;
+                            const q = modalItemSearch.trim().toLowerCase();
+                            return (
+                              prod.productName.toLowerCase().includes(q) ||
+                              (prod.productCode && prod.productCode.toLowerCase().includes(q)) ||
+                              prod.customers.some((c) => c.customerName.toLowerCase().includes(q))
+                            );
+                          })
+                          .map((prod, idx) => {
+                            const pTotal = prod.totalStockCases ?? prod.totalRequiredCases;
+                            const pGiven = prod.totalGivenCases ?? prod.totalUsedCases;
+                            const pBal = prod.totalBalanceCases ?? prod.totalRemainingCases;
+                            const pBalAmt = prod.balanceAmount ?? (pBal * prod.rate);
+
+                            return (
+                              <TableRow key={idx} hover sx={{ '&:hover': { backgroundColor: '#F8FAFC' }, '&:last-child td': { borderBottom: 0 } }}>
+                                <TableCell sx={{ color: '#64748B', fontWeight: 600, textAlign: 'center', fontSize: '13px' }}>{idx + 1}</TableCell>
+                                <TableCell>
+                                  <Typography sx={{ fontWeight: 800, fontSize: '14px', color: '#0F172A' }}>
+                                    {prod.productName}
+                                  </Typography>
+                                  {prod.productCode && (
+                                    <Typography sx={{ fontSize: '11.5px', color: '#64748B', fontWeight: 500 }}>
+                                      Code: {prod.productCode}
+                                    </Typography>
+                                  )}
+                                </TableCell>
+                                <TableCell sx={{ textAlign: 'center', color: '#475569', fontWeight: 600, fontSize: '13.5px' }}>{pTotal} cs</TableCell>
+                                <TableCell sx={{ textAlign: 'center', color: '#16A34A', fontWeight: 800, fontSize: '13.5px' }}>{pGiven} cs</TableCell>
+                                <TableCell sx={{ textAlign: 'center' }}>
+                                  <Chip
+                                    label={`${pBal} Cases`}
+                                    size="small"
+                                    sx={{
+                                      height: 26,
+                                      fontWeight: 800,
+                                      fontSize: '12px',
+                                      backgroundColor: pBal > 0 ? '#F5F3FF' : '#F1F5F9',
+                                      color: pBal > 0 ? '#7C3AED' : '#64748B',
+                                      border: pBal > 0 ? '1px solid #DDD6FE' : 'none',
+                                    }}
+                                  />
+                                </TableCell>
+                                <TableCell sx={{ textAlign: 'right', color: '#334155', fontWeight: 600, fontSize: '13.5px' }}>
+                                  ₹{prod.rate.toLocaleString('en-IN')}
+                                </TableCell>
+                                <TableCell sx={{ textAlign: 'right', fontWeight: 900, color: '#0F172A', fontSize: '14px' }}>
+                                  ₹{pBalAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                </TableCell>
+                                <TableCell>
+                                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.6 }}>
+                                    {prod.customers.map((c, cIdx) => (
+                                      <Chip
+                                        key={cIdx}
+                                        label={`${c.customerName}: ${c.balanceCases ?? c.remainingCases} cs`}
+                                        size="small"
+                                        sx={{
+                                          height: 22,
+                                          fontSize: '11px',
+                                          backgroundColor: '#FEF3C7',
+                                          color: '#92400E',
+                                          fontWeight: 700,
+                                          border: '1px solid #FDE68A',
+                                        }}
+                                      />
+                                    ))}
+                                  </Box>
+                                </TableCell>
+                              </TableRow>
+                            );
+                          })}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+
+                {/* View 2: Customer Orders Sheet */}
+                {companyModal.tab === 'order' && (
+                  <TableContainer>
+                    <Table>
+                      <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
+                        <TableRow>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', width: '50px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>#</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>Customer Name</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>Product Name</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Ordered</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#16A34A', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Delivered</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#7C3AED', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Balance</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase' }}>Rate (₹)</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#0F172A', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase' }}>Amount</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Performa</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {companyModal.company.items
+                          .filter((item) => {
+                            if (!modalItemSearch.trim()) return true;
+                            const q = modalItemSearch.trim().toLowerCase();
+                            return (
+                              item.customerName.toLowerCase().includes(q) ||
+                              item.productName.toLowerCase().includes(q) ||
+                              (item.productCode && item.productCode.toLowerCase().includes(q)) ||
+                              item.performaNumber.toLowerCase().includes(q)
+                            );
+                          })
+                          .map((item, idx) => (
+                            <TableRow key={idx} hover sx={{ '&:hover': { backgroundColor: '#F8FAFC' }, '&:last-child td': { borderBottom: 0 } }}>
+                              <TableCell sx={{ color: '#64748B', fontWeight: 600, textAlign: 'center', fontSize: '13px' }}>{idx + 1}</TableCell>
+                              <TableCell>
+                                <Typography sx={{ fontWeight: 800, fontSize: '13.5px', color: '#0F172A' }}>{item.customerName}</Typography>
+                                {item.customerPhone && (
+                                  <Typography sx={{ fontSize: '11px', color: '#64748B' }}>{item.customerPhone}</Typography>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Typography sx={{ fontWeight: 700, fontSize: '13.5px' }}>{item.productName}</Typography>
+                                {item.productCode && (
+                                  <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>{item.productCode}</Typography>
+                                )}
+                              </TableCell>
+                              <TableCell sx={{ textAlign: 'center', color: '#475569', fontWeight: 600, fontSize: '13.5px' }}>
+                                {item.orderedCases ?? item.requiredCases} cs
+                              </TableCell>
+                              <TableCell sx={{ textAlign: 'center', color: '#16A34A', fontWeight: 800, fontSize: '13.5px' }}>
+                                {item.givenCases ?? item.usedCases} cs
+                              </TableCell>
+                              <TableCell sx={{ textAlign: 'center' }}>
+                                <Chip
+                                  label={`${item.balanceCases ?? item.remainingCases} cs`}
+                                  size="small"
+                                  sx={{
+                                    height: 24,
+                                    fontWeight: 800,
+                                    backgroundColor: '#F5F3FF',
+                                    color: '#7C3AED',
+                                    border: '1px solid #DDD6FE',
+                                  }}
+                                />
+                              </TableCell>
+                              <TableCell sx={{ textAlign: 'right', color: '#334155', fontWeight: 600, fontSize: '13.5px' }}>
+                                ₹{item.rate.toLocaleString('en-IN')}
+                              </TableCell>
+                              <TableCell sx={{ textAlign: 'right', fontWeight: 900, color: '#0F172A', fontSize: '14px' }}>
+                                ₹{(item.balanceAmount ?? item.remainingAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                              </TableCell>
+                              <TableCell sx={{ textAlign: 'center' }}>
+                                <Chip
+                                  label={item.performaNumber}
+                                  size="small"
+                                  sx={{
+                                    height: 22,
+                                    fontSize: '11px',
+                                    fontWeight: 800,
+                                    backgroundColor: '#EFF6FF',
+                                    color: '#1D4ED8',
+                                    border: '1px solid #BFDBFE',
+                                  }}
+                                />
+                                {item.performaDate && (
+                                  <Typography sx={{ fontSize: '11px', color: '#94A3B8', mt: 0.3 }}>
+                                    {item.performaDate}
+                                  </Typography>
+                                )}
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
+              </Paper>
+            </Box>
           )}
-        </DialogActions>
+        </Box>
       </Dialog>
 
       {/* ========================================================================= */}

@@ -1005,7 +1005,22 @@ export const calculatePendingCasesData = async (options?: {
       const prodName = item.productSnapshot?.productName || 'Unknown Product';
       const prodCode = item.productSnapshot?.productCode || '';
       const category = item.productSnapshot?.category || '';
-      const itemCompany = (item.productSnapshot?.companyName?.trim() || perf.companyName?.trim() || 'General');
+      const itemCompany = (
+        item.productSnapshot?.companyName?.trim() ||
+        (item as any).companyName?.trim() ||
+        (item as any).company?.trim() ||
+        (item as any).brand?.trim() ||
+        perf.companyName?.trim() ||
+        (perf as any).company?.trim() ||
+        'General'
+      );
+
+      // If filtering by specific companyName, ignore items from other companies
+      if (companyName && typeof companyName === 'string' && companyName.trim() !== '' && companyName.toLowerCase() !== 'all') {
+        if (itemCompany.toLowerCase() !== companyName.trim().toLowerCase()) {
+          continue;
+        }
+      }
 
       // Update customer entry
       custEntry.totalPendingCases += remainingCases;
@@ -1047,6 +1062,10 @@ export const calculatePendingCasesData = async (options?: {
           avatarColor: matchedComp?.avatarColor || '#0B4DB7',
           totalPendingCases: 0,
           totalPendingAmount: 0,
+          totalRequiredCases: 0,
+          totalUsedCases: 0,
+          totalStockAmount: 0,
+          totalGivenAmount: 0,
           customersWaiting: new Set<string>(),
           productSummaries: new Map(),
           items: [],
@@ -1056,6 +1075,10 @@ export const calculatePendingCasesData = async (options?: {
       const compEntry = companyMap.get(compKey)!;
       compEntry.totalPendingCases += remainingCases;
       compEntry.totalPendingAmount += remainingAmt;
+      compEntry.totalRequiredCases = (compEntry.totalRequiredCases || 0) + reqCases;
+      compEntry.totalUsedCases = (compEntry.totalUsedCases || 0) + usedCases;
+      compEntry.totalStockAmount = (compEntry.totalStockAmount || 0) + (reqCases * rate);
+      compEntry.totalGivenAmount = (compEntry.totalGivenAmount || 0) + (usedCases * rate);
       compEntry.customersWaiting.add(rawCustName);
 
       // Product summary under company
@@ -1068,21 +1091,32 @@ export const calculatePendingCasesData = async (options?: {
           totalRemainingCases: 0,
           totalRequiredCases: 0,
           totalUsedCases: 0,
+          totalStockCases: 0,
+          totalGivenCases: 0,
+          totalBalanceCases: 0,
           rate,
           estimatedAmount: 0,
+          balanceAmount: 0,
           customers: [],
         });
       }
       const prodSummary = compEntry.productSummaries.get(prodKey)!;
       prodSummary.totalRemainingCases += remainingCases;
+      prodSummary.totalBalanceCases += remainingCases;
       prodSummary.totalRequiredCases += reqCases;
+      prodSummary.totalStockCases += reqCases;
       prodSummary.totalUsedCases += usedCases;
+      prodSummary.totalGivenCases += usedCases;
       prodSummary.estimatedAmount += remainingAmt;
+      prodSummary.balanceAmount += remainingAmt;
       prodSummary.customers.push({
         customerName: rawCustName,
         customerPhone: custPhone,
         performaNumber: perf.performaNumber,
         remainingCases,
+        balanceCases: remainingCases,
+        requiredCases: reqCases,
+        givenCases: usedCases,
         date: perf.date,
       });
 
@@ -1100,8 +1134,12 @@ export const calculatePendingCasesData = async (options?: {
         remainingCases,
         requiredCases: reqCases,
         usedCases,
+        orderedCases: reqCases,
+        givenCases: usedCases,
+        balanceCases: remainingCases,
         rate,
         remainingAmount: remainingAmt,
+        balanceAmount: remainingAmt,
       });
     }
 
@@ -1140,23 +1178,40 @@ export const calculatePendingCasesData = async (options?: {
   // Company cases array (only companies with pending cases)
   let companyCases = Array.from(companyMap.values())
     .filter((c) => c.totalPendingCases > 0)
-    .map((c) => ({
-      companyName: c.companyName,
-      companyId: c.companyId,
-      address: c.address,
-      gstin: c.gstin,
-      avatarLetter: c.avatarLetter,
-      avatarBg: c.avatarBg,
-      avatarColor: c.avatarColor,
-      totalPendingCases: c.totalPendingCases,
-      totalPendingAmount: c.totalPendingAmount,
-      customersCount: c.customersWaiting.size,
-      customersWaitingNames: Array.from(c.customersWaiting),
-      productSummaries: Array.from(c.productSummaries.values()).sort(
-        (a: any, b: any) => b.totalRemainingCases - a.totalRemainingCases
-      ),
-      items: c.items.sort((a: any, b: any) => b.remainingCases - a.remainingCases),
-    }))
+    .map((c) => {
+      const stockCases = c.totalRequiredCases || (c.totalPendingCases + (c.totalUsedCases || 0));
+      const givenCases = c.totalUsedCases || 0;
+      const balanceCases = c.totalPendingCases;
+      const stockAmt = c.totalStockAmount || (c.totalPendingAmount + (c.totalGivenAmount || 0));
+      const givenAmt = c.totalGivenAmount || 0;
+      const balanceAmt = c.totalPendingAmount;
+      const pct = stockCases > 0 ? Math.round((givenCases / stockCases) * 100) : 0;
+
+      return {
+        companyName: c.companyName,
+        companyId: c.companyId,
+        address: c.address,
+        gstin: c.gstin,
+        avatarLetter: c.avatarLetter,
+        avatarBg: c.avatarBg,
+        avatarColor: c.avatarColor,
+        totalStockCases: stockCases,
+        totalGivenCases: givenCases,
+        totalBalanceCases: balanceCases,
+        totalStockAmount: stockAmt,
+        totalGivenAmount: givenAmt,
+        totalBalanceAmount: balanceAmt,
+        deliveryPercentage: pct,
+        totalPendingCases: c.totalPendingCases,
+        totalPendingAmount: c.totalPendingAmount,
+        customersCount: c.customersWaiting.size,
+        customersWaitingNames: Array.from(c.customersWaiting),
+        productSummaries: Array.from(c.productSummaries.values()).sort(
+          (a: any, b: any) => b.totalRemainingCases - a.totalRemainingCases
+        ),
+        items: c.items.sort((a: any, b: any) => b.remainingCases - a.remainingCases),
+      };
+    })
     .sort((a: any, b: any) => b.totalPendingCases - a.totalPendingCases);
 
   // Filter by search term if provided
