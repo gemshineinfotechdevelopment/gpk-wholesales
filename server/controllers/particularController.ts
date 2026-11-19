@@ -27,7 +27,17 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
 
     // Use unified pending cases calculation to guarantee exact synchronization with Pending Cases dashboard
     const { calculatePendingCasesData } = await import('../services/performaConsumptionService');
-    const { customerPendingMap, customerDeliveredMap, performaPendingMap } = await calculatePendingCasesData();
+    const { customerTotalCasesMap, customerPendingMap, customerDeliveredMap, performaPendingMap } = await calculatePendingCasesData();
+
+    // Calculate customer total dispatched cases across all bills in DB
+    const customerBillsTotalCases = new Map<string, number>();
+    for (const b of particulars) {
+      const cKey = (b.customerName || '').trim().toLowerCase();
+      const bCases = (b.caseCount && b.caseCount !== '0')
+        ? (parseFloat(b.caseCount) || 0)
+        : (b.products || []).reduce((sum: number, pr: any) => sum + (parseFloat(pr.quantity) || 0), 0);
+      customerBillsTotalCases.set(cKey, (customerBillsTotalCases.get(cKey) || 0) + bCases);
+    }
 
     const enriched = particulars.map((p: any) => {
       const pCustName = (p.customerName || '').trim();
@@ -36,28 +46,21 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
       const pPfNum = (p.performaNumber || '').trim().toUpperCase();
       const pPfId = p.performaId ? String(p.performaId).trim() : '';
 
-      let pending = 0;
+      let totalCustCases = 0;
       let delivered = 0;
+      let pending = 0;
 
-      // 1. Direct customer pending cases match (matches customer card in Pending Cases)
-      if (customerPendingMap.has(pCustKey)) {
-        pending = customerPendingMap.get(pCustKey) || 0;
-      } else if (pCleanDigits.length >= 7 && customerPendingMap.has(pCleanDigits)) {
-        pending = customerPendingMap.get(pCleanDigits) || 0;
-      } else if (p.customerId && customerPendingMap.has(String(p.customerId))) {
-        pending = customerPendingMap.get(String(p.customerId)) || 0;
-      } else {
-        // 2. Fuzzy / partial substring match across customer map
-        for (const [key, val] of customerPendingMap.entries()) {
-          if (key.length > 2 && (pCustKey.includes(key) || key.includes(pCustKey))) {
-            pending = val;
-            break;
-          }
-        }
+      // 1. Direct customer total cases match
+      if (customerTotalCasesMap?.has(pCustKey)) {
+        totalCustCases = customerTotalCasesMap.get(pCustKey) || 0;
+      } else if (customerTotalCasesMap && pCleanDigits.length >= 7 && customerTotalCasesMap.has(pCleanDigits)) {
+        totalCustCases = customerTotalCasesMap.get(pCleanDigits) || 0;
+      } else if (customerTotalCasesMap && p.customerId && customerTotalCasesMap.has(String(p.customerId))) {
+        totalCustCases = customerTotalCasesMap.get(String(p.customerId)) || 0;
       }
 
-      // Customer delivered cases match
-      if (customerDeliveredMap && customerDeliveredMap.has(pCustKey)) {
+      // 2. Direct customer delivered / out cases match
+      if (customerDeliveredMap?.has(pCustKey)) {
         delivered = customerDeliveredMap.get(pCustKey) || 0;
       } else if (customerDeliveredMap && pCleanDigits.length >= 7 && customerDeliveredMap.has(pCleanDigits)) {
         delivered = customerDeliveredMap.get(pCleanDigits) || 0;
@@ -65,8 +68,33 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
         delivered = customerDeliveredMap.get(String(p.customerId)) || 0;
       }
 
-      // 3. Fallback to performa pending map if linked performa still has remaining cases
-      if (pending === 0) {
+      // 3. Direct customer pending cases match
+      if (customerPendingMap.has(pCustKey)) {
+        pending = customerPendingMap.get(pCustKey) || 0;
+      } else if (pCleanDigits.length >= 7 && customerPendingMap.has(pCleanDigits)) {
+        pending = customerPendingMap.get(pCleanDigits) || 0;
+      } else if (p.customerId && customerPendingMap.has(String(p.customerId))) {
+        pending = customerPendingMap.get(String(p.customerId)) || 0;
+      } else {
+        // Fuzzy / partial substring match across customer map
+        for (const [key, val] of customerPendingMap.entries()) {
+          if (key.length > 2 && (pCustKey.includes(key) || key.includes(pCustKey))) {
+            pending = val;
+            if (customerTotalCasesMap?.has(key)) totalCustCases = customerTotalCasesMap.get(key) || 0;
+            if (customerDeliveredMap?.has(key)) delivered = customerDeliveredMap.get(key) || 0;
+            break;
+          }
+        }
+      }
+
+      // Fallback: If customer has bills recorded, ensure delivered is at least the sum of bills
+      const billsSum = customerBillsTotalCases.get(pCustKey) || 0;
+      if (delivered === 0 && billsSum > 0) {
+        delivered = billsSum;
+      }
+
+      // Fallback to performa pending map if linked performa still has remaining cases
+      if (pending === 0 && totalCustCases === 0) {
         if (pPfNum && performaPendingMap.has(pPfNum)) {
           pending = performaPendingMap.get(pPfNum) || 0;
         } else if (pPfId && performaPendingMap.has(pPfId)) {
@@ -78,9 +106,16 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
         ? p.caseCount
         : (p.products || []).reduce((sum: number, pr: any) => sum + (parseFloat(pr.quantity) || 0), 0).toString();
 
+      // Calculation formula:
+      // If customer has booked cases in Performa, Balance Pending Cases = Math.max(0, Total Cases - Out Cases)
+      if (totalCustCases > 0) {
+        pending = Math.max(0, totalCustCases - delivered);
+      }
+
       return {
         ...p,
         caseCount: computedBillCases,
+        totalCustomerCases: totalCustCases,
         deliveredCaseCount: delivered,
         pendingCaseCount: pending,
       };
