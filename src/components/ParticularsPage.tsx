@@ -3346,8 +3346,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                     const discStr = row.discount && parseFloat(row.discount) > 0 ? (parseFloat(row.discount) <= 100 ? `${row.discount}%` : `₹${row.discount}`) : '-';
                     const packStr = row.packing && parseFloat(row.packing) > 0 ? (parseFloat(row.packing) <= 100 ? `${row.packing}%` : `₹${row.packing}`) : '-';
                     const taxStr = row.tax && parseFloat(row.tax) > 0 ? `₹${parseFloat(row.tax).toLocaleString('en-IN')}` : '-';
-                    const hasPdf = Boolean(row.pdfData && row.pdfData.trim() !== '');
-                    const isUploading = uploadingBillId === rowId;
                     const outCasesVal = Number(row.caseCount) || (row.products ? row.products.reduce((acc: number, p: any) => acc + (parseFloat(p.quantity) || 0), 0) : 0);
                     const pendingCasesVal = Number(row.pendingCaseCount) || 0;
 
