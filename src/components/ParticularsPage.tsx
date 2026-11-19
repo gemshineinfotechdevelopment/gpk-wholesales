@@ -3438,7 +3438,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                   <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '95px' }}>
                     DATE
                   </TableCell>
-                  <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '120px' }}>
+                  <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '11.5px', fontWeight: 700, color: '#16A34A', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '105px' }}>
+                    OUT CASES
+                  </TableCell>
+                  <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '11.5px', fontWeight: 700, color: '#B45309', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '115px' }}>
                     PENDING CASES
                   </TableCell>
                   <TableCell align="right" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '100px' }}>
@@ -3467,19 +3470,19 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
               <TableBody>
                 {particularLoading ? (
                   <TableRow>
-                    <TableCell colSpan={12} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={13} align="center" sx={{ py: 6 }}>
                       <CircularProgress size={32} sx={{ color: '#0B4DB7' }} />
                     </TableCell>
                   </TableRow>
                 ) : filteredParticularRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={12} align="center" sx={{ py: 6, color: '#64748B' }}>
+                    <TableCell colSpan={13} align="center" sx={{ py: 6, color: '#64748B' }}>
                       No particular bills found {filterCustomer !== 'ALL' ? `for ${filterCustomer}` : ''}{filterParticularCompany !== 'ALL' ? ` under ${filterParticularCompany}` : ''}.
                     </TableCell>
                   </TableRow>
                 ) : (
                   filteredParticularRows.map((row, index) => {
-                    const isLast = index === particularDetails.length - 1;
+                    const isLast = index === filteredParticularRows.length - 1;
                     const rowId = row._id || row.id || '';
                     const subtotalNum = parseFloat(String(row.amount || row.total || '0').replace(/,/g, '')) || 0;
                     const totalNum = parseFloat(String(row.total || row.amount || '0').replace(/,/g, '')) || 0;
@@ -3488,6 +3491,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                     const taxStr = row.tax && parseFloat(row.tax) > 0 ? `₹${parseFloat(row.tax).toLocaleString('en-IN')}` : '-';
                     const hasPdf = Boolean(row.pdfData && row.pdfData.trim() !== '');
                     const isUploading = uploadingBillId === rowId;
+                    const outCasesVal = Number(row.caseCount) || (row.products ? row.products.reduce((acc: number, p: any) => acc + (parseFloat(p.quantity) || 0), 0) : 0);
                     const pendingCasesVal = Number(row.pendingCaseCount) || 0;
 
                     return (
@@ -3512,6 +3516,29 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                           {row.date}
                         </TableCell>
                         <TableCell align="center" sx={{ py: 1.4, px: 1, borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
+                          {outCasesVal > 0 ? (
+                            <Tooltip title={row.deliveredCaseCount && Number(row.deliveredCaseCount) > outCasesVal ? `Bill Out: ${outCasesVal} Cases • Total Delivered: ${row.deliveredCaseCount} Cases` : `${outCasesVal} Cases dispatched in this bill`} arrow>
+                              <Chip
+                                size="small"
+                                label={`${outCasesVal} Cases`}
+                                sx={{
+                                  backgroundColor: '#DCFCE7',
+                                  color: '#15803D',
+                                  fontWeight: 800,
+                                  fontSize: '11.5px',
+                                  height: '22px',
+                                  borderRadius: '5px',
+                                  border: '1px solid #BBF7D0',
+                                }}
+                              />
+                            </Tooltip>
+                          ) : (
+                            <Typography sx={{ fontSize: '12px', color: '#94A3B8', fontWeight: 600 }}>
+                              -
+                            </Typography>
+                          )}
+                        </TableCell>
+                        <TableCell align="center" sx={{ py: 1.4, px: 1, borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           {pendingCasesVal > 0 ? (
                             <Chip
                               size="small"
@@ -3523,6 +3550,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                                 fontSize: '11.5px',
                                 height: '22px',
                                 borderRadius: '5px',
+                                border: '1px solid #FDE68A',
                               }}
                             />
                           ) : (

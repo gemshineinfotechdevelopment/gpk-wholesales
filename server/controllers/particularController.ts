@@ -27,7 +27,7 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
 
     // Use unified pending cases calculation to guarantee exact synchronization with Pending Cases dashboard
     const { calculatePendingCasesData } = await import('../services/performaConsumptionService');
-    const { customerPendingMap, performaPendingMap } = await calculatePendingCasesData();
+    const { customerPendingMap, customerDeliveredMap, performaPendingMap } = await calculatePendingCasesData();
 
     const enriched = particulars.map((p: any) => {
       const pCustName = (p.customerName || '').trim();
@@ -37,6 +37,7 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
       const pPfId = p.performaId ? String(p.performaId).trim() : '';
 
       let pending = 0;
+      let delivered = 0;
 
       // 1. Direct customer pending cases match (matches customer card in Pending Cases)
       if (customerPendingMap.has(pCustKey)) {
@@ -55,6 +56,15 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
         }
       }
 
+      // Customer delivered cases match
+      if (customerDeliveredMap && customerDeliveredMap.has(pCustKey)) {
+        delivered = customerDeliveredMap.get(pCustKey) || 0;
+      } else if (customerDeliveredMap && pCleanDigits.length >= 7 && customerDeliveredMap.has(pCleanDigits)) {
+        delivered = customerDeliveredMap.get(pCleanDigits) || 0;
+      } else if (customerDeliveredMap && p.customerId && customerDeliveredMap.has(String(p.customerId))) {
+        delivered = customerDeliveredMap.get(String(p.customerId)) || 0;
+      }
+
       // 3. Fallback to performa pending map if linked performa still has remaining cases
       if (pending === 0) {
         if (pPfNum && performaPendingMap.has(pPfNum)) {
@@ -71,6 +81,7 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
       return {
         ...p,
         caseCount: computedBillCases,
+        deliveredCaseCount: delivered,
         pendingCaseCount: pending,
       };
     });

@@ -897,6 +897,7 @@ export interface PendingCasesData {
   grandTotalPendingCases: number;
   grandTotalPendingAmount: number;
   customerPendingMap: Map<string, number>;
+  customerDeliveredMap: Map<string, number>;
   customerCompanyPendingMap: Map<string, number>;
   performaPendingMap: Map<string, number>;
   customerCases: any[];
@@ -945,6 +946,7 @@ export const calculatePendingCasesData = async (options?: {
   const customerMap = new Map<string, any>();
   const companyMap = new Map<string, any>();
   const customerPendingMap = new Map<string, number>();
+  const customerDeliveredMap = new Map<string, number>();
   const customerCompanyPendingMap = new Map<string, number>();
   const performaPendingMap = new Map<string, number>();
 
@@ -1152,21 +1154,25 @@ export const calculatePendingCasesData = async (options?: {
     }
   }
 
-  // Populate customerPendingMap with various customer aliases (name, digits, id)
+  // Populate customerPendingMap and customerDeliveredMap with various customer aliases (name, digits, id)
   for (const [cKey, cEntry] of customerMap.entries()) {
     customerPendingMap.set(cKey, cEntry.totalPendingCases);
+    customerDeliveredMap.set(cKey, cEntry.totalUsedCases);
     if (cEntry.customerPhone) {
       const cleanPhone = cEntry.customerPhone.replace(/[^0-9]/g, '');
       if (cleanPhone.length >= 7) {
         customerPendingMap.set(cleanPhone, cEntry.totalPendingCases);
+        customerDeliveredMap.set(cleanPhone, cEntry.totalUsedCases);
       }
     }
     const cleanNameDigits = cEntry.customerName.replace(/[^0-9]/g, '');
     if (cleanNameDigits.length >= 7) {
       customerPendingMap.set(cleanNameDigits, cEntry.totalPendingCases);
+      customerDeliveredMap.set(cleanNameDigits, cEntry.totalUsedCases);
     }
     if (cEntry.customerId) {
       customerPendingMap.set(cEntry.customerId, cEntry.totalPendingCases);
+      customerDeliveredMap.set(cEntry.customerId, cEntry.totalUsedCases);
     }
   }
 
@@ -1240,6 +1246,7 @@ export const calculatePendingCasesData = async (options?: {
     grandTotalPendingCases,
     grandTotalPendingAmount,
     customerPendingMap,
+    customerDeliveredMap,
     customerCompanyPendingMap,
     performaPendingMap,
     customerCases,
