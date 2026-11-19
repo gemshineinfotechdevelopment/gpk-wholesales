@@ -3756,10 +3756,15 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                 <TextField
                   fullWidth
                   size="small"
-                  type="number"
+                  inputMode="decimal"
                   placeholder="e.g. 1000000"
                   value={creditAmount}
-                  onChange={(e) => setCreditAmount(e.target.value)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                      setCreditAmount(val);
+                    }
+                  }}
                   slotProps={{
                     input: {
                       sx: {
@@ -3768,6 +3773,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                         height: '42px',
                         backgroundColor: '#FFFFFF',
                         borderRadius: '6px',
+                        '& input::-webkit-inner-spin-button, & input::-webkit-outer-spin-button': {
+                          WebkitAppearance: 'none',
+                          margin: 0,
+                        },
+                        '& input': {
+                          MozAppearance: 'textfield',
+                        },
                         '& .MuiOutlinedInput-notchedOutline': {
                           borderColor: '#CBD5E1',
                         },
