@@ -336,6 +336,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
 
   // Open Edit Performa Modal
   const handleOpenEditModal = async (performa: any) => {
+    if (userRole === 'user') return;
     try {
       setEditLoading(true);
       setEditModalOpen(true);
@@ -593,7 +594,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
 
   // Save Performa Changes
   const handleSaveEditPerforma = async () => {
-    if (!editPerformaId) return;
+    if (userRole === 'user' || !editPerformaId) return;
     if (editProducts.length === 0) {
       setToast({ open: true, message: 'At least one product item is required', severity: 'error' });
       return;
@@ -659,6 +660,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
 
   // Cancel Performa
   const handleCancelPerforma = async (id: string, num: string) => {
+    if (userRole === 'user') return;
     if (!window.confirm(`Are you sure you want to cancel Performa ${num}?`)) return;
     try {
       await PerformasApi.cancel(id);
@@ -671,6 +673,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
 
   // Delete Performa
   const handleDeletePerforma = async (id: string, num: string) => {
+    if (userRole === 'user') return;
     if (
       !window.confirm(
         `Are you sure you want to permanently delete Performa ${num}?\n\nThis will also remove all linked audit and ledger entries.`
@@ -1040,7 +1043,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     direction={sortBy === 'customer' ? sortOrder : 'asc'}
                     onClick={() => handleSortRequest('customer')}
                   >
-                    Customer
+                    {userRole === 'user' ? 'Brand / Company' : 'Customer'}
                   </TableSortLabel>
                 </TableCell>
                 <TableCell sx={{ fontWeight: 800, textAlign: 'right', color: '#475569' }}>
@@ -1103,13 +1106,21 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                       </TableCell>
                       <TableCell sx={{ color: '#475569', fontSize: '13px', whiteSpace: 'nowrap' }}>{p.date}</TableCell>
                       <TableCell>
-                        <Typography sx={{ fontWeight: 700, fontSize: '13.5px', color: '#0F172A' }}>
-                          {p.customerSnapshot?.name}
-                        </Typography>
-                        {p.companyName && (
-                          <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
-                            {p.companyName}
+                        {userRole === 'user' ? (
+                          <Typography sx={{ fontWeight: 700, fontSize: '13.5px', color: '#0F172A' }}>
+                            {p.companyName || p.customerSnapshot?.companyName || '-'}
                           </Typography>
+                        ) : (
+                          <>
+                            <Typography sx={{ fontWeight: 700, fontSize: '13.5px', color: '#0F172A' }}>
+                              {p.customerSnapshot?.name}
+                            </Typography>
+                            {p.companyName && (
+                              <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
+                                {p.companyName}
+                              </Typography>
+                            )}
+                          </>
                         )}
                       </TableCell>
                       <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: '#0B4DB7' }}>
@@ -1129,74 +1140,91 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                       <TableCell sx={{ textAlign: 'center' }}>{getStatusChip(p.status)}</TableCell>
                       <TableCell sx={{ textAlign: 'center' }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
-                          {onSelectCustomerForBill && p.status !== 'CANCELLED' && p.status !== 'COMPLETED' && (
-                            <Tooltip title="Create Particular Bill for this Customer">
+                          {userRole === 'user' ? (
+                            <Tooltip title="View Details">
                               <IconButton
                                 size="small"
-                                onClick={() => onSelectCustomerForBill(p.customerSnapshot?.name || '', 'Create Particular')}
-                                sx={{ color: '#059669', backgroundColor: '#ECFDF5', '&:hover': { backgroundColor: '#D1FAE5' } }}
-                              >
-                                <ReceiptLongRoundedIcon sx={{ fontSize: 18 }} />
-                              </IconButton>
-                            </Tooltip>
-                          )}
-
-                          <Tooltip title="View Details">
-                            <IconButton size="small" onClick={() => handleOpenViewModal(p._id)} sx={{ color: '#0B4DB7' }}>
-                              <VisibilityRoundedIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                          </Tooltip>
-
-                          {userRole !== 'user' && (
-                            <Tooltip title="Edit Performa">
-                              <IconButton
-                                size="small"
-                                onClick={() => handleOpenEditModal(p)}
+                                onClick={() => handleOpenViewModal(p._id)}
                                 sx={{
-                                  color: '#2563EB',
+                                  color: '#0B4DB7',
                                   backgroundColor: '#EFF6FF',
                                   '&:hover': { backgroundColor: '#DBEAFE' },
+                                  width: '32px',
+                                  height: '28px',
+                                  borderRadius: '6px',
                                 }}
                               >
-                                <ModeEditOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                                <VisibilityRoundedIcon sx={{ fontSize: 18 }} />
                               </IconButton>
                             </Tooltip>
-                          )}
+                          ) : (
+                            <>
+                              {onSelectCustomerForBill && p.status !== 'CANCELLED' && p.status !== 'COMPLETED' && (
+                                <Tooltip title="Create Particular Bill for this Customer">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => onSelectCustomerForBill(p.customerSnapshot?.name || '', 'Create Particular')}
+                                    sx={{ color: '#059669', backgroundColor: '#ECFDF5', '&:hover': { backgroundColor: '#D1FAE5' } }}
+                                  >
+                                    <ReceiptLongRoundedIcon sx={{ fontSize: 18 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
 
-                          <Tooltip title="Share on WhatsApp">
-                            <IconButton
-                              size="small"
-                              onClick={() => sharePerformaOnWhatsApp(p)}
-                              sx={{
-                                color: '#FFFFFF',
-                                backgroundColor: '#25D366',
-                                '&:hover': { backgroundColor: '#1EBE5D' },
-                              }}
-                            >
-                              <WhatsAppIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                          </Tooltip>
+                              <Tooltip title="View Details">
+                                <IconButton size="small" onClick={() => handleOpenViewModal(p._id)} sx={{ color: '#0B4DB7' }}>
+                                  <VisibilityRoundedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                              </Tooltip>
 
-                          <Tooltip title="Print Performa">
-                            <IconButton size="small" onClick={() => handleOpenPrintModal(p)} sx={{ color: '#475569' }}>
-                              <PrintOutlinedIcon sx={{ fontSize: 18 }} />
-                            </IconButton>
-                          </Tooltip>
+                              <Tooltip title="Edit Performa">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleOpenEditModal(p)}
+                                  sx={{
+                                    color: '#2563EB',
+                                    backgroundColor: '#EFF6FF',
+                                    '&:hover': { backgroundColor: '#DBEAFE' },
+                                  }}
+                                >
+                                  <ModeEditOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                              </Tooltip>
 
-                          {userRole !== 'user' && p.status !== 'CANCELLED' && p.status !== 'COMPLETED' && (
-                            <Tooltip title="Cancel Performa">
-                              <IconButton size="small" onClick={() => handleCancelPerforma(p._id, p.performaNumber)} sx={{ color: '#D97706' }}>
-                                <CancelOutlinedIcon sx={{ fontSize: 18 }} />
-                              </IconButton>
-                            </Tooltip>
-                          )}
+                              <Tooltip title="Share on WhatsApp">
+                                <IconButton
+                                  size="small"
+                                  onClick={() => sharePerformaOnWhatsApp(p)}
+                                  sx={{
+                                    color: '#FFFFFF',
+                                    backgroundColor: '#25D366',
+                                    '&:hover': { backgroundColor: '#1EBE5D' },
+                                  }}
+                                >
+                                  <WhatsAppIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                              </Tooltip>
 
-                          {userRole !== 'user' && (
-                            <Tooltip title="Delete Performa">
-                              <IconButton size="small" onClick={() => handleDeletePerforma(p._id, p.performaNumber)} sx={{ color: '#DC2626', '&:hover': { backgroundColor: '#FEE2E2' } }}>
-                                <DeleteOutlineRoundedIcon sx={{ fontSize: 18 }} />
-                              </IconButton>
-                            </Tooltip>
+                              <Tooltip title="Print Performa">
+                                <IconButton size="small" onClick={() => handleOpenPrintModal(p)} sx={{ color: '#475569' }}>
+                                  <PrintOutlinedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                              </Tooltip>
+
+                              {p.status !== 'CANCELLED' && p.status !== 'COMPLETED' && (
+                                <Tooltip title="Cancel Performa">
+                                  <IconButton size="small" onClick={() => handleCancelPerforma(p._id, p.performaNumber)} sx={{ color: '#D97706' }}>
+                                    <CancelOutlinedIcon sx={{ fontSize: 18 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              )}
+
+                              <Tooltip title="Delete Performa">
+                                <IconButton size="small" onClick={() => handleDeletePerforma(p._id, p.performaNumber)} sx={{ color: '#DC2626', '&:hover': { backgroundColor: '#FEE2E2' } }}>
+                                  <DeleteOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                                </IconButton>
+                              </Tooltip>
+                            </>
                           )}
                         </Box>
                       </TableCell>
@@ -1454,7 +1482,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
               >
                 Print Performa
               </Button>
-              {onSelectCustomerForBill && selectedPerformaForView.status !== 'CANCELLED' && (
+              {userRole !== 'user' && onSelectCustomerForBill && selectedPerformaForView.status !== 'CANCELLED' && (
                 <Button
                   variant="contained"
                   disableElevation
@@ -1482,7 +1510,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
 
       {/* Edit Performa Dialog */}
       <Dialog
-        open={editModalOpen}
+        open={editModalOpen && userRole !== 'user'}
         onClose={() => !editLoading && setEditModalOpen(false)}
         maxWidth="lg"
         fullWidth

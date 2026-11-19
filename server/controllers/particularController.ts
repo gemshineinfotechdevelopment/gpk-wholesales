@@ -127,6 +127,10 @@ export const getNextBillNo = async (_req: Request, res: Response, next: NextFunc
 
 export const createParticular = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (req.headers['x-user-role'] === 'user') {
+      res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to create bills.' });
+      return;
+    }
     const {
       customerName,
       caseCount,
@@ -228,6 +232,10 @@ export const createParticular = async (req: Request, res: Response, next: NextFu
 
 export const updateParticular = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (req.headers['x-user-role'] === 'user') {
+      res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to edit bills.' });
+      return;
+    }
     const { id } = req.params;
     const existing = await Particular.findById(id);
     if (!existing) {
@@ -351,6 +359,10 @@ export const updateParticular = async (req: Request, res: Response, next: NextFu
 
 export const deleteParticular = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (req.headers['x-user-role'] === 'user') {
+      res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to delete bills.' });
+      return;
+    }
     const particular = await Particular.findById(req.params.id);
     if (!particular) {
       res.status(404).json({ success: false, error: 'Particular bill not found' });
@@ -407,6 +419,10 @@ export const deleteParticular = async (req: Request, res: Response, next: NextFu
 
 export const uploadParticularPdf = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (req.headers['x-user-role'] === 'user') {
+      res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to upload documents.' });
+      return;
+    }
     const { id } = req.params;
     const { pdfData, pdfName } = req.body;
 
@@ -468,6 +484,10 @@ export const uploadParticularPdf = async (req: Request, res: Response, next: Nex
 
 export const deleteParticularPdf = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (req.headers['x-user-role'] === 'user') {
+      res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to delete documents.' });
+      return;
+    }
     const { id } = req.params;
     const particular = await Particular.findById(id);
 

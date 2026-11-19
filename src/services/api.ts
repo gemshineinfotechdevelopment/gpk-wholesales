@@ -43,14 +43,26 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
   const normalizedEndpoint = endpoint.startsWith('/') ? endpoint : `/${endpoint}`;
   const url = `${API_BASE_URL}${normalizedEndpoint}`;
 
-  // Retrieve auth token if stored
+  // Retrieve auth token and user role if stored
   const token = typeof window !== 'undefined'
     ? localStorage.getItem('gpk_auth_token') || localStorage.getItem('dheeksha_auth_token')
     : null;
 
+  let userRole = '';
+  if (typeof window !== 'undefined') {
+    const userStr = localStorage.getItem('gpk_user');
+    if (userStr) {
+      try {
+        const u = JSON.parse(userStr);
+        userRole = u.role || '';
+      } catch {}
+    }
+  }
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(userRole ? { 'x-user-role': userRole } : {}),
     ...((options.headers as Record<string, string>) || {}),
   };
 

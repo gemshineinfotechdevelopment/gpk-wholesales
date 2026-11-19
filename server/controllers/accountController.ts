@@ -29,6 +29,10 @@ export const getAccountDetails = async (req: Request, res: Response, next: NextF
 
 export const addCredit = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (req.headers['x-user-role'] === 'user') {
+      res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to add credits.' });
+      return;
+    }
     const { customerName, companyName, creditAmount, date, paymentMode, reference, notes } = req.body;
 
     const parsedCredit = parseFloat(String(creditAmount).replace(/,/g, '')) || 0;
@@ -68,6 +72,10 @@ export const addCredit = async (req: Request, res: Response, next: NextFunction)
 
 export const deleteAccountEntry = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (req.headers['x-user-role'] === 'user') {
+      res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to delete account records.' });
+      return;
+    }
     const entry = await AccountLedger.findById(req.params.id);
     if (!entry) {
       res.status(404).json({ success: false, error: 'Account ledger entry not found' });

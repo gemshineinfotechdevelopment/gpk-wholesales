@@ -197,6 +197,10 @@ export const getPerformaById = async (req: Request, res: Response, next: NextFun
 
 export const createPerforma = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (req.headers['x-user-role'] === 'user') {
+      res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to create performas.' });
+      return;
+    }
     const {
       customerId,
       customerSnapshot,
@@ -388,6 +392,10 @@ export const createPerforma = async (req: Request, res: Response, next: NextFunc
 
 export const updatePerforma = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (req.headers['x-user-role'] === 'user') {
+      res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to edit performas.' });
+      return;
+    }
     const { id } = req.params;
     const existing = await Performa.findById(id);
     if (!existing) {
@@ -540,6 +548,10 @@ export const updatePerforma = async (req: Request, res: Response, next: NextFunc
 
 export const cancelPerforma = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (req.headers['x-user-role'] === 'user') {
+      res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to cancel performas.' });
+      return;
+    }
     const { id } = req.params;
     const performa = await Performa.findById(id);
     if (!performa) {
@@ -571,6 +583,10 @@ export const cancelPerforma = async (req: Request, res: Response, next: NextFunc
 
 export const deletePerforma = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (req.headers['x-user-role'] === 'user') {
+      res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to delete performas.' });
+      return;
+    }
     const { id } = req.params;
     const performa = await Performa.findById(id);
     if (!performa) {
@@ -589,6 +605,10 @@ export const deletePerforma = async (req: Request, res: Response, next: NextFunc
 
 export const addCustomerAdvance = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
+    if (req.headers['x-user-role'] === 'user') {
+      res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to add advances.' });
+      return;
+    }
     const { customerId, customerName, amount, date, paymentMode, reference, notes, createdBy = 'Admin' } = req.body;
     const parsedAmount = parseFloat(String(amount).replace(/,/g, '')) || 0;
     if (parsedAmount <= 0) {
