@@ -126,15 +126,6 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
   // Total Allocated Value = Subtotal - Discount + Packing + Tax
   const totalAllocatedVal = Math.max(0, subtotalVal - discountAmt + packingAmt + taxAmt);
 
-  const billsTotalCases = (performa.customerBills || []).reduce(
-    (acc: number, b: any) => acc + (parseFloat(String(b.caseCount || 0)) || 0),
-    0
-  );
-  const billsTotalAmt = (performa.customerBills || []).reduce(
-    (acc: number, b: any) => acc + (parseFloat(String(b.netTotal || b.total || b.amount || 0)) || 0),
-    0
-  );
-
   return (
     <div
       className="gpk-performa-container"
@@ -400,52 +391,6 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
           </div>
         </div>
       </div>
-
-      {/* Linked Particulars Bills Table (if any) */}
-      {performa.customerBills && performa.customerBills.length > 0 && (
-        <div style={{ marginTop: '14px', marginBottom: '14px', pageBreakInside: 'avoid' }}>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: '#0F172A', textTransform: 'uppercase', letterSpacing: '0.04em', marginBottom: '4px' }}>
-            Linked Particulars Purchase Bills ({performa.customerBills.length})
-          </div>
-          <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '11px', border: '1px solid #CBD5E1' }}>
-            <thead>
-              <tr style={{ backgroundColor: '#F1F5F9' }}>
-                <th style={{ padding: '4px 6px', textAlign: 'center', border: '1px solid #CBD5E1', width: '30px' }}>#</th>
-                <th style={{ padding: '4px 8px', textAlign: 'left', border: '1px solid #CBD5E1' }}>Bill No</th>
-                <th style={{ padding: '4px 8px', textAlign: 'left', border: '1px solid #CBD5E1', width: '80px' }}>Date</th>
-                <th style={{ padding: '4px 8px', textAlign: 'left', border: '1px solid #CBD5E1' }}>Company</th>
-                <th style={{ padding: '4px 6px', textAlign: 'center', border: '1px solid #CBD5E1', width: '50px' }}>Cases</th>
-                <th style={{ padding: '4px 8px', textAlign: 'right', border: '1px solid #CBD5E1', width: '90px' }}>Net Total (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              {performa.customerBills.map((b: any, bIdx: number) => (
-                <tr key={bIdx} style={{ backgroundColor: bIdx % 2 === 1 ? '#F8FAFC' : '#FFFFFF' }}>
-                  <td style={{ padding: '4px 6px', textAlign: 'center', border: '1px solid #CBD5E1' }}>{bIdx + 1}</td>
-                  <td style={{ padding: '4px 8px', fontWeight: 700, border: '1px solid #CBD5E1' }}>#{b.billNo}</td>
-                  <td style={{ padding: '4px 8px', border: '1px solid #CBD5E1' }}>{b.date}</td>
-                  <td style={{ padding: '4px 8px', border: '1px solid #CBD5E1', color: '#0B4DB7' }}>{b.companyName || '-'}</td>
-                  <td style={{ padding: '4px 6px', textAlign: 'center', border: '1px solid #CBD5E1' }}>{b.caseCount || '0'}</td>
-                  <td style={{ padding: '4px 8px', textAlign: 'right', fontWeight: 700, border: '1px solid #CBD5E1' }}>₹ {formatCurrency(b.netTotal || parseFloat(b.total || b.amount || 0))}</td>
-                </tr>
-              ))}
-            </tbody>
-            <tfoot>
-              <tr style={{ backgroundColor: '#F1F5F9', fontWeight: 800 }}>
-                <td colSpan={4} style={{ padding: '5px 8px', textAlign: 'right', border: '1px solid #CBD5E1', color: '#0F172A' }}>
-                  Total Particulars Purchases:
-                </td>
-                <td style={{ padding: '5px 6px', textAlign: 'center', border: '1px solid #CBD5E1', color: '#0F172A' }}>
-                  {billsTotalCases}
-                </td>
-                <td style={{ padding: '5px 8px', textAlign: 'right', border: '1px solid #CBD5E1', color: '#DC2626' }}>
-                  ₹ {formatCurrency(billsTotalAmt)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      )}
 
       {/* Footer Signatures */}
       <div

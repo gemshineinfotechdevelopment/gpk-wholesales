@@ -1952,15 +1952,6 @@ export const generatePerformaHtml = (performa: any): string => {
 
   const totalAllocatedVal = Math.max(0, subtotalVal - discountAmt + packingAmt + taxAmt);
 
-  const billsTotalCases = (performa.customerBills || []).reduce(
-    (acc: number, b: any) => acc + (parseFloat(String(b.caseCount || 0)) || 0),
-    0
-  );
-  const billsTotalAmt = (performa.customerBills || []).reduce(
-    (acc: number, b: any) => acc + (parseFloat(String(b.netTotal || b.total || b.amount || 0)) || 0),
-    0
-  );
-
   const productRowsHtml = (performa.products || []).map((item: any, idx: number) => {
     const isEven = idx % 2 === 1;
     const prodName = item.productSnapshot?.productName || item.productName || item.particular || 'Product';
@@ -2090,50 +2081,6 @@ export const generatePerformaHtml = (performa: any): string => {
             </div>
           </div>
         </div>
-
-        ${performa.customerBills && performa.customerBills.length > 0 ? `
-        <div style="margin-top: 14px; margin-bottom: 14px; page-break-inside: avoid;">
-          <div style="font-size: 11px; font-weight: 800; color: #0F172A; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 4px;">
-            Linked Particulars Purchase Bills (${performa.customerBills.length})
-          </div>
-          <table style="width: 100%; border-collapse: collapse; font-size: 11px; border: 1px solid #CBD5E1;">
-            <thead>
-              <tr style="background-color: #F1F5F9;">
-                <th style="padding: 4px 6px; text-align: center; border: 1px solid #CBD5E1; width: 30px;">#</th>
-                <th style="padding: 4px 8px; text-align: left; border: 1px solid #CBD5E1;">Bill No</th>
-                <th style="padding: 4px 8px; text-align: left; border: 1px solid #CBD5E1; width: 80px;">Date</th>
-                <th style="padding: 4px 8px; text-align: left; border: 1px solid #CBD5E1;">Company</th>
-                <th style="padding: 4px 6px; text-align: center; border: 1px solid #CBD5E1; width: 50px;">Cases</th>
-                <th style="padding: 4px 8px; text-align: right; border: 1px solid #CBD5E1; width: 90px;">Net Total (₹)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${performa.customerBills.map((b: any, bIdx: number) => `
-                <tr style="background-color: ${bIdx % 2 === 1 ? '#F8FAFC' : '#FFFFFF'};">
-                  <td style="padding: 4px 6px; text-align: center; border: 1px solid #CBD5E1;">${bIdx + 1}</td>
-                  <td style="padding: 4px 8px; font-weight: 700; border: 1px solid #CBD5E1;">#${b.billNo}</td>
-                  <td style="padding: 4px 8px; border: 1px solid #CBD5E1;">${b.date}</td>
-                  <td style="padding: 4px 8px; border: 1px solid #CBD5E1; color: #0B4DB7;">${b.companyName || '-'}</td>
-                  <td style="padding: 4px 6px; text-align: center; border: 1px solid #CBD5E1;">${b.caseCount || '0'}</td>
-                  <td style="padding: 4px 8px; text-align: right; font-weight: 700; border: 1px solid #CBD5E1;">₹ ${formatCurrency(b.netTotal || parseFloat(b.total || b.amount || 0))}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-            <tfoot>
-              <tr style="background-color: #F1F5F9; font-weight: 800;">
-                <td colspan="4" style="padding: 5px 8px; text-align: right; border: 1px solid #CBD5E1; color: #0F172A;">
-                  Total Particulars Purchases:
-                </td>
-                <td style="padding: 5px 6px; text-align: center; border: 1px solid #CBD5E1; color: #0F172A;">
-                  ${billsTotalCases}
-                </td>
-                <td style="padding: 5px 8px; text-align: right; border: 1px solid #CBD5E1; color: #DC2626;">
-                  ₹ ${formatCurrency(billsTotalAmt)}
-                </td>
-              </tr>
-            </tfoot>
-          </table>
-        </div>` : ''}
 
         <!-- Signatures -->
         <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 28px; padding-top: 14px; border-top: 1px dashed #CBD5E1; font-size: 11px; page-break-inside: avoid;">
