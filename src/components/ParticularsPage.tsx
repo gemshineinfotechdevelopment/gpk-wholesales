@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef, type FC } from 'react';
+import { useState, useEffect, useMemo, type FC } from 'react';
 import {
   Box,
   Typography,
@@ -30,12 +30,8 @@ import ModeEditOutlineRoundedIcon from '@mui/icons-material/ModeEditOutlineRound
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded';
-import UploadFileRoundedIcon from '@mui/icons-material/UploadFileRounded';
-import PictureAsPdfRoundedIcon from '@mui/icons-material/PictureAsPdfRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
-import DownloadRoundedIcon from '@mui/icons-material/DownloadRounded';
-import OpenInNewRoundedIcon from '@mui/icons-material/OpenInNewRounded';
 import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
@@ -124,6 +120,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
     setAccountCustomerInput(name);
     setParticularCustomerInput(name);
   }, [filterCustomer, currentCustomerName]);
+
+  const activeSelectedCustomer = isCustomer
+    ? (initialCustomerName || currentCustomerName || filterCustomer || 'Customer')
+    : (filterCustomer && filterCustomer !== 'ALL' && filterCustomer !== 'All Customers'
+        ? filterCustomer
+        : (currentCustomerName && currentCustomerName !== 'ALL' && currentCustomerName !== 'All Customers' ? currentCustomerName : ''));
+
+  const isSingleCustomer = isCustomer || Boolean(activeSelectedCustomer);
 
   // Subtab 2: Create Particular Form State
   const [caseCount, setCaseCount] = useState<string>('0');
@@ -260,23 +264,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
     products: [],
   });
   const [editBillLoading, setEditBillLoading] = useState(false);
-
-  // PDF Upload & Preview State (under 1 MB)
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploadTargetBillId, setUploadTargetBillId] = useState<string | null>(null);
-  const [uploadingBillId, setUploadingBillId] = useState<string | null>(null);
-  const [pdfPreviewModal, setPdfPreviewModal] = useState<{
-    open: boolean;
-    url: string;
-    name: string;
-    id: string;
-    billNo?: string;
-  } | null>(null);
-  const [pdfToast, setPdfToast] = useState<{
-    open: boolean;
-    message: string;
-    severity: 'success' | 'error' | 'info';
-  }>({
+  const [toast, setToast] = useState<{ open: boolean; message: string; severity: 'success' | 'error' | 'info' }>({
     open: false,
     message: '',
     severity: 'success',
@@ -979,6 +967,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
 
   // Delete handlers
   const handleDeleteAccountEntry = async (id: string) => {
+    if (isCustomer) return;
     if (!window.confirm('Delete this account ledger transaction?')) return;
     try {
       const entryToDelete = accountDetails.find((a) => (a._id || a.id) === id);
@@ -1002,6 +991,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
   };
 
   const handleDeleteParticular = async (id: string) => {
+    if (isCustomer) return;
     if (!window.confirm('Delete this particular bill?')) return;
     try {
       const billToDelete = particularDetails.find((p) => (p._id || p.id) === id);
@@ -1116,6 +1106,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
 
   // Edit Particular Handlers
   const handleOpenEditParticular = (row: any) => {
+    if (isCustomer) return;
     const rowId = row._id || row.id || '';
     setEditingParticularId(rowId);
     setEditBillForm({
@@ -1223,7 +1214,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
   }, [editSubtotal, editDiscountVal, editPackingVal, editTaxVal]);
 
   const handleSaveEditParticular = async () => {
-    if (!editingParticularId) return;
+    if (isCustomer || !editingParticularId) return;
     try {
       setEditBillLoading(true);
       await ParticularsApi.update(editingParticularId, {
@@ -1244,7 +1235,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
       await fetchParticulars();
       await fetchAccounts(filterCustomer);
       setOpenEditParticularModal(false);
-      setPdfToast({
+      setToast({
         open: true,
         message: `Bill #${editBillForm.billNo} updated successfully!`,
         severity: 'success',
@@ -1254,150 +1245,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
       alert('Error updating bill details');
     } finally {
       setEditBillLoading(false);
-    }
-  };
-
-  // Transport Receipt / PDF Upload Handlers (Up to 5 MB)
-  const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
-
-  const handleTriggerPdfUpload = (id: string) => {
-    setUploadTargetBillId(id);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-      fileInputRef.current.click();
-    }
-  };
-
-  const handlePdfFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    const targetId = uploadTargetBillId;
-    if (!file || !targetId) return;
-
-    // Reset input so same file can be selected again if needed
-    e.target.value = '';
-
-    // 1. Verify file type is Image or PDF
-    const isImageOrPdf =
-      file.type.startsWith('image/') ||
-      file.type === 'application/pdf' ||
-      /\.(jpg|jpeg|png|webp|gif|pdf)$/i.test(file.name);
-    if (!isImageOrPdf) {
-      setPdfToast({
-        open: true,
-        message: 'Invalid file format. Please upload an Image (JPG, PNG, WEBP) or PDF file.',
-        severity: 'error',
-      });
-      return;
-    }
-
-    // 2. Verify file size is under 5 MB
-    if (file.size > MAX_FILE_SIZE_BYTES) {
-      const sizeInMb = (file.size / (1024 * 1024)).toFixed(2);
-      setPdfToast({
-        open: true,
-        message: `File size (${sizeInMb} MB) exceeds 5 MB limit. Please select a smaller file.`,
-        severity: 'error',
-      });
-      return;
-    }
-
-    try {
-      setUploadingBillId(targetId);
-      const reader = new FileReader();
-      reader.onload = async () => {
-        try {
-          const base64Data = reader.result as string;
-          const uploadRes = await ParticularsApi.uploadPdf(targetId, base64Data, file.name);
-          const savedData = uploadRes?.data?.pdfData || base64Data;
-
-          // Update local state in particularDetails
-          setParticularDetails((prev) =>
-            prev.map((p) => {
-              const pId = p._id || p.id;
-              if (pId === targetId) {
-                return { ...p, pdfData: savedData, pdfName: file.name };
-              }
-              return p;
-            })
-          );
-
-          setPdfToast({
-            open: true,
-            message: `Receipt document "${file.name}" uploaded successfully!`,
-            severity: 'success',
-          });
-        } catch (uploadErr) {
-          console.error('Failed to save document to server:', uploadErr);
-          setPdfToast({
-            open: true,
-            message: 'Failed to upload receipt. Please try again.',
-            severity: 'error',
-          });
-        } finally {
-          setUploadingBillId(null);
-        }
-      };
-
-      reader.onerror = () => {
-        setUploadingBillId(null);
-        setPdfToast({
-          open: true,
-          message: 'Error reading file.',
-          severity: 'error',
-        });
-      };
-
-      reader.readAsDataURL(file);
-    } catch (err) {
-      console.error('Failed to initiate upload:', err);
-      setUploadingBillId(null);
-    }
-  };
-
-  const handleOpenPdfPreview = (row: any) => {
-    const rowId = row._id || row.id || '';
-    if (!row.pdfData) {
-      handleTriggerPdfUpload(rowId);
-      return;
-    }
-
-    setPdfPreviewModal({
-      open: true,
-      url: row.pdfData,
-      name: row.pdfName || `Bill-${row.billNo || 'document'}.pdf`,
-      id: rowId,
-      billNo: row.billNo,
-    });
-  };
-
-  const handleDeleteAttachedPdf = async (id: string) => {
-    if (!window.confirm('Are you sure you want to remove the attached PDF from this bill?')) return;
-    try {
-      await ParticularsApi.deletePdf(id);
-      setParticularDetails((prev) =>
-        prev.map((p) => {
-          const pId = p._id || p.id;
-          if (pId === id) {
-            return { ...p, pdfData: '', pdfName: '' };
-          }
-          return p;
-        })
-      );
-      if (pdfPreviewModal?.id === id) {
-        setPdfPreviewModal(null);
-      }
-      setPdfToast({
-        open: true,
-        message: 'Attached PDF deleted successfully.',
-        severity: 'success',
-      });
-    } catch (err) {
-      console.error('Failed to delete attached PDF:', err);
-      setPdfToast({
-        open: true,
-        message: 'Failed to delete attached PDF.',
-        severity: 'error',
-      });
     }
   };
 
@@ -3104,9 +2951,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                     <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '110px' }}>
                       DATE
                     </TableCell>
-                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '140px' }}>
-                      CUSTOMER
-                    </TableCell>
+                    {!isSingleCustomer && (
+                      <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '140px' }}>
+                        CUSTOMER
+                      </TableCell>
+                    )}
                     <TableCell sx={{ py: 1.5, px: { xs: 2, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B' }}>
                       COMPANY NAME
                     </TableCell>
@@ -3119,21 +2968,23 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                     <TableCell align="right" sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '120px' }}>
                       BALANCE
                     </TableCell>
-                    <TableCell align="center" sx={{ py: 1.5, px: { xs: 2, sm: 3 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '70px' }}>
-                      DELETE
-                    </TableCell>
+                    {!isCustomer && (
+                      <TableCell align="center" sx={{ py: 1.5, px: { xs: 2, sm: 3 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '70px' }}>
+                        DELETE
+                      </TableCell>
+                    )}
                   </TableRow>
                 </TableHead>
                 <TableBody>
                   {accountLoading ? (
                     <TableRow>
-                      <TableCell colSpan={8} align="center" sx={{ py: 6 }}>
+                      <TableCell colSpan={8 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6 }}>
                         <CircularProgress size={32} sx={{ color: '#0B4DB7' }} />
                       </TableCell>
                     </TableRow>
                   ) : accountDetails.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8} align="center" sx={{ py: 6, color: '#64748B' }}>
+                      <TableCell colSpan={8 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6, color: '#64748B' }}>
                         No account details found {filterCustomer && filterCustomer !== 'ALL' ? `for ${filterCustomer}` : ''}.
                       </TableCell>
                     </TableRow>
@@ -3156,9 +3007,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                           <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 500, color: '#475569', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.date}
                           </TableCell>
-                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 700, color: '#0B4DB7', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
-                            {row.customerName}
-                          </TableCell>
+                          {!isSingleCustomer && (
+                            <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 700, color: '#0B4DB7', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                              {row.customerName}
+                            </TableCell>
+                          )}
                           <TableCell sx={{ py: 1.6, px: { xs: 2, sm: 2.5 }, fontSize: '13.5px', fontWeight: 600, color: '#0F172A', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.companyName && row.companyName !== 'General' ? row.companyName : '-'}
                           </TableCell>
@@ -3181,29 +3034,31 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                           >
                             {row.balance}
                           </TableCell>
-                          <TableCell align="center" sx={{ py: 1.6, px: { xs: 2, sm: 3 }, borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
-                            <Tooltip title="Delete Record" arrow>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleDeleteAccountEntry(rowId)}
-                                sx={{
-                                  color: '#64748B',
-                                  backgroundColor: '#F8FAFC',
-                                  border: '1px solid #E2E8F0',
-                                  borderRadius: '6px',
-                                  p: 0.7,
-                                  transition: 'all 0.15s ease',
-                                  '&:hover': {
-                                    color: '#DC2626',
-                                    backgroundColor: '#FEF2F2',
-                                    borderColor: '#FECACA',
-                                  },
-                                }}
-                              >
-                                <DeleteOutlineRoundedIcon sx={{ fontSize: 16 }} />
-                              </IconButton>
-                            </Tooltip>
-                          </TableCell>
+                          {!isCustomer && (
+                            <TableCell align="center" sx={{ py: 1.6, px: { xs: 2, sm: 3 }, borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                              <Tooltip title="Delete Record" arrow>
+                                <IconButton
+                                  size="small"
+                                  onClick={() => handleDeleteAccountEntry(rowId)}
+                                  sx={{
+                                    color: '#64748B',
+                                    backgroundColor: '#F8FAFC',
+                                    border: '1px solid #E2E8F0',
+                                    borderRadius: '6px',
+                                    p: 0.7,
+                                    transition: 'all 0.15s ease',
+                                    '&:hover': {
+                                      color: '#DC2626',
+                                      backgroundColor: '#FEF2F2',
+                                      borderColor: '#FECACA',
+                                    },
+                                  }}
+                                >
+                                  <DeleteOutlineRoundedIcon sx={{ fontSize: 16 }} />
+                                </IconButton>
+                              </Tooltip>
+                            </TableCell>
+                          )}
                         </TableRow>
                       );
                     })
@@ -3429,9 +3284,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                   <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '80px' }}>
                     BILL.NO
                   </TableCell>
-                  <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '130px' }}>
-                    CUSTOMER
-                  </TableCell>
+                  {!isSingleCustomer && (
+                    <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '130px' }}>
+                      CUSTOMER
+                    </TableCell>
+                  )}
                   <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '140px' }}>
                     COMPANY NAME
                   </TableCell>
@@ -3459,7 +3316,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                   <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '120px' }}>
                     TRANSPORT
                   </TableCell>
-                  <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', width: '175px' }}>
+                  <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', width: '150px' }}>
                     ACTION
                   </TableCell>
                 </TableRow>
@@ -3467,13 +3324,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
               <TableBody>
                 {particularLoading ? (
                   <TableRow>
-                    <TableCell colSpan={12} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={isSingleCustomer ? 11 : 12} align="center" sx={{ py: 6 }}>
                       <CircularProgress size={32} sx={{ color: '#0B4DB7' }} />
                     </TableCell>
                   </TableRow>
                 ) : filteredParticularRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={12} align="center" sx={{ py: 6, color: '#64748B' }}>
+                    <TableCell colSpan={isSingleCustomer ? 11 : 12} align="center" sx={{ py: 6, color: '#64748B' }}>
                       No particular bills found {filterCustomer !== 'ALL' ? `for ${filterCustomer}` : ''}{filterParticularCompany !== 'ALL' ? ` under ${filterParticularCompany}` : ''}.
                     </TableCell>
                   </TableRow>
@@ -3486,8 +3343,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                     const discStr = row.discount && parseFloat(row.discount) > 0 ? (parseFloat(row.discount) <= 100 ? `${row.discount}%` : `₹${row.discount}`) : '-';
                     const packStr = row.packing && parseFloat(row.packing) > 0 ? (parseFloat(row.packing) <= 100 ? `${row.packing}%` : `₹${row.packing}`) : '-';
                     const taxStr = row.tax && parseFloat(row.tax) > 0 ? `₹${parseFloat(row.tax).toLocaleString('en-IN')}` : '-';
-                    const hasPdf = Boolean(row.pdfData && row.pdfData.trim() !== '');
-                    const isUploading = uploadingBillId === rowId;
                     const pendingCasesVal = Number(row.pendingCaseCount) || 0;
 
                     return (
@@ -3502,9 +3357,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                         <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '13px', fontWeight: 700, color: '#0F172A', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           {row.billNo}
                         </TableCell>
-                        <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '13px', fontWeight: 700, color: '#0B4DB7', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
-                          {row.customerName}
-                        </TableCell>
+                        {!isSingleCustomer && (
+                          <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '13px', fontWeight: 700, color: '#0B4DB7', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
+                            {row.customerName}
+                          </TableCell>
+                        )}
                         <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '13px', fontWeight: 600, color: '#0F172A', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           {row.companyName && row.companyName !== 'General' ? row.companyName : '-'}
                         </TableCell>
@@ -3551,136 +3408,118 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
                         </TableCell>
                         <TableCell align="center" sx={{ py: 1.4, px: 1.5, borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                           <Box sx={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 0.6 }}>
-                            <Tooltip title="Share on WhatsApp" arrow>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleShareBillWhatsApp(row)}
-                                sx={{
-                                  backgroundColor: '#25D366',
-                                  color: '#FFFFFF',
-                                  borderRadius: '4px',
-                                  width: '24px',
-                                  height: '22px',
-                                  p: 0,
-                                  '&:hover': { backgroundColor: '#1EBE5D' },
-                                }}
-                              >
-                                <WhatsAppIcon sx={{ fontSize: 14 }} />
-                              </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="View" arrow>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleOpenBillPrint(row, false)}
-                                sx={{
-                                  backgroundColor: '#0B4DB7',
-                                  color: '#FFFFFF',
-                                  borderRadius: '4px',
-                                  width: '24px',
-                                  height: '22px',
-                                  p: 0,
-                                  '&:hover': { backgroundColor: '#083B8D' },
-                                }}
-                              >
-                                <VisibilityRoundedIcon sx={{ fontSize: 14 }} />
-                              </IconButton>
-                            </Tooltip>
-
-                            <Tooltip title="Print" arrow>
-                              <IconButton
-                                size="small"
-                                onClick={() => handleOpenBillPrint(row, true)}
-                                sx={{
-                                  backgroundColor: '#334155',
-                                  color: '#FFFFFF',
-                                  borderRadius: '4px',
-                                  width: '24px',
-                                  height: '22px',
-                                  p: 0,
-                                  '&:hover': { backgroundColor: '#1E293B' },
-                                }}
-                              >
-                                <PrintOutlinedIcon sx={{ fontSize: 14 }} />
-                              </IconButton>
-                            </Tooltip>
-
-                            {/* Edit Particular Bill Button (Admin & Super Admin only) */}
-                            {!isCustomer && (
-                              <Tooltip title="Edit Bill Details" arrow>
+                            {isCustomer ? (
+                              <Tooltip title="View Bill" arrow>
                                 <IconButton
                                   size="small"
-                                  onClick={() => handleOpenEditParticular(row)}
+                                  onClick={() => handleOpenBillPrint(row, false)}
                                   sx={{
-                                    backgroundColor: '#0284C7',
+                                    backgroundColor: '#0B4DB7',
                                     color: '#FFFFFF',
-                                    borderRadius: '4px',
-                                    width: '24px',
-                                    height: '22px',
+                                    borderRadius: '6px',
+                                    width: '32px',
+                                    height: '28px',
                                     p: 0,
-                                    '&:hover': { backgroundColor: '#0369A1' },
+                                    '&:hover': { backgroundColor: '#083B8D' },
                                   }}
                                 >
-                                  <ModeEditOutlineRoundedIcon sx={{ fontSize: 14 }} />
+                                  <VisibilityRoundedIcon sx={{ fontSize: 16 }} />
                                 </IconButton>
                               </Tooltip>
-                            )}
+                            ) : (
+                              <>
+                                <Tooltip title="Share on WhatsApp" arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleShareBillWhatsApp(row)}
+                                    sx={{
+                                      backgroundColor: '#25D366',
+                                      color: '#FFFFFF',
+                                      borderRadius: '4px',
+                                      width: '24px',
+                                      height: '22px',
+                                      p: 0,
+                                      '&:hover': { backgroundColor: '#1EBE5D' },
+                                    }}
+                                  >
+                                    <WhatsAppIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                </Tooltip>
 
-                            {/* PDF Upload / View Button */}
-                            {(hasPdf || !isCustomer) && (
-                              <Tooltip
-                                title={
-                                  hasPdf
-                                    ? `View PDF (${row.pdfName || 'Attached Document'})`
-                                    : 'Upload PDF (Under 1 MB)'
-                                }
-                                arrow
-                              >
-                                <IconButton
-                                  size="small"
-                                  onClick={() => (hasPdf ? handleOpenPdfPreview(row) : handleTriggerPdfUpload(rowId))}
-                                  disabled={isUploading}
-                                  sx={{
-                                    backgroundColor: hasPdf ? '#16A34A' : '#6366F1',
-                                    color: '#FFFFFF',
-                                    borderRadius: '4px',
-                                    width: '24px',
-                                    height: '22px',
-                                    p: 0,
-                                    '&:hover': { backgroundColor: hasPdf ? '#15803D' : '#4F46E5' },
-                                    '&.Mui-disabled': { backgroundColor: '#CBD5E1', color: '#FFFFFF' },
-                                  }}
-                                >
-                                  {isUploading ? (
-                                    <CircularProgress size={12} sx={{ color: '#FFFFFF' }} />
-                                  ) : hasPdf ? (
-                                    <PictureAsPdfRoundedIcon sx={{ fontSize: 14 }} />
-                                  ) : (
-                                    <UploadFileRoundedIcon sx={{ fontSize: 14 }} />
-                                  )}
-                                </IconButton>
-                              </Tooltip>
-                            )}
+                                <Tooltip title="View" arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleOpenBillPrint(row, false)}
+                                    sx={{
+                                      backgroundColor: '#0B4DB7',
+                                      color: '#FFFFFF',
+                                      borderRadius: '4px',
+                                      width: '24px',
+                                      height: '22px',
+                                      p: 0,
+                                      '&:hover': { backgroundColor: '#083B8D' },
+                                    }}
+                                  >
+                                    <VisibilityRoundedIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                </Tooltip>
 
-                            {/* Delete Button (Admin & Super Admin only) */}
-                            {!isCustomer && (
-                              <Tooltip title="Delete" arrow>
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleDeleteParticular(rowId)}
-                                  sx={{
-                                    backgroundColor: '#DC2626',
-                                    color: '#FFFFFF',
-                                    borderRadius: '4px',
-                                    width: '24px',
-                                    height: '22px',
-                                    p: 0,
-                                    '&:hover': { backgroundColor: '#B91C1C' },
-                                  }}
-                                >
-                                  <DeleteOutlineRoundedIcon sx={{ fontSize: 14 }} />
-                                </IconButton>
-                              </Tooltip>
+                                <Tooltip title="Print" arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleOpenBillPrint(row, true)}
+                                    sx={{
+                                      backgroundColor: '#334155',
+                                      color: '#FFFFFF',
+                                      borderRadius: '4px',
+                                      width: '24px',
+                                      height: '22px',
+                                      p: 0,
+                                      '&:hover': { backgroundColor: '#1E293B' },
+                                    }}
+                                  >
+                                    <PrintOutlinedIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                </Tooltip>
+
+                                {/* Edit Particular Bill Button (Admin & Super Admin only) */}
+                                <Tooltip title="Edit Bill Details" arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleOpenEditParticular(row)}
+                                    sx={{
+                                      backgroundColor: '#0284C7',
+                                      color: '#FFFFFF',
+                                      borderRadius: '4px',
+                                      width: '24px',
+                                      height: '22px',
+                                      p: 0,
+                                      '&:hover': { backgroundColor: '#0369A1' },
+                                    }}
+                                  >
+                                    <ModeEditOutlineRoundedIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                </Tooltip>
+
+                                {/* Delete Button (Admin & Super Admin only) */}
+                                <Tooltip title="Delete" arrow>
+                                  <IconButton
+                                    size="small"
+                                    onClick={() => handleDeleteParticular(rowId)}
+                                    sx={{
+                                      backgroundColor: '#DC2626',
+                                      color: '#FFFFFF',
+                                      borderRadius: '4px',
+                                      width: '24px',
+                                      height: '22px',
+                                      p: 0,
+                                      '&:hover': { backgroundColor: '#B91C1C' },
+                                    }}
+                                  >
+                                    <DeleteOutlineRoundedIcon sx={{ fontSize: 14 }} />
+                                  </IconButton>
+                                </Tooltip>
+                              </>
                             )}
                           </Box>
                         </TableCell>
@@ -4020,201 +3859,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
           </Paper>
         </Box>
       )}
-      {/* Hidden File Input for PDF Upload (Under 1 MB) */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="application/pdf"
-        style={{ display: 'none' }}
-        onChange={handlePdfFileChange}
-      />
-
-      {/* PDF Document Preview & Management Modal */}
-      <Dialog
-        open={Boolean(pdfPreviewModal?.open)}
-        onClose={() => setPdfPreviewModal(null)}
-        maxWidth="md"
-        fullWidth
-        slotProps={{
-          paper: {
-            sx: {
-              borderRadius: '12px',
-              overflow: 'hidden',
-              height: '80vh',
-              display: 'flex',
-              flexDirection: 'column',
-            },
-          },
-        }}
-      >
-        <DialogTitle
-          sx={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            backgroundColor: '#0B4DB7',
-            color: '#FFFFFF',
-            py: 1.5,
-            px: 2.5,
-          }}
-        >
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <PictureAsPdfRoundedIcon sx={{ fontSize: 22, color: '#FFFFFF' }} />
-            <Typography sx={{ fontSize: '15px', fontWeight: 700, color: '#FFFFFF' }}>
-              {pdfPreviewModal?.name || 'Attached PDF Document'}
-            </Typography>
-            {pdfPreviewModal?.billNo && (
-              <Chip
-                label={`Bill #${pdfPreviewModal.billNo}`}
-                size="small"
-                sx={{
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  color: '#FFFFFF',
-                  fontWeight: 600,
-                  fontSize: '11px',
-                  height: '20px',
-                }}
-              />
-            )}
-          </Box>
-          <IconButton
-            size="small"
-            onClick={() => setPdfPreviewModal(null)}
-            sx={{ color: '#FFFFFF', '&:hover': { backgroundColor: 'rgba(255,255,255,0.1)' } }}
-          >
-            <CloseRoundedIcon sx={{ fontSize: 20 }} />
-          </IconButton>
-        </DialogTitle>
-
-        <DialogContent sx={{ p: 0, flex: 1, backgroundColor: '#F1F5F9', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          {pdfPreviewModal?.url ? (
-            pdfPreviewModal.url.startsWith('data:image') || pdfPreviewModal.url.match(/\.(jpeg|jpg|png|webp|gif)$/i) || !pdfPreviewModal.url.includes('application/pdf') ? (
-              <Box sx={{ p: 2, display: 'flex', alignItems: 'center', justifyContent: 'center', width: '100%', height: '100%', overflow: 'auto' }}>
-                <img
-                  src={pdfPreviewModal.url}
-                  alt={pdfPreviewModal.name || 'Document'}
-                  style={{
-                    maxWidth: '100%',
-                    maxHeight: '100%',
-                    objectFit: 'contain',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                    borderRadius: '6px',
-                  }}
-                />
-              </Box>
-            ) : (
-              <iframe
-                src={pdfPreviewModal.url}
-                title="PDF Preview"
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  border: 'none',
-                  display: 'block',
-                }}
-              />
-            )
-          ) : (
-            <Box
-              sx={{
-                height: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#64748B',
-              }}
-            >
-              <Typography>No document available</Typography>
-            </Box>
-          )}
-        </DialogContent>
-
-        <DialogActions
-          sx={{
-            px: 2.5,
-            py: 1.5,
-            backgroundColor: '#FFFFFF',
-            borderTop: '1px solid #E2E8F0',
-            justifyContent: 'space-between',
-          }}
-        >
-          <Button
-            variant="outlined"
-            color="error"
-            size="small"
-            startIcon={<DeleteOutlineRoundedIcon sx={{ fontSize: 16 }} />}
-            onClick={() => pdfPreviewModal?.id && handleDeleteAttachedPdf(pdfPreviewModal.id)}
-            sx={{
-              textTransform: 'none',
-              fontWeight: 600,
-              fontSize: '12.5px',
-              borderRadius: '6px',
-            }}
-          >
-            Delete Document
-          </Button>
-
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2, flexWrap: 'wrap' }}>
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<UploadFileRoundedIcon sx={{ fontSize: 16 }} />}
-              onClick={() => pdfPreviewModal?.id && handleTriggerPdfUpload(pdfPreviewModal.id)}
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                fontSize: '12.5px',
-                borderRadius: '6px',
-              }}
-            >
-              Change / Re-upload
-            </Button>
-
-            <Button
-              variant="outlined"
-              size="small"
-              startIcon={<OpenInNewRoundedIcon sx={{ fontSize: 16 }} />}
-              component="a"
-              href={pdfPreviewModal?.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                textTransform: 'none',
-                fontWeight: 600,
-                fontSize: '12.5px',
-                borderRadius: '6px',
-                color: '#475569',
-                borderColor: '#CBD5E1',
-              }}
-            >
-              Open in New Tab
-            </Button>
-
-            <Button
-              variant="contained"
-              disableElevation
-              size="small"
-              startIcon={<DownloadRoundedIcon sx={{ fontSize: 16 }} />}
-              component="a"
-              href={pdfPreviewModal?.url}
-              download={pdfPreviewModal?.name || 'bill-receipt'}
-              target="_blank"
-              rel="noopener noreferrer"
-              sx={{
-                backgroundColor: '#0B4DB7',
-                color: '#FFFFFF',
-                textTransform: 'none',
-                fontWeight: 700,
-                fontSize: '12.5px',
-                borderRadius: '6px',
-                '&:hover': { backgroundColor: '#083B8D' },
-              }}
-            >
-              Download
-            </Button>
-          </Box>
-        </DialogActions>
-      </Dialog>
 
       {/* Bill Print & Preview Modal */}
       <BillPrintModal
@@ -4223,20 +3867,20 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
         bill={selectedBillForPrint}
       />
 
-      {/* Toast Notification for PDF Uploads */}
+      {/* Toast Notification */}
       <Snackbar
-        open={pdfToast.open}
+        open={toast.open}
         autoHideDuration={4000}
-        onClose={() => setPdfToast((prev) => ({ ...prev, open: false }))}
+        onClose={() => setToast((prev) => ({ ...prev, open: false }))}
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
       >
         <Alert
-          onClose={() => setPdfToast((prev) => ({ ...prev, open: false }))}
-          severity={pdfToast.severity}
+          onClose={() => setToast((prev) => ({ ...prev, open: false }))}
+          severity={toast.severity}
           variant="filled"
           sx={{ width: '100%', borderRadius: '8px', fontWeight: 600, fontSize: '13px' }}
         >
-          {pdfToast.message}
+          {toast.message}
         </Alert>
       </Snackbar>
 
@@ -4272,7 +3916,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
 
       {/* Edit Particular Bill Dialog */}
       <Dialog
-        open={openEditParticularModal}
+        open={openEditParticularModal && !isCustomer}
         onClose={() => setOpenEditParticularModal(false)}
         maxWidth="md"
         fullWidth
@@ -4780,15 +4424,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({ initialCustomerName,
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Hidden File Input for Transport / Godown Receipt Upload */}
-      <input
-        type="file"
-        ref={fileInputRef}
-        accept="image/*,application/pdf"
-        style={{ display: 'none' }}
-        onChange={handlePdfFileChange}
-      />
     </Box>
   );
 };

@@ -29,8 +29,6 @@ import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded';
 import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
-import VpnKeyRoundedIcon from '@mui/icons-material/VpnKeyRounded';
-import { CustomerLoginModal } from './CustomerLoginModal';
 import { CustomersApi, AccountsApi, CompaniesApi } from '../services/api';
 import { printCustomerListDirectly } from '../utils/printUtils';
 import { DateRangePrintModal } from './DateRangePrintModal';
@@ -95,15 +93,6 @@ export const CustomersPage: FC<CustomersPageProps> = ({
     date: new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
   });
   const [paymentLoading, setPaymentLoading] = useState(false);
-
-  // Customer Login Modal State (Admin & Super Admin)
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
-  const [selectedLoginCustomer, setSelectedLoginCustomer] = useState<Customer | null>(null);
-
-  const handleOpenLoginModal = (customer: Customer) => {
-    setSelectedLoginCustomer(customer);
-    setLoginModalOpen(true);
-  };
 
   const fetchCustomers = async () => {
     try {
@@ -797,28 +786,6 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                         }}
                       >
                         <Box sx={{ display: 'inline-flex', alignItems: 'center', gap: 0.8 }}>
-                          {/* Portal Login Credentials Button */}
-                          <Tooltip title="Customer Login (Phone No)" arrow>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenLoginModal(customer)}
-                              sx={{
-                                color: '#D97706',
-                                backgroundColor: '#FFFBEB',
-                                border: '1px solid #FDE68A',
-                                borderRadius: '6px',
-                                p: 0.7,
-                                '&:hover': {
-                                  color: '#FFFFFF',
-                                  backgroundColor: '#D97706',
-                                  borderColor: '#D97706',
-                                },
-                              }}
-                            >
-                              <VpnKeyRoundedIcon sx={{ fontSize: 16 }} />
-                            </IconButton>
-                          </Tooltip>
-
                           {/* Statement Button */}
                           <Tooltip title="View Statement" arrow>
                             <IconButton
@@ -1143,18 +1110,6 @@ export const CustomersPage: FC<CustomersPageProps> = ({
             rangeText
           );
         }}
-      />
-
-      {/* Customer Login Management Modal (Admin & Super Admin) */}
-      <CustomerLoginModal
-        open={loginModalOpen}
-        onClose={() => {
-          setLoginModalOpen(false);
-          setSelectedLoginCustomer(null);
-        }}
-        customerId={selectedLoginCustomer?._id || selectedLoginCustomer?.id}
-        customerName={selectedLoginCustomer?.name}
-        customerMobile={selectedLoginCustomer?.mobile}
       />
     </Box>
   );
