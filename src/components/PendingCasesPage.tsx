@@ -1051,29 +1051,28 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
           ) : (
             /* DETAILED CARD VIEW (ALTERNATIVE) */
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {data?.customerCases?.map((customer) => {
-                return (
-                  <Paper
-                    key={customer.customerName}
+              {data?.customerCases?.map((customer) => (
+                <Paper
+                  key={customer.customerName}
+                  sx={{
+                    borderRadius: '10px',
+                    border: '1px solid #E2E8F0',
+                    overflow: 'hidden',
+                    backgroundColor: '#FFFFFF',
+                  }}
+                >
+                  <Box
                     sx={{
-                      borderRadius: '10px',
-                      border: '1px solid #E2E8F0',
-                      overflow: 'hidden',
-                      backgroundColor: '#FFFFFF',
+                      p: 2,
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 1.5,
+                      cursor: 'pointer',
                     }}
+                    onClick={() => setCustomerModal({ open: true, customer })}
                   >
-                    <Box
-                      sx={{
-                        p: 2,
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                        flexWrap: 'wrap',
-                        gap: 1.5,
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => setCustomerModal({ open: true, customer })}
-                    >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
                         <Avatar sx={{ bgcolor: '#DBEAFE', color: '#0B4DB7', fontWeight: 800, width: 38, height: 38 }}>
                           {customer.customerName.charAt(0).toUpperCase()}
@@ -1102,8 +1101,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                       </Box>
                     </Box>
                   </Paper>
-                );
-              })}
+                ))}
             </Box>
           )}
         </Box>
