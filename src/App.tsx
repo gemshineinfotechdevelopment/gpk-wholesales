@@ -239,6 +239,14 @@ function App() {
               initialCustomerName={effectiveCustomerName}
               initialSubTab={currentUser?.role === 'user' ? 'Account Details' : particularInitialSubTab}
               userRole={currentUser?.role}
+              onNavigateToPerforma={(custName) => {
+                if (custName) {
+                  setSelectedCustomerName(custName);
+                  localStorage.setItem('gpk_active_customer', custName);
+                }
+                setActiveTab('Performa');
+                localStorage.setItem('gpk_active_tab', 'Performa');
+              }}
             />
           )}
 
