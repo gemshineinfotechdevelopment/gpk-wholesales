@@ -8,11 +8,16 @@ try {
   // Ignore if not supported in environment
 }
 
+const ATLAS_DEFAULT_URI =
+  'mongodb+srv://heamanthprabhu59_db_user:heamanth007@cluster0.zr2dveb.mongodb.net/gpk_wholesales?retryWrites=true&w=majority';
+
 export const connectDB = async (retryCount = 0): Promise<void> => {
   let uri =
     process.env.MONGODB_URI ||
     process.env.MONGO_URI ||
-    'mongodb://127.0.0.1:27017/gpk_wholesales';
+    (process.env.NODE_ENV === 'production'
+      ? 'mongodb://127.0.0.1:27017/gpk_billing'
+      : ATLAS_DEFAULT_URI);
 
   // Check if placeholder password hasn't been replaced yet
   if (uri.includes('<db_password>') || uri.includes('<password>')) {
@@ -27,7 +32,7 @@ export const connectDB = async (retryCount = 0): Promise<void> => {
     uri = uri.replace(/<([^>]+)>/g, '$1');
   }
 
-  // Ensure DB name is explicitly set to gpk_wholesales if not specified
+  // Ensure DB name is explicitly set to gpk_wholesales if not specified on Atlas
   if (uri.includes('.mongodb.net/?')) {
     uri = uri.replace('.mongodb.net/?', '.mongodb.net/gpk_wholesales?');
   } else if (uri.endsWith('.mongodb.net/')) {
@@ -38,16 +43,40 @@ export const connectDB = async (retryCount = 0): Promise<void> => {
 
   try {
     const conn = await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 30000,
+      serverSelectionTimeoutMS: 6000,
       socketTimeoutMS: 45000,
     });
     console.log(`=============================================`);
-    console.log(`[Database] MongoDB Atlas Connected Successfully!`);
+    console.log(`[Database] MongoDB Connected Successfully!`);
     console.log(`[Database Host] ${conn.connection.host}`);
     console.log(`[Database Name] ${conn.connection.name}`);
     console.log(`=============================================`);
-  } catch (error) {
-    console.error(`[Database Error] Failed to connect to MongoDB Atlas (Attempt ${retryCount + 1}):`, error);
+  } catch (error: any) {
+    console.error(`[Database Error] Failed to connect to MongoDB (${error.message}) - Attempt ${retryCount + 1}`);
+
+    // Fallback: If local 127.0.0.1 was specified but is not running on this machine (e.g. in local development),
+    // automatically fall back to MongoDB Atlas so the app continues working smoothly.
+    const isLocalhostUri = uri.includes('127.0.0.1') || uri.includes('localhost');
+    const fallbackUri = process.env.MONGODB_ATLAS_URI || ATLAS_DEFAULT_URI;
+
+    if (isLocalhostUri && fallbackUri && uri !== fallbackUri) {
+      console.warn(`[Database] Local MongoDB is not reachable. Falling back to MongoDB Atlas...`);
+      try {
+        const fallbackConn = await mongoose.connect(fallbackUri, {
+          serverSelectionTimeoutMS: 10000,
+          socketTimeoutMS: 45000,
+        });
+        console.log(`=============================================`);
+        console.log(`[Database] Connected to Fallback MongoDB Atlas!`);
+        console.log(`[Database Host] ${fallbackConn.connection.host}`);
+        console.log(`[Database Name] ${fallbackConn.connection.name}`);
+        console.log(`=============================================`);
+        return;
+      } catch (fallbackError: any) {
+        console.error(`[Database Error] Fallback Atlas connection also failed:`, fallbackError.message);
+      }
+    }
+
     if (retryCount < 5) {
       console.log(`[Database] Retrying connection in 3 seconds...`);
       setTimeout(() => connectDB(retryCount + 1), 3000);
@@ -62,4 +91,3 @@ mongoose.connection.on('disconnected', () => {
 mongoose.connection.on('error', (err: any) => {
   console.error('[Database Error] MongoDB connection error:', err);
 });
-
