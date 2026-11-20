@@ -174,6 +174,7 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
             alignItems: 'center',
             gap: 1.5,
             width: { xs: '100%', sm: 'auto' },
+            flexWrap: 'wrap',
           }}
         >
           {/* Search Box */}

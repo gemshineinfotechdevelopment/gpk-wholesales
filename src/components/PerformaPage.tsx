@@ -1099,9 +1099,14 @@ export const PerformaPage: FC<PerformaPageProps> = ({
           alignItems: 'center',
           gap: { xs: 2, sm: 3, md: 4 },
           mb: 2.5,
-          flexWrap: 'wrap',
+          overflowX: 'auto',
+          flexWrap: { xs: 'nowrap', md: 'wrap' },
+          whiteSpace: 'nowrap',
+          WebkitOverflowScrolling: 'touch',
           borderBottom: '1px solid #EEF2F6',
-          pb: 0.5,
+          pb: 0.8,
+          '&::-webkit-scrollbar': { height: '3px' },
+          '&::-webkit-scrollbar-thumb': { backgroundColor: '#CBD5E1', borderRadius: '3px' },
         }}
       >
         {SUB_TABS.map((tab) => {
@@ -1191,7 +1196,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
               gap: 2,
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
               <Box
                 sx={{
                   width: 44,
@@ -1215,7 +1220,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
               </Box>
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
               <Chip
                 label={`Performa No: ${performaNumber}`}
                 sx={{
@@ -1772,7 +1777,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                           borderBottom: '1.5px solid #E2E8F0',
                         }}
                       >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
                           <Typography
                             sx={{
                               fontWeight: 900,
@@ -2228,7 +2233,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
               </Box>
             </Box>
 
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
               <IconButton
                 onClick={() => selectedCustomer && fetchCustomerPerformaData(selectedCustomer)}
                 sx={{ border: '1px solid #E2E8F0', borderRadius: '8px' }}

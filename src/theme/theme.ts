@@ -84,11 +84,48 @@ export const theme = createTheme({
           letterSpacing: '0.04em',
           textTransform: 'uppercase',
           color: '#1E293B',
+          '@media (max-width: 600px)': {
+            padding: '8px 10px',
+            fontSize: '11px',
+          },
         },
         body: {
           fontSize: '13.5px',
           fontWeight: 500,
           color: '#334155',
+          '@media (max-width: 600px)': {
+            padding: '8px 10px',
+            fontSize: '12.5px',
+          },
+        },
+      },
+    },
+    MuiTableContainer: {
+      styleOverrides: {
+        root: {
+          maxWidth: '100%',
+          overflowX: 'auto',
+          WebkitOverflowScrolling: 'touch',
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          margin: 16,
+          '@media (max-width: 600px)': {
+            margin: 8,
+            width: 'calc(100% - 16px) !important',
+            maxHeight: 'calc(100% - 16px) !important',
+          },
+        },
+      },
+    },
+    MuiDialogActions: {
+      styleOverrides: {
+        root: {
+          flexWrap: 'wrap',
+          gap: '8px',
         },
       },
     },

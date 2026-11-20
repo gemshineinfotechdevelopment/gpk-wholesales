@@ -722,7 +722,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
           gap: 2,
         }}
       >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
           <Box
             sx={{
               width: 44,
@@ -748,7 +748,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
           </Box>
         </Box>
 
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', width: { xs: '100%', sm: 'auto' } }}>
           <Button
             variant="contained"
             disableElevation

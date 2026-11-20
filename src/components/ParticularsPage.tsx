@@ -1306,11 +1306,16 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         sx={{
           display: 'flex',
           alignItems: 'center',
-          gap: { xs: 2, sm: 3, md: 4 },
+          gap: { xs: 2.5, sm: 3, md: 4 },
           mb: 2.5,
-          flexWrap: 'wrap',
+          overflowX: 'auto',
+          flexWrap: { xs: 'nowrap', md: 'wrap' },
+          whiteSpace: 'nowrap',
+          WebkitOverflowScrolling: 'touch',
           borderBottom: '1px solid #EEF2F6',
-          pb: 0.5,
+          pb: 0.8,
+          '&::-webkit-scrollbar': { height: '3px' },
+          '&::-webkit-scrollbar-thumb': { backgroundColor: '#CBD5E1', borderRadius: '3px' },
         }}
       >
         {(isCustomer
