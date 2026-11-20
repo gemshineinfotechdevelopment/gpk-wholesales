@@ -1063,7 +1063,7 @@ export const calculatePendingCasesData = async (options?: {
           gstin: matchedComp?.gstin || '',
           avatarLetter: matchedComp?.avatarLetter || itemCompany.charAt(0).toUpperCase(),
           avatarBg: matchedComp?.avatarBg || '#DBEAFE',
-          avatarColor: matchedComp?.avatarColor || '#0B4DB7',
+          avatarColor: matchedComp?.avatarColor || '#1E40AF',
           totalPendingCases: 0,
           totalPendingAmount: 0,
           totalRequiredCases: 0,

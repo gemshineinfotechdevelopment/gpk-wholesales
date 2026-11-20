@@ -100,7 +100,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
             justifyContent: 'space-between',
             px: 3,
             py: 1.8,
-            backgroundColor: '#0B4DB7',
+            backgroundColor: '#1E40AF',
             color: '#FFFFFF',
           }}
         >
@@ -251,7 +251,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
               onClick={handleTriggerPrint}
               startIcon={<PrintOutlinedIcon sx={{ fontSize: '18px !important' }} />}
               sx={{
-                backgroundColor: '#0B4DB7',
+                backgroundColor: '#1E40AF',
                 color: '#FFFFFF',
                 fontSize: '13px',
                 fontWeight: 700,
@@ -260,7 +260,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
                 py: 0.8,
                 borderRadius: '6px',
                 '&:hover': {
-                  backgroundColor: '#083B8D',
+                  backgroundColor: '#1E3A8A',
                 },
               }}
             >

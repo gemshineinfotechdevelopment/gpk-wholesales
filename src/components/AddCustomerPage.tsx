@@ -58,7 +58,7 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
         address: formData.billingAddress.trim(),
         avatarLetter: formData.fullName.trim().charAt(0).toUpperCase(),
         avatarBg: '#DBEAFE',
-        avatarColor: '#0B4DB7',
+        avatarColor: '#1E40AF',
         isLoginEnabled: true,
         password: cleanMobile, // Initial password is their registered phone number
       });
@@ -154,9 +154,9 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
                   height: '42px',
                   transition: 'all 0.15s ease',
                   '&:focus-within': {
-                    borderColor: '#0B4DB7',
+                    borderColor: '#1E40AF',
                     backgroundColor: '#FFFFFF',
-                    boxShadow: '0 0 0 3px rgba(11, 77, 183, 0.1)',
+                    boxShadow: '0 0 0 3px rgba(30, 64, 175, 0.1)',
                   },
                 }}
               >
@@ -202,9 +202,9 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
                   height: '42px',
                   transition: 'all 0.15s ease',
                   '&:focus-within': {
-                    borderColor: '#0B4DB7',
+                    borderColor: '#1E40AF',
                     backgroundColor: '#FFFFFF',
-                    boxShadow: '0 0 0 3px rgba(11, 77, 183, 0.1)',
+                    boxShadow: '0 0 0 3px rgba(30, 64, 175, 0.1)',
                   },
                 }}
               >
@@ -250,9 +250,9 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
                   height: '42px',
                   transition: 'all 0.15s ease',
                   '&:focus-within': {
-                    borderColor: '#0B4DB7',
+                    borderColor: '#1E40AF',
                     backgroundColor: '#FFFFFF',
-                    boxShadow: '0 0 0 3px rgba(11, 77, 183, 0.1)',
+                    boxShadow: '0 0 0 3px rgba(30, 64, 175, 0.1)',
                   },
                 }}
               >
@@ -298,9 +298,9 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
                   height: '42px',
                   transition: 'all 0.15s ease',
                   '&:focus-within': {
-                    borderColor: '#0B4DB7',
+                    borderColor: '#1E40AF',
                     backgroundColor: '#FFFFFF',
-                    boxShadow: '0 0 0 3px rgba(11, 77, 183, 0.1)',
+                    boxShadow: '0 0 0 3px rgba(30, 64, 175, 0.1)',
                   },
                 }}
               >
@@ -371,11 +371,11 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
                 borderRadius: '8px',
                 fontSize: '13.5px',
                 fontWeight: 700,
-                backgroundColor: '#0B4DB7',
+                backgroundColor: '#1E40AF',
                 color: '#FFFFFF',
                 textTransform: 'none',
                 '&:hover': {
-                  backgroundColor: '#083B8D',
+                  backgroundColor: '#1E3A8A',
                 },
               }}
             >

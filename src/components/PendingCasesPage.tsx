@@ -485,7 +485,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
       >
         <Box>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-            <Inventory2OutlinedIcon sx={{ color: '#0B4DB7', fontSize: 30 }} />
+            <Inventory2OutlinedIcon sx={{ color: '#1E40AF', fontSize: 30 }} />
             <Typography variant="h5" sx={{ fontWeight: 800, color: '#0F172A', letterSpacing: '-0.02em', fontSize: '22px' }}>
               Pending Cases & Company Stock Dashboard
             </Typography>
@@ -507,7 +507,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                 fontWeight: 700,
                 fontSize: '12px',
                 borderColor: '#CBD5E1',
-                backgroundColor: viewMode === 'table' ? '#0B4DB7' : 'transparent',
+                backgroundColor: viewMode === 'table' ? '#1E40AF' : 'transparent',
                 color: viewMode === 'table' ? '#FFFFFF' : '#475569',
               }}
             >
@@ -522,7 +522,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                 fontWeight: 700,
                 fontSize: '12px',
                 borderColor: '#CBD5E1',
-                backgroundColor: viewMode === 'cards' ? '#0B4DB7' : 'transparent',
+                backgroundColor: viewMode === 'cards' ? '#1E40AF' : 'transparent',
                 color: viewMode === 'cards' ? '#FFFFFF' : '#475569',
               }}
             >
@@ -578,7 +578,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
             <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               Total Pending Value
             </Typography>
-            <Typography sx={{ fontSize: '22px', fontWeight: 900, color: '#0B4DB7', mt: 0.2 }}>
+            <Typography sx={{ fontSize: '22px', fontWeight: 900, color: '#1E40AF', mt: 0.2 }}>
               ₹{data?.summary?.totalPendingAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
             </Typography>
             <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>Expected billing volume</Typography>
@@ -639,11 +639,11 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
               borderRadius: '6px',
               px: 2,
               py: 0.6,
-              backgroundColor: subTab === 'customer' ? '#0B4DB7' : 'transparent',
+              backgroundColor: subTab === 'customer' ? '#1E40AF' : 'transparent',
               color: subTab === 'customer' ? '#FFFFFF' : '#475569',
-              boxShadow: subTab === 'customer' ? '0 2px 4px rgba(11, 77, 183, 0.2)' : 'none',
+              boxShadow: subTab === 'customer' ? '0 2px 4px rgba(30, 64, 175, 0.2)' : 'none',
               '&:hover': {
-                backgroundColor: subTab === 'customer' ? '#093C8F' : '#E2E8F0',
+                backgroundColor: subTab === 'customer' ? '#1E3A8A' : '#E2E8F0',
               },
             }}
           >
@@ -657,7 +657,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                 fontSize: '10.5px',
                 fontWeight: 800,
                 backgroundColor: subTab === 'customer' ? '#FFFFFF' : '#CBD5E1',
-                color: subTab === 'customer' ? '#0B4DB7' : '#334155',
+                color: subTab === 'customer' ? '#1E40AF' : '#334155',
               }}
             />
           </Button>
@@ -673,11 +673,11 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
               borderRadius: '6px',
               px: 2,
               py: 0.6,
-              backgroundColor: subTab === 'company' ? '#0B4DB7' : 'transparent',
+              backgroundColor: subTab === 'company' ? '#1E40AF' : 'transparent',
               color: subTab === 'company' ? '#FFFFFF' : '#475569',
-              boxShadow: subTab === 'company' ? '0 2px 4px rgba(11, 77, 183, 0.2)' : 'none',
+              boxShadow: subTab === 'company' ? '0 2px 4px rgba(30, 64, 175, 0.2)' : 'none',
               '&:hover': {
-                backgroundColor: subTab === 'company' ? '#093C8F' : '#E2E8F0',
+                backgroundColor: subTab === 'company' ? '#1E3A8A' : '#E2E8F0',
               },
             }}
           >
@@ -691,7 +691,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                 fontSize: '10.5px',
                 fontWeight: 800,
                 backgroundColor: subTab === 'company' ? '#FFFFFF' : '#CBD5E1',
-                color: subTab === 'company' ? '#0B4DB7' : '#334155',
+                color: subTab === 'company' ? '#1E40AF' : '#334155',
               }}
             />
           </Button>
@@ -745,7 +745,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
       {/* Loading & Error States */}
       {loading && !data && (
         <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', py: 8 }}>
-          <CircularProgress size={36} sx={{ color: '#0B4DB7', mb: 2 }} />
+          <CircularProgress size={36} sx={{ color: '#1E40AF', mb: 2 }} />
           <Typography variant="body2" sx={{ color: '#64748B' }}>
             Analyzing pending cases and stock status...
           </Typography>
@@ -840,7 +840,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                             <Avatar
                               sx={{
                                 bgcolor: '#DBEAFE',
-                                color: '#0B4DB7',
+                                color: '#1E40AF',
                                 fontWeight: 800,
                                 width: 32,
                                 height: 32,
@@ -963,7 +963,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                                 size="small"
                                 onClick={() => setCustomerModal({ open: true, customer })}
                                 sx={{
-                                  color: '#0B4DB7',
+                                  color: '#1E40AF',
                                   backgroundColor: '#EFF6FF',
                                   '&:hover': { backgroundColor: '#DBEAFE' },
                                   width: 30,
@@ -1077,7 +1077,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                     onClick={() => setCustomerModal({ open: true, customer })}
                   >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
-                        <Avatar sx={{ bgcolor: '#DBEAFE', color: '#0B4DB7', fontWeight: 800, width: 38, height: 38 }}>
+                        <Avatar sx={{ bgcolor: '#DBEAFE', color: '#1E40AF', fontWeight: 800, width: 38, height: 38 }}>
                           {customer.customerName.charAt(0).toUpperCase()}
                         </Avatar>
                         <Box>
@@ -1141,7 +1141,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                 sx={{
                   fontWeight: 700,
                   fontSize: '11px',
-                  backgroundColor: activeCompanySelection === 'ALL' ? '#0B4DB7' : '#F1F5F9',
+                  backgroundColor: activeCompanySelection === 'ALL' ? '#1E40AF' : '#F1F5F9',
                   color: activeCompanySelection === 'ALL' ? '#FFFFFF' : '#475569',
                   borderRadius: '6px',
                   height: 26,
@@ -1338,7 +1338,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                                   size="small"
                                   onClick={() => handleCopyCompanySupplierOrder(company)}
                                   sx={{
-                                    color: '#0B4DB7',
+                                    color: '#1E40AF',
                                     backgroundColor: '#EFF6FF',
                                     '&:hover': { backgroundColor: '#DBEAFE' },
                                     width: 30,
@@ -1517,11 +1517,11 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                   onSelectCustomerForBill(cust);
                 }}
                 sx={{
-                  backgroundColor: '#0B4DB7',
+                  backgroundColor: '#1E40AF',
                   textTransform: 'none',
                   fontWeight: 700,
                   fontSize: '12.5px',
-                  '&:hover': { backgroundColor: '#093C8F' },
+                  '&:hover': { backgroundColor: '#1E3A8A' },
                 }}
               >
                 Create Particular Bill
@@ -1598,7 +1598,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                     <Typography sx={{ fontSize: '11px', fontWeight: 800, color: '#1D4ED8', textTransform: 'uppercase' }}>
                       Pending Amount
                     </Typography>
-                    <Typography sx={{ fontSize: '24px', fontWeight: 900, color: '#0B4DB7', mt: 0.5 }}>
+                    <Typography sx={{ fontSize: '24px', fontWeight: 900, color: '#1E40AF', mt: 0.5 }}>
                       ₹{(customerModal.customer.totalPendingAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                     </Typography>
                     <Typography sx={{ fontSize: '11px', color: '#3B82F6' }}>Balance order value</Typography>
@@ -2257,7 +2257,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
         <DialogContent sx={{ p: 2.5, backgroundColor: '#F8FAFC' }}>
           {editModal.loading ? (
             <Box sx={{ py: 6, textAlign: 'center' }}>
-              <CircularProgress size={32} sx={{ color: '#0B4DB7' }} />
+              <CircularProgress size={32} sx={{ color: '#1E40AF' }} />
             </Box>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
@@ -2375,7 +2375,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
             disableElevation
             disabled={editModal.saving || editModal.loading}
             onClick={handleSaveEditModal}
-            sx={{ backgroundColor: '#0B4DB7', textTransform: 'none', fontWeight: 700, px: 2.5 }}
+            sx={{ backgroundColor: '#1E40AF', textTransform: 'none', fontWeight: 700, px: 2.5 }}
           >
             {editModal.saving ? 'Saving...' : 'Save Changes'}
           </Button>
@@ -2429,7 +2429,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                 }}
               >
                 <span>Performa: {p.number}</span>
-                <span style={{ color: '#0B4DB7', fontSize: '12px' }}>Select ➔</span>
+                <span style={{ color: '#1E40AF', fontSize: '12px' }}>Select ➔</span>
               </Button>
             ))}
           </Box>

@@ -193,7 +193,7 @@ export const SettingsPage: FC<SettingsPageProps> = ({ currentUser, onSettingsUpd
   if (pageLoading) {
     return (
       <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
-        <CircularProgress size={40} sx={{ color: '#0B4DB7' }} />
+        <CircularProgress size={40} sx={{ color: '#1E40AF' }} />
       </Box>
     );
   }
@@ -214,7 +214,7 @@ export const SettingsPage: FC<SettingsPageProps> = ({ currentUser, onSettingsUpd
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
           <Box
             sx={{
-              backgroundColor: '#0B4DB7',
+              backgroundColor: '#1E40AF',
               color: '#FFFFFF',
               width: 50,
               height: 50,
@@ -222,7 +222,7 @@ export const SettingsPage: FC<SettingsPageProps> = ({ currentUser, onSettingsUpd
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 12px rgba(11, 77, 183, 0.35)',
+              boxShadow: '0 4px 12px rgba(30, 64, 175, 0.35)',
             }}
           >
             <LockResetRoundedIcon sx={{ fontSize: 28 }} />
@@ -408,7 +408,7 @@ export const SettingsPage: FC<SettingsPageProps> = ({ currentUser, onSettingsUpd
                     height: 40,
                     borderRadius: '10px',
                     backgroundColor: '#EFF6FF',
-                    color: '#0B4DB7',
+                    color: '#1E40AF',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -507,7 +507,7 @@ export const SettingsPage: FC<SettingsPageProps> = ({ currentUser, onSettingsUpd
                   startIcon={adminLoading ? <CircularProgress size={16} color="inherit" /> : <SaveRoundedIcon />}
                   sx={{
                     mt: 1,
-                    backgroundColor: '#0B4DB7',
+                    backgroundColor: '#1E40AF',
                     '&:hover': { backgroundColor: '#093E94' },
                     fontWeight: 700,
                     borderRadius: '8px',

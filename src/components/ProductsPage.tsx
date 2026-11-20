@@ -148,7 +148,7 @@ export const ProductsPage: FC = () => {
         {/* Blue Header Banner */}
         <Box
           sx={{
-            backgroundColor: '#0B4DB7',
+            backgroundColor: '#1E40AF',
             px: { xs: 2, sm: 3 },
             py: 1.5,
             display: 'flex',
@@ -277,7 +277,7 @@ export const ProductsPage: FC = () => {
               startIcon={<AddRoundedIcon sx={{ fontSize: 18 }} />}
               sx={{
                 backgroundColor: '#FFFFFF',
-                color: '#0B4DB7',
+                color: '#1E40AF',
                 fontSize: '13px',
                 fontWeight: 700,
                 textTransform: 'none',
@@ -365,7 +365,7 @@ export const ProductsPage: FC = () => {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={32} sx={{ color: '#0B4DB7' }} />
+                    <CircularProgress size={32} sx={{ color: '#1E40AF' }} />
                   </TableCell>
                 </TableRow>
               ) : filteredProducts.length === 0 ? (
@@ -379,7 +379,7 @@ export const ProductsPage: FC = () => {
                         <Button
                           size="small"
                           onClick={() => setSearchTerm('')}
-                          sx={{ textTransform: 'none', color: '#0B4DB7', fontWeight: 600 }}
+                          sx={{ textTransform: 'none', color: '#1E40AF', fontWeight: 600 }}
                         >
                           Clear Search
                         </Button>
@@ -448,7 +448,7 @@ export const ProductsPage: FC = () => {
                               p: 0.7,
                               transition: 'all 0.15s ease',
                               '&:hover': {
-                                color: '#0B4DB7',
+                                color: '#1E40AF',
                                 backgroundColor: '#EFF6FF',
                                 borderColor: '#BFDBFE',
                               },
@@ -552,13 +552,13 @@ export const ProductsPage: FC = () => {
             onClick={handleSaveProduct}
             disabled={modalLoading}
             sx={{
-              backgroundColor: '#0B4DB7',
+              backgroundColor: '#1E40AF',
               color: '#FFFFFF',
               fontWeight: 700,
               textTransform: 'none',
               px: 2.5,
               borderRadius: '6px',
-              '&:hover': { backgroundColor: '#083B8D' },
+              '&:hover': { backgroundColor: '#1E3A8A' },
             }}
           >
             {modalLoading ? 'Saving...' : 'Save Product'}

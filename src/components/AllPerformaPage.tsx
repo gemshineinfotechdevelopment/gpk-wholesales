@@ -734,7 +734,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
               justifyContent: 'center',
             }}
           >
-            <AccountBalanceWalletRoundedIcon sx={{ fontSize: 26, color: '#0B4DB7' }} />
+            <AccountBalanceWalletRoundedIcon sx={{ fontSize: 26, color: '#1E40AF' }} />
           </Box>
           <Box>
             <Typography variant="h6" sx={{ fontWeight: 800, color: '#0F172A', fontSize: '20px' }}>
@@ -779,7 +779,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
               onClick={onAddNewPerforma}
               startIcon={<AddRoundedIcon />}
               sx={{
-                backgroundColor: '#0B4DB7',
+                backgroundColor: '#1E40AF',
                 color: '#FFFFFF',
                 fontWeight: 700,
                 fontSize: '13.5px',
@@ -787,7 +787,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                 borderRadius: '8px',
                 px: 2.5,
                 '&:hover': {
-                  backgroundColor: '#083B8D',
+                  backgroundColor: '#1E3A8A',
                 },
               }}
             >
@@ -838,7 +838,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
               <Typography sx={{ fontSize: '11.5px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
                 Total Cases
               </Typography>
-              <Typography sx={{ fontSize: '22px', fontWeight: 800, color: '#0B4DB7', mt: 0.5 }}>
+              <Typography sx={{ fontSize: '22px', fontWeight: 800, color: '#1E40AF', mt: 0.5 }}>
                 {summary.totalRequiredCases || 0}
               </Typography>
             </CardContent>
@@ -1082,7 +1082,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={9} sx={{ textAlign: 'center', py: 6 }}>
-                    <CircularProgress size={30} sx={{ color: '#0B4DB7' }} />
+                    <CircularProgress size={30} sx={{ color: '#1E40AF' }} />
                   </TableCell>
                 </TableRow>
               ) : performas.length === 0 ? (
@@ -1100,7 +1100,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                   return (
                     <TableRow key={p._id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                       <TableCell>
-                        <Typography sx={{ fontWeight: 800, color: '#0B4DB7', fontSize: '13.5px' }}>
+                        <Typography sx={{ fontWeight: 800, color: '#1E40AF', fontSize: '13.5px' }}>
                           {p.performaNumber}
                         </Typography>
                       </TableCell>
@@ -1123,7 +1123,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                           </>
                         )}
                       </TableCell>
-                      <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: '#0B4DB7' }}>
+                      <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: '#1E40AF' }}>
                         ₹{performaVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell sx={{ textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>
@@ -1146,7 +1146,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                                 size="small"
                                 onClick={() => handleOpenViewModal(p._id)}
                                 sx={{
-                                  color: '#0B4DB7',
+                                  color: '#1E40AF',
                                   backgroundColor: '#EFF6FF',
                                   '&:hover': { backgroundColor: '#DBEAFE' },
                                   width: '32px',
@@ -1172,7 +1172,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                               )}
 
                               <Tooltip title="View Details">
-                                <IconButton size="small" onClick={() => handleOpenViewModal(p._id)} sx={{ color: '#0B4DB7' }}>
+                                <IconButton size="small" onClick={() => handleOpenViewModal(p._id)} sx={{ color: '#1E40AF' }}>
                                   <VisibilityRoundedIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </Tooltip>
@@ -1262,7 +1262,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
         <DialogContent sx={{ p: 3, backgroundColor: '#F8FAFC' }}>
           {viewLoading || !selectedPerformaForView ? (
             <Box sx={{ py: 6, textAlign: 'center' }}>
-              <CircularProgress size={30} sx={{ color: '#0B4DB7' }} />
+              <CircularProgress size={30} sx={{ color: '#1E40AF' }} />
             </Box>
           ) : (
             <Box>
@@ -1303,7 +1303,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     </Box>
                     <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span style={{ color: '#64748B' }}>Packing Charge:</span>
-                      <strong style={{ color: selectedPerformaForView.packingAmount ? '#0B4DB7' : undefined }}>
+                      <strong style={{ color: selectedPerformaForView.packingAmount ? '#1E40AF' : undefined }}>
                         {selectedPerformaForView.packingAmount ? `+ ₹${selectedPerformaForView.packingAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : (selectedPerformaForView.packing ? `${selectedPerformaForView.packing}%` : '-')}
                       </strong>
                     </Box>
@@ -1315,8 +1315,8 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     </Box>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 0.5, borderTop: '1px solid #EEF2F6', mb: 0.5 }}>
-                    <span style={{ fontSize: '12.5px', color: '#0B4DB7', fontWeight: 800 }}>Performa Total Value:</span>
-                    <strong style={{ color: '#0B4DB7', fontSize: '14px', fontWeight: 900 }}>₹{(selectedPerformaForView.totalAllocatedAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
+                    <span style={{ fontSize: '12.5px', color: '#1E40AF', fontWeight: 800 }}>Performa Total Value:</span>
+                    <strong style={{ color: '#1E40AF', fontSize: '14px', fontWeight: 900 }}>₹{(selectedPerformaForView.totalAllocatedAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</strong>
                   </Box>
                   <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 0.5, pt: 0.5, borderTop: '1px solid #EEF2F6' }}>
                     <span style={{ fontSize: '12.5px', color: '#475569' }}>Current Status:</span>
@@ -1377,7 +1377,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                       <TableBody>
                         {selectedPerformaForView.customerBills.map((bill: any, idx: number) => (
                           <TableRow key={idx}>
-                            <TableCell sx={{ fontWeight: 700, color: '#0B4DB7' }}>{bill.billNo || '-'}</TableCell>
+                            <TableCell sx={{ fontWeight: 700, color: '#1E40AF' }}>{bill.billNo || '-'}</TableCell>
                             <TableCell sx={{ fontSize: '12.5px' }}>{bill.date || '-'}</TableCell>
                             <TableCell sx={{ fontSize: '12.5px' }}>{bill.companyName || bill.company || '-'}</TableCell>
                             <TableCell sx={{ textAlign: 'center', fontWeight: 700 }}>{bill.caseCount || bill.cases || 0}</TableCell>
@@ -1478,7 +1478,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                   handleOpenPrintModal(selectedPerformaForView);
                 }}
                 startIcon={<PrintOutlinedIcon sx={{ fontSize: 18 }} />}
-                sx={{ backgroundColor: '#0B4DB7', textTransform: 'none', fontWeight: 700 }}
+                sx={{ backgroundColor: '#1E40AF', textTransform: 'none', fontWeight: 700 }}
               >
                 Print Performa
               </Button>
@@ -1533,7 +1533,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
         <DialogContent sx={{ p: 3, backgroundColor: '#F8FAFC' }}>
           {editLoading ? (
             <Box sx={{ py: 6, textAlign: 'center' }}>
-              <CircularProgress size={30} sx={{ color: '#0B4DB7' }} />
+              <CircularProgress size={30} sx={{ color: '#1E40AF' }} />
             </Box>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
@@ -1653,7 +1653,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     placeholder="e.g. 2.5% or 3"
                     helperText={editPackingVal > 0 ? `+ ₹${editPackingVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'Supports decimal (%)'}
                     slotProps={{
-                      formHelperText: { sx: { color: '#0B4DB7', fontWeight: 600 } },
+                      formHelperText: { sx: { color: '#1E40AF', fontWeight: 600 } },
                     }}
                   />
                   <TextField
@@ -1678,13 +1678,13 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     Allocated Products & Quantities
                   </Typography>
                   <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
-                    <Chip label={`Cases: ${editTotalCases}`} sx={{ fontWeight: 800, backgroundColor: '#EFF6FF', color: '#0B4DB7' }} />
+                    <Chip label={`Cases: ${editTotalCases}`} sx={{ fontWeight: 800, backgroundColor: '#EFF6FF', color: '#1E40AF' }} />
                     <Chip label={`Subtotal: ₹${editSubtotalAllocated.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} sx={{ fontWeight: 700, backgroundColor: '#F1F5F9', color: '#475569' }} />
                     {editDiscountVal > 0 && (
                       <Chip label={`Discount: -₹${editDiscountVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} sx={{ fontWeight: 700, backgroundColor: '#FEF2F2', color: '#DC2626' }} />
                     )}
                     {editPackingVal > 0 && (
-                      <Chip label={`Packing: +₹${editPackingVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} sx={{ fontWeight: 700, backgroundColor: '#EFF6FF', color: '#0B4DB7' }} />
+                      <Chip label={`Packing: +₹${editPackingVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} sx={{ fontWeight: 700, backgroundColor: '#EFF6FF', color: '#1E40AF' }} />
                     )}
                     {editTaxVal > 0 && (
                       <Chip label={`Tax: +₹${editTaxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`} sx={{ fontWeight: 700, backgroundColor: '#F0FDF4', color: '#166534' }} />
@@ -1771,7 +1771,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     disableElevation
                     onClick={handleAddProductToEditList}
                     startIcon={<AddRoundedIcon />}
-                    sx={{ backgroundColor: '#0B4DB7', textTransform: 'none', fontWeight: 700, height: '40px' }}
+                    sx={{ backgroundColor: '#1E40AF', textTransform: 'none', fontWeight: 700, height: '40px' }}
                   >
                     Add
                   </Button>
@@ -1896,7 +1896,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
             disableElevation
             onClick={handleSaveEditPerforma}
             disabled={editLoading}
-            sx={{ backgroundColor: '#0B4DB7', textTransform: 'none', fontWeight: 700, px: 3 }}
+            sx={{ backgroundColor: '#1E40AF', textTransform: 'none', fontWeight: 700, px: 3 }}
           >
             {editLoading ? 'Saving...' : 'Save Changes'}
           </Button>
@@ -1974,7 +1974,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                   <Chip
                     label={extraQtyDialog.companyName}
                     size="small"
-                    sx={{ height: '20px', fontSize: '10.5px', fontWeight: 700, mt: 0.5, backgroundColor: '#EFF6FF', color: '#0B4DB7' }}
+                    sx={{ height: '20px', fontSize: '10.5px', fontWeight: 700, mt: 0.5, backgroundColor: '#EFF6FF', color: '#1E40AF' }}
                   />
                 )}
               </Box>
@@ -1982,7 +1982,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                 <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
                   Current Requirement
                 </Typography>
-                <Typography sx={{ fontSize: '16px', fontWeight: 900, color: '#0B4DB7' }}>
+                <Typography sx={{ fontSize: '16px', fontWeight: 900, color: '#1E40AF' }}>
                   {extraQtyDialog.existingCases} Cases
                 </Typography>
                 <Typography sx={{ fontSize: '11.5px', color: '#64748B', fontWeight: 600 }}>
@@ -2048,7 +2048,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     fontWeight: 800,
                     fontSize: '11px',
                     backgroundColor: '#FFFFFF',
-                    color: '#0B4DB7',
+                    color: '#1E40AF',
                     border: '1px solid #93C5FD',
                     '&:hover': {
                       backgroundColor: '#DBEAFE',
@@ -2096,7 +2096,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     </Typography>
                   </Box>
 
-                  <Typography sx={{ fontSize: '20px', fontWeight: 900, color: '#0B4DB7' }}>+</Typography>
+                  <Typography sx={{ fontSize: '20px', fontWeight: 900, color: '#1E40AF' }}>+</Typography>
 
                   <Box sx={{ textAlign: 'center' }}>
                     <Typography sx={{ fontSize: '11px', color: '#1D4ED8', fontWeight: 700 }}>Extra Added</Typography>

@@ -241,11 +241,11 @@ export const Navbar: FC<NavbarProps> = ({
                     sx={{
                       fontWeight: isActive ? 700 : 500,
                       fontSize: '14.5px',
-                      color: isActive ? '#0B4DB7' : '#475569',
+                      color: isActive ? '#1E40AF' : '#475569',
                       letterSpacing: '-0.01em',
                       transition: 'color 0.15s ease',
                       '&:hover': {
-                        color: '#0B4DB7',
+                        color: '#1E40AF',
                       },
                     }}
                   >
@@ -260,7 +260,7 @@ export const Navbar: FC<NavbarProps> = ({
                         left: 0,
                         right: 0,
                         height: '3px',
-                        backgroundColor: '#0B4DB7',
+                        backgroundColor: '#1E40AF',
                         borderTopLeftRadius: '2px',
                         borderTopRightRadius: '2px',
                       }}
@@ -288,12 +288,12 @@ export const Navbar: FC<NavbarProps> = ({
                     sx={{
                       fontWeight: isActive ? 600 : 500,
                       fontSize: '14px',
-                      color: isActive ? '#0B4DB7' : '#475569',
+                      color: isActive ? '#1E40AF' : '#475569',
                       letterSpacing: '-0.01em',
                       px: 0.5,
                       transition: 'color 0.15s ease',
                       '&:hover': {
-                        color: '#0B4DB7',
+                        color: '#1E40AF',
                       },
                     }}
                   >
@@ -309,7 +309,7 @@ export const Navbar: FC<NavbarProps> = ({
                         left: 0,
                         right: 0,
                         height: '3px',
-                        backgroundColor: '#0B4DB7',
+                        backgroundColor: '#1E40AF',
                         borderTopLeftRadius: '2px',
                         borderTopRightRadius: '2px',
                       }}
@@ -345,7 +345,7 @@ export const Navbar: FC<NavbarProps> = ({
               user?.role === 'superadmin'
                 ? '#DC2626'
                 : user?.role === 'admin'
-                ? '#0B4DB7'
+                ? '#1E40AF'
                 : '#16A34A',
             border: `1px solid ${
               user?.role === 'superadmin'
@@ -368,7 +368,7 @@ export const Navbar: FC<NavbarProps> = ({
               user?.role === 'superadmin'
                 ? '#DC2626'
                 : user?.role === 'admin'
-                ? '#0B4DB7'
+                ? '#1E40AF'
                 : '#16A34A',
             display: 'flex',
             alignItems: 'center',
@@ -427,7 +427,7 @@ export const Navbar: FC<NavbarProps> = ({
               {user?.role === 'superadmin' ? (
                 <ShieldRoundedIcon sx={{ fontSize: 22, color: '#DC2626' }} />
               ) : user?.role === 'admin' ? (
-                <AdminPanelSettingsRoundedIcon sx={{ fontSize: 22, color: '#0B4DB7' }} />
+                <AdminPanelSettingsRoundedIcon sx={{ fontSize: 22, color: '#1E40AF' }} />
               ) : (
                 <AccountCircleRoundedIcon sx={{ fontSize: 22, color: '#16A34A' }} />
               )}
@@ -457,7 +457,7 @@ export const Navbar: FC<NavbarProps> = ({
                 sx={{ py: 1 }}
               >
                 <ListItemIcon>
-                  <LockResetRoundedIcon sx={{ fontSize: 18, color: '#0B4DB7' }} />
+                  <LockResetRoundedIcon sx={{ fontSize: 18, color: '#1E40AF' }} />
                 </ListItemIcon>
                 <Box>
                   <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
@@ -582,7 +582,7 @@ export const Navbar: FC<NavbarProps> = ({
                 height: 38,
                 borderRadius: '50%',
                 backgroundColor:
-                  user?.role === 'superadmin' ? '#DC2626' : user?.role === 'admin' ? '#0B4DB7' : '#16A34A',
+                  user?.role === 'superadmin' ? '#DC2626' : user?.role === 'admin' ? '#1E40AF' : '#16A34A',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -616,7 +616,7 @@ export const Navbar: FC<NavbarProps> = ({
                   fontWeight: 700,
                   mt: 0.3,
                   backgroundColor: user?.role === 'superadmin' ? '#FEF2F2' : user?.role === 'admin' ? '#EFF6FF' : '#F0FDF4',
-                  color: user?.role === 'superadmin' ? '#DC2626' : user?.role === 'admin' ? '#0B4DB7' : '#16A34A',
+                  color: user?.role === 'superadmin' ? '#DC2626' : user?.role === 'admin' ? '#1E40AF' : '#16A34A',
                 }}
               />
             </Box>
@@ -638,13 +638,13 @@ export const Navbar: FC<NavbarProps> = ({
                       py: 1,
                       px: 1.5,
                       backgroundColor: isActive ? '#EFF6FF' : 'transparent',
-                      color: isActive ? '#0B4DB7' : '#334155',
+                      color: isActive ? '#1E40AF' : '#334155',
                       '&:hover': {
                         backgroundColor: isActive ? '#EFF6FF' : '#F8FAFC',
                       },
                     }}
                   >
-                    <ListItemIcon sx={{ minWidth: 34, color: isActive ? '#0B4DB7' : '#64748B' }}>
+                    <ListItemIcon sx={{ minWidth: 34, color: isActive ? '#1E40AF' : '#64748B' }}>
                       {getTabIcon(tab)}
                     </ListItemIcon>
                     <ListItemText
@@ -654,7 +654,7 @@ export const Navbar: FC<NavbarProps> = ({
                             fontSize: '13.5px',
                             fontWeight: isActive ? 800 : 600,
                             letterSpacing: '-0.01em',
-                            color: isActive ? '#0B4DB7' : '#334155',
+                            color: isActive ? '#1E40AF' : '#334155',
                           }}
                         >
                           {tab}
@@ -678,7 +678,7 @@ export const Navbar: FC<NavbarProps> = ({
               }}
               sx={{ borderRadius: '8px', py: 1, px: 1.5, mb: 0.8 }}
             >
-              <ListItemIcon sx={{ minWidth: 34, color: '#0B4DB7' }}>
+              <ListItemIcon sx={{ minWidth: 34, color: '#1E40AF' }}>
                 <LockResetRoundedIcon sx={{ fontSize: 20 }} />
               </ListItemIcon>
               <ListItemText

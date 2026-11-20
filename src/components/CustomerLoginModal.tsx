@@ -197,8 +197,8 @@ _You can view your bills, ledger statement, and balance status._
                 {customerName}
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, mt: 0.5 }}>
-                <PhoneIphoneRoundedIcon sx={{ fontSize: 16, color: '#0B4DB7' }} />
-                <Typography sx={{ fontSize: '12.5px', color: '#0B4DB7', fontWeight: 700 }}>
+                <PhoneIphoneRoundedIcon sx={{ fontSize: 16, color: '#1E40AF' }} />
+                <Typography sx={{ fontSize: '12.5px', color: '#1E40AF', fontWeight: 700 }}>
                   Login Phone: {cleanPhone || 'No Phone Number'}
                 </Typography>
               </Box>
@@ -314,13 +314,13 @@ _You can view your bills, ledger statement, and balance status._
             onClick={handleSave}
             disabled={loading || fetching}
             sx={{
-              backgroundColor: '#0B4DB7',
+              backgroundColor: '#1E40AF',
               color: '#FFFFFF',
               fontWeight: 700,
               textTransform: 'none',
               borderRadius: '8px',
               px: 2.2,
-              '&:hover': { backgroundColor: '#083B8D' },
+              '&:hover': { backgroundColor: '#1E3A8A' },
             }}
           >
             {loading ? <CircularProgress size={20} sx={{ color: '#FFFFFF' }} /> : 'Save Login'}

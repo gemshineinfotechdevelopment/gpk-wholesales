@@ -46,7 +46,7 @@ const seedSampleData = async () => {
         name: 'GPK Crackers Wholesale & Retail',
         avatarLetter: 'G',
         avatarBg: '#DBEAFE',
-        avatarColor: '#0B4DB7',
+        avatarColor: '#1E40AF',
         address: '14, Main Road, Sivakasi, Tamil Nadu - 626123',
         gstin: '33AAACG1234F1Z5',
       },

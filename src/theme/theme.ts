@@ -4,9 +4,9 @@ export const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#0B4DB7', // Deep Royal Blue
+      main: '#1E40AF', // Deep Royal Blue
       light: '#EFF6FF',
-      dark: '#083B8D',
+      dark: '#1E3A8A',
       contrastText: '#FFFFFF',
     },
     text: {
@@ -14,7 +14,7 @@ export const theme = createTheme({
       secondary: '#475569',
     },
     background: {
-      default: '#F8F9FD',
+      default: '#F8FAFC',
       paper: '#FFFFFF',
     },
     divider: '#E2E8F0',
