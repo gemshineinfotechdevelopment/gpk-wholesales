@@ -1610,34 +1610,52 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   onChange={(_e, val) => handleProductSelect(val)}
                   freeSolo
                   onInputChange={(_e, newInputValue) => setProductName(newInputValue)}
-                  renderOption={(props, option) => (
-                    <Box component="li" {...props} key={props.key || option._id || option.name} sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', py: 0.8 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                        <Typography sx={{ fontWeight: 700, fontSize: '13px', color: '#0F172A' }}>
-                          {option.name}
-                        </Typography>
-                        {option.rate && (
-                          <Typography sx={{ fontWeight: 700, fontSize: '12px', color: '#16A34A' }}>
-                            ₹{parseFloat(option.rate).toLocaleString('en-IN')}
+                  renderOption={(props, option) => {
+                    const { key, ...otherProps } = props;
+                    const optName = typeof option === 'string' ? option : option.name;
+                    const optCompany = typeof option === 'string' ? '' : option.companyName;
+                    const optCode = typeof option === 'string' ? '' : option.code;
+
+                    return (
+                      <Box
+                        component="li"
+                        key={key || (typeof option === 'string' ? option : option._id || option.name)}
+                        {...otherProps}
+                        sx={{
+                          width: '100% !important',
+                          display: 'flex !important',
+                          flexDirection: 'column !important',
+                          alignItems: 'flex-start !important',
+                          justifyContent: 'flex-start !important',
+                          textAlign: 'left !important',
+                          py: 0.8,
+                          px: 2,
+                        }}
+                      >
+                        <Box sx={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'flex-start', textAlign: 'left' }}>
+                          <Typography sx={{ fontWeight: 700, fontSize: '13px', color: '#0F172A', textAlign: 'left' }}>
+                            {optName}
                           </Typography>
+                        </Box>
+                        {(optCompany || optCode) && (
+                          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.3, width: '100%', justifyContent: 'flex-start' }}>
+                            {optCompany && (
+                              <Chip
+                                label={optCompany}
+                                size="small"
+                                sx={{ height: '18px', fontSize: '10px', fontWeight: 600, backgroundColor: '#EFF6FF', color: '#0B4DB7' }}
+                              />
+                            )}
+                            {optCode && (
+                              <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
+                                Code: {optCode}
+                              </Typography>
+                            )}
+                          </Box>
                         )}
                       </Box>
-                      <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', mt: 0.3 }}>
-                        {option.companyName && (
-                          <Chip
-                            label={option.companyName}
-                            size="small"
-                            sx={{ height: '18px', fontSize: '10px', fontWeight: 600, backgroundColor: '#EFF6FF', color: '#0B4DB7' }}
-                          />
-                        )}
-                        {option.code && (
-                          <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
-                            Code: {option.code}
-                          </Typography>
-                        )}
-                      </Box>
-                    </Box>
-                  )}
+                    );
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}
