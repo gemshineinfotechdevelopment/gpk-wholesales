@@ -298,7 +298,7 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                 borderColor: '#CBD5E1',
               },
               '&:focus-within': {
-                borderColor: '#047857',
+                borderColor: '#1D4ED8',
               },
             }}
           >
@@ -364,7 +364,7 @@ export const CustomersPage: FC<CustomersPageProps> = ({
               onClick={onAddNew}
               startIcon={<AddRoundedIcon sx={{ fontSize: 19 }} />}
               sx={{
-                backgroundColor: '#047857',
+                background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
                 color: '#FFFFFF',
                 height: '38px',
                 px: 2,
@@ -374,9 +374,9 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                 textTransform: 'none',
                 letterSpacing: '-0.01em',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 1px 2px rgba(4, 120, 87, 0.15)',
+                boxShadow: '0 1px 2px rgba(37, 99, 235, 0.15)',
                 '&:hover': {
-                  backgroundColor: '#064E3B',
+                  background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
                 },
               }}
             >
@@ -529,7 +529,7 @@ export const CustomersPage: FC<CustomersPageProps> = ({
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={32} sx={{ color: '#047857' }} />
+                    <CircularProgress size={32} sx={{ color: '#1D4ED8' }} />
                   </TableCell>
                 </TableRow>
               ) : filteredCustomers.length === 0 ? (
@@ -596,8 +596,8 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                               width: 34,
                               height: 34,
                               borderRadius: '50%',
-                              backgroundColor: customer.avatarBg || '#D1FAE5',
-                              color: customer.avatarColor || '#047857',
+                              backgroundColor: customer.avatarBg || '#BAE6FD',
+                              color: customer.avatarColor || '#1D4ED8',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -616,7 +616,7 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                                 color: '#0F172A',
                                 letterSpacing: '-0.01em',
                                 '&:hover': {
-                                  color: '#047857',
+                                  color: '#1D4ED8',
                                   textDecoration: 'underline',
                                 },
                               }}
@@ -793,15 +793,15 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                               size="small"
                               onClick={() => onSelectCustomerForParticular?.(customer.name, 'Account Details')}
                               sx={{
-                                color: '#047857',
-                                backgroundColor: '#ECFDF5',
+                                color: '#1D4ED8',
+                                backgroundColor: '#F0F9FF',
                                 border: '1px solid #BFDBFE',
                                 borderRadius: '6px',
                                 p: 0.7,
                                 '&:hover': {
                                   color: '#FFFFFF',
-                                  backgroundColor: '#047857',
-                                  borderColor: '#047857',
+                                  background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                                  borderColor: '#1D4ED8',
                                 },
                               }}
                             >
@@ -843,8 +843,8 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                                 borderRadius: '6px',
                                 p: 0.7,
                                 '&:hover': {
-                                  color: '#047857',
-                                  backgroundColor: '#ECFDF5',
+                                  color: '#1D4ED8',
+                                  backgroundColor: '#F0F9FF',
                                   borderColor: '#BFDBFE',
                                 },
                               }}
@@ -1082,13 +1082,13 @@ export const CustomersPage: FC<CustomersPageProps> = ({
             onClick={handleSaveEdit}
             disabled={editLoading}
             sx={{
-              backgroundColor: '#047857',
+              background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
               color: '#FFFFFF',
               fontWeight: 700,
               textTransform: 'none',
               px: 2.5,
               borderRadius: '6px',
-              '&:hover': { backgroundColor: '#064E3B' },
+              '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
             }}
           >
             {editLoading ? 'Saving...' : 'Save Changes'}

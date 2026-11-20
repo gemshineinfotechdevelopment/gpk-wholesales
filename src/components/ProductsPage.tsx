@@ -148,7 +148,7 @@ export const ProductsPage: FC = () => {
         {/* Blue Header Banner */}
         <Box
           sx={{
-            backgroundColor: '#047857',
+            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
             px: { xs: 2, sm: 3 },
             py: 1.5,
             display: 'flex',
@@ -277,7 +277,7 @@ export const ProductsPage: FC = () => {
               startIcon={<AddRoundedIcon sx={{ fontSize: 18 }} />}
               sx={{
                 backgroundColor: '#FFFFFF',
-                color: '#047857',
+                color: '#1D4ED8',
                 fontSize: '13px',
                 fontWeight: 700,
                 textTransform: 'none',
@@ -365,7 +365,7 @@ export const ProductsPage: FC = () => {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={4} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={32} sx={{ color: '#047857' }} />
+                    <CircularProgress size={32} sx={{ color: '#1D4ED8' }} />
                   </TableCell>
                 </TableRow>
               ) : filteredProducts.length === 0 ? (
@@ -379,7 +379,7 @@ export const ProductsPage: FC = () => {
                         <Button
                           size="small"
                           onClick={() => setSearchTerm('')}
-                          sx={{ textTransform: 'none', color: '#047857', fontWeight: 600 }}
+                          sx={{ textTransform: 'none', color: '#1D4ED8', fontWeight: 600 }}
                         >
                           Clear Search
                         </Button>
@@ -448,8 +448,8 @@ export const ProductsPage: FC = () => {
                               p: 0.7,
                               transition: 'all 0.15s ease',
                               '&:hover': {
-                                color: '#047857',
-                                backgroundColor: '#ECFDF5',
+                                color: '#1D4ED8',
+                                backgroundColor: '#F0F9FF',
                                 borderColor: '#BFDBFE',
                               },
                             }}
@@ -552,13 +552,13 @@ export const ProductsPage: FC = () => {
             onClick={handleSaveProduct}
             disabled={modalLoading}
             sx={{
-              backgroundColor: '#047857',
+              background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
               color: '#FFFFFF',
               fontWeight: 700,
               textTransform: 'none',
               px: 2.5,
               borderRadius: '6px',
-              '&:hover': { backgroundColor: '#064E3B' },
+              '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
             }}
           >
             {modalLoading ? 'Saving...' : 'Save Product'}

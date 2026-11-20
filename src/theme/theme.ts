@@ -4,9 +4,9 @@ export const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#047857', // Deep Emerald Green (Professional Billing Theme)
-      light: '#ECFDF5',
-      dark: '#064E3B',
+      main: '#1D4ED8', // Dark Blue to Light Blue Theme
+      light: '#F0F9FF',
+      dark: '#172554',
       contrastText: '#FFFFFF',
     },
     secondary: {
@@ -74,10 +74,19 @@ export const theme = createTheme({
         root: {
           textTransform: 'none',
           fontWeight: 700,
-          borderRadius: '6px',
+          borderRadius: '7px',
           boxShadow: 'none',
           '&:hover': {
             boxShadow: 'none',
+          },
+        },
+        contained: {
+          background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+          color: '#FFFFFF',
+          boxShadow: '0 2px 8px rgba(37, 99, 235, 0.28)',
+          '&:hover': {
+            background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.38)',
           },
         },
       },

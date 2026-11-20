@@ -187,7 +187,7 @@ export const generateBillHtml = (bill: BillPrintData): string => {
     .comp-name {
       font-size: 26px;
       font-weight: 900;
-      color: #047857;
+      color: #1D4ED8;
       margin-bottom: 2px;
       letter-spacing: -0.01em;
       text-transform: uppercase;
@@ -357,14 +357,14 @@ export const generateBillHtml = (bill: BillPrintData): string => {
     <!-- Metadata Block -->
     <div class="meta-box">
       <div>
-        <div class="meta-row"><span class="meta-label">Bill No:</span><span class="meta-val" style="color:#047857; font-size:14px;">#${bill.billNo || '-'}</span></div>
+        <div class="meta-row"><span class="meta-label">Bill No:</span><span class="meta-val" style="color:#1D4ED8; font-size:14px;">#${bill.billNo || '-'}</span></div>
         <div class="meta-row"><span class="meta-label">Customer Name:</span><span class="meta-val">${bill.customerName || '-'}</span></div>
         ${bill.companyName && bill.companyName.trim() ? `<div class="meta-row"><span class="meta-label">Company Name:</span><span class="meta-val">${bill.companyName.trim()}</span></div>` : ''}
         <div class="meta-row"><span class="meta-label">Transport Name:</span><span class="meta-val">${transportName}</span></div>
       </div>
       <div>
         <div class="meta-row"><span class="meta-label">Date:</span><span class="meta-val">${bill.date || '-'}</span></div>
-        <div class="meta-row"><span class="meta-label">Total Cases:</span><span class="meta-val" style="font-size:13.5px; color:#047857;">${computedCases}</span></div>
+        <div class="meta-row"><span class="meta-label">Total Cases:</span><span class="meta-val" style="font-size:13.5px; color:#1D4ED8;">${computedCases}</span></div>
         <div class="meta-row"><span class="meta-label">Phone:</span><span class="meta-val">${bill.phone || '+91 98765 43210'}</span></div>
       </div>
     </div>
@@ -595,7 +595,7 @@ export const generateCustomerListPrintHtml = (
         <div class="subsequent-header">
           <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0F172A; padding-bottom: 4px; margin-bottom: 6px;">
             <div>
-              <span style="font-size: 15px; font-weight: 900; color: #047857;">GPK CRACKERS</span>
+              <span style="font-size: 15px; font-weight: 900; color: #1D4ED8;">GPK CRACKERS</span>
               <span style="font-size: 10.5px; font-weight: 700; color: #475569; margin-left: 8px;">• ${reportTitle}</span>
               ${dateRangeText ? `<span class="date-badge" style="margin-left: 8px; font-size: 9px; padding: 1px 6px;">${dateRangeText}</span>` : ''}
             </div>
@@ -763,7 +763,7 @@ export const generateCustomerListPrintHtml = (
       font-size: 20px;
       font-weight: 900;
       letter-spacing: -0.01em;
-      color: #047857;
+      color: #1D4ED8;
       line-height: 1.1;
     }
     .comp-sub {
@@ -781,8 +781,8 @@ export const generateCustomerListPrintHtml = (
     }
     .date-badge {
       display: inline-block;
-      background-color: #ECFDF5;
-      color: #047857;
+      background-color: #F0F9FF;
+      color: #1D4ED8;
       border: 1px solid #BFDBFE;
       padding: 1px 6px;
       border-radius: 4px;
@@ -981,7 +981,7 @@ export const generateLedgerStatementHtml = (
           <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 155px;">${entry.companyName || '-'}</td>
           <td class="text-right" style="width:105px; color:#1E293B; font-weight:700;">${deb > 0 ? `₹ ${deb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
           <td class="text-right" style="width:105px; color:#16A34A; font-weight:700;">${cred > 0 ? `₹ ${cred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
-          <td class="text-right" style="width:110px; font-weight:800; color:#047857;">₹ ${entry.balance || '0.00'}</td>
+          <td class="text-right" style="width:110px; font-weight:800; color:#1D4ED8;">₹ ${entry.balance || '0.00'}</td>
         </tr>
       `;
     }).join('');
@@ -1028,7 +1028,7 @@ export const generateLedgerStatementHtml = (
         <div class="subsequent-header">
           <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0F172A; padding-bottom: 4px; margin-bottom: 5px;">
             <div>
-              <span style="font-size: 15px; font-weight: 900; color: #047857;">GPK CRACKERS</span>
+              <span style="font-size: 15px; font-weight: 900; color: #1D4ED8;">GPK CRACKERS</span>
               <span style="font-size: 10.5px; font-weight: 700; color: #475569; margin-left: 8px;">• ACCOUNT STATEMENT: ${customerName.toUpperCase()}</span>
               ${dateRangeText ? `<span class="date-badge" style="margin-left: 8px; font-size: 9px; padding: 1px 6px;">${dateRangeText}</span>` : ''}
             </div>
@@ -1180,7 +1180,7 @@ export const generateLedgerStatementHtml = (
       font-size: 19px;
       font-weight: 900;
       letter-spacing: -0.01em;
-      color: #047857;
+      color: #1D4ED8;
       line-height: 1.1;
     }
     .comp-sub {
@@ -1198,8 +1198,8 @@ export const generateLedgerStatementHtml = (
     }
     .date-badge {
       display: inline-block;
-      background-color: #ECFDF5;
-      color: #047857;
+      background-color: #F0F9FF;
+      color: #1D4ED8;
       border: 1px solid #BFDBFE;
       padding: 1px 6px;
       border-radius: 4px;
@@ -1393,7 +1393,7 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
       return `
         <tr class="data-row" style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
           <td class="text-center" style="width:26px;">${globalIdx + 1}</td>
-          <td class="text-center" style="font-weight:800; color:#047857; width:52px;">#${p.billNo || '-'}</td>
+          <td class="text-center" style="font-weight:800; color:#1D4ED8; width:52px;">#${p.billNo || '-'}</td>
           <td class="text-center" style="width:65px; color:#334155;">${p.date || '-'}</td>
           <td style="font-weight:700; color:#0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">${p.customerName || '-'}</td>
           <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 105px;">${p.companyName || '-'}</td>
@@ -1435,7 +1435,7 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
           </div>
           <div class="kpi-card">
             <div class="kpi-title">Total Cases Billed</div>
-            <div class="kpi-val" style="color:#047857;">${overallCasesSum}</div>
+            <div class="kpi-val" style="color:#1D4ED8;">${overallCasesSum}</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-title">Total Billed Amount</div>
@@ -1447,7 +1447,7 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
         <div class="subsequent-header">
           <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0F172A; padding-bottom: 4px; margin-bottom: 5px;">
             <div>
-              <span style="font-size: 15px; font-weight: 900; color: #047857;">GPK CRACKERS</span>
+              <span style="font-size: 15px; font-weight: 900; color: #1D4ED8;">GPK CRACKERS</span>
               <span style="font-size: 10.5px; font-weight: 700; color: #475569; margin-left: 8px;">• PARTICULARS BILLS MASTER REPORT</span>
               ${dateRangeText ? `<span class="date-badge" style="margin-left: 8px; font-size: 9px; padding: 1px 6px;">${dateRangeText}</span>` : ''}
             </div>
@@ -1601,7 +1601,7 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
       font-size: 19px;
       font-weight: 900;
       letter-spacing: -0.01em;
-      color: #047857;
+      color: #1D4ED8;
       line-height: 1.1;
     }
     .comp-sub {
@@ -1619,8 +1619,8 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
     }
     .date-badge {
       display: inline-block;
-      background-color: #ECFDF5;
-      color: #047857;
+      background-color: #F0F9FF;
+      color: #1D4ED8;
       border: 1px solid #BFDBFE;
       padding: 1px 6px;
       border-radius: 4px;
@@ -1792,7 +1792,7 @@ export const generateCompaniesListPrintHtml = (companies: any[]): string => {
 <body>
   <div class="header">
     <div>
-      <div style="font-size:24px; font-weight:900; color:#047857;">GPK CRACKERS</div>
+      <div style="font-size:24px; font-weight:900; color:#1D4ED8;">GPK CRACKERS</div>
       <h2 style="font-size:15px; margin-top:2px;">COMPANIES DIRECTORY</h2>
     </div>
     <div style="text-align:right; font-size:11.5px;">
@@ -1835,7 +1835,7 @@ export const generateProductsListPrintHtml = (products: any[]): string => {
       <td class="text-center" style="width:40px; border: 1px solid #CBD5E1; padding: 6px;">${idx + 1}</td>
       <td style="font-weight:700; color:#0F172A; border: 1px solid #CBD5E1; padding: 6px 8px;">${p.name}</td>
       <td class="text-center" style="color:#64748B; border: 1px solid #CBD5E1; padding: 6px;">${p.hsnCode || '-'}</td>
-      <td style="text-align:right; font-weight:700; color:#047857; border: 1px solid #CBD5E1; padding: 6px 8px;">₹ ${(parseFloat(p.rate) || 0).toFixed(2)}</td>
+      <td style="text-align:right; font-weight:700; color:#1D4ED8; border: 1px solid #CBD5E1; padding: 6px 8px;">₹ ${(parseFloat(p.rate) || 0).toFixed(2)}</td>
     </tr>
   `;
   }).join('');
@@ -1860,7 +1860,7 @@ export const generateProductsListPrintHtml = (products: any[]): string => {
 <body>
   <div class="header">
     <div>
-      <div style="font-size:24px; font-weight:900; color:#047857;">GPK CRACKERS</div>
+      <div style="font-size:24px; font-weight:900; color:#1D4ED8;">GPK CRACKERS</div>
       <h2 style="font-size:15px; margin-top:2px;">PRODUCTS PRICE CATALOG</h2>
     </div>
     <div style="text-align:right; font-size:11.5px;">
@@ -1967,7 +1967,7 @@ export const generatePerformaHtml = (performa: any): string => {
         <div style="font-weight: 700; color: #0F172A;">${prodName}</div>
         ${prodCode ? `<div style="font-size: 10.5px; color: #64748B;">Code: ${prodCode}</div>` : ''}
       </td>
-      <td style="padding: 7px 8px; border: 1px solid #CBD5E1; color: #047857; font-weight: 600; font-size: 11.5px;">
+      <td style="padding: 7px 8px; border: 1px solid #CBD5E1; color: #1D4ED8; font-weight: 600; font-size: 11.5px;">
         ${compName || '-'}
       </td>
       <td style="padding: 7px 6px; text-align: center; font-weight: 800; color: #0F172A; border: 1px solid #CBD5E1;">
@@ -2008,7 +2008,7 @@ export const generatePerformaHtml = (performa: any): string => {
       <body>
         <div style="position: relative; text-align: center; border-bottom: 2px solid #0F172A; padding-bottom: 8px; margin-bottom: 10px;">
           <div style="position: absolute; right: 0; top: 0; font-size: 12px; font-weight: 700; color: #475569;">Prepared By: <b>${performa.preparedBy || 'S.Nagaraj'}</b></div>
-          <h1 style="font-size: 26px; font-weight: 900; color: #047857; margin: 0 0 2px 0; text-transform: uppercase;">GPK Crackers</h1>
+          <h1 style="font-size: 26px; font-weight: 900; color: #1D4ED8; margin: 0 0 2px 0; text-transform: uppercase;">GPK Crackers</h1>
           <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase;">Wholesale & Retail Trading • Sivakasi</div>
         </div>
 
@@ -2016,11 +2016,11 @@ export const generatePerformaHtml = (performa: any): string => {
 
         <div class="meta-card">
           <div>
-            <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Performa No: </span><span style="font-weight: 900; color: #047857; font-size: 15px;">#${performa.performaNumber || '-'}</span></div>
+            <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Performa No: </span><span style="font-weight: 900; color: #1D4ED8; font-size: 15px;">#${performa.performaNumber || '-'}</span></div>
             <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Date: </span><span style="font-weight: 700;">${performa.date || '-'}</span></div>
             <div>
               <span style="color: #64748B; font-weight: 600;">Status: </span>
-              <span style="font-weight: 800; color: ${performa.status === 'ACTIVE' ? '#16A34A' : performa.status === 'PARTIALLY_USED' ? '#D97706' : '#047857'}; font-size: 11.5px;">
+              <span style="font-weight: 800; color: ${performa.status === 'ACTIVE' ? '#16A34A' : performa.status === 'PARTIALLY_USED' ? '#D97706' : '#1D4ED8'}; font-size: 11.5px;">
                 ${performa.status || 'ACTIVE'}
               </span>
             </div>
@@ -2076,7 +2076,7 @@ export const generatePerformaHtml = (performa: any): string => {
             <div class="summary-row" style="color: #475569;">
               <span>Tax (Amount):</span><strong style="font-weight: 700; color: #0F172A;">+ ₹ ${formatCurrency(taxAmt)}</strong>
             </div>` : ''}
-            <div class="summary-row" style="padding-top: 6px; border-top: 2px solid #047857; margin-top: 4px; font-size: 13px; color: #047857;">
+            <div class="summary-row" style="padding-top: 6px; border-top: 2px solid #1D4ED8; margin-top: 4px; font-size: 13px; color: #1D4ED8;">
               <span style="font-weight: 800;">Total Allocated Value:</span><strong style="font-weight: 900; font-size: 14px;">₹ ${formatCurrency(totalAllocatedVal)}</strong>
             </div>
           </div>
@@ -2145,12 +2145,12 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
       return `
         <tr class="data-row" style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
           <td class="text-center" style="width:30px;">${globalIdx + 1}</td>
-          <td class="text-center" style="font-weight:800; color:#047857; width:65px;">#${p.performaNumber || '-'}</td>
+          <td class="text-center" style="font-weight:800; color:#1D4ED8; width:65px;">#${p.performaNumber || '-'}</td>
           <td class="text-center" style="width:75px; color:#334155;">${p.date || '-'}</td>
           <td style="font-weight:700; color:#0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${custName}</td>
           <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${compName}</td>
           <td class="text-center" style="width:50px; font-weight:800;">${cases}</td>
-          <td class="text-center" style="width:70px; font-size:9.5px; font-weight:700; color:${p.status === 'ACTIVE' ? '#16A34A' : '#047857'};">${p.status || 'ACTIVE'}</td>
+          <td class="text-center" style="width:70px; font-size:9.5px; font-weight:700; color:${p.status === 'ACTIVE' ? '#16A34A' : '#1D4ED8'};">${p.status || 'ACTIVE'}</td>
           <td class="text-right" style="font-weight:800; width:110px; color:#0F172A;">₹ ${value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         </tr>
       `;
@@ -2184,7 +2184,7 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
           </div>
           <div class="kpi-card">
             <div class="kpi-title">Total Cases</div>
-            <div class="kpi-val" style="color:#047857;">${overallTotalCases}</div>
+            <div class="kpi-val" style="color:#1D4ED8;">${overallTotalCases}</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-title">Total Allocated Value</div>
@@ -2196,7 +2196,7 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
         <div class="subsequent-header">
           <div style="display: flex; justify-content: space-between; align-items: flex-end; border-bottom: 2px solid #0F172A; padding-bottom: 4px; margin-bottom: 5px;">
             <div>
-              <span style="font-size: 15px; font-weight: 900; color: #047857;">GPK CRACKERS</span>
+              <span style="font-size: 15px; font-weight: 900; color: #1D4ED8;">GPK CRACKERS</span>
               <span style="font-size: 10.5px; font-weight: 700; color: #475569; margin-left: 8px;">• ${reportTitle}</span>
               ${dateRangeText ? `<span class="date-badge" style="margin-left: 8px; font-size: 9px; padding: 1px 6px;">${dateRangeText}</span>` : ''}
             </div>
@@ -2345,7 +2345,7 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
       font-size: 19px;
       font-weight: 900;
       letter-spacing: -0.01em;
-      color: #047857;
+      color: #1D4ED8;
       line-height: 1.1;
     }
     .comp-sub {
@@ -2363,8 +2363,8 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
     }
     .date-badge {
       display: inline-block;
-      background-color: #ECFDF5;
-      color: #047857;
+      background-color: #F0F9FF;
+      color: #1D4ED8;
       border: 1px solid #BFDBFE;
       padding: 1px 6px;
       border-radius: 4px;

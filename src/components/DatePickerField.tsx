@@ -123,8 +123,8 @@ export const DatePickerField: FC<DatePickerFieldProps> = ({
                     cursor: disabled ? 'default' : 'pointer',
                     transition: 'all 0.15s ease',
                     '&:hover': {
-                      color: disabled ? '#94A3B8' : '#047857',
-                      backgroundColor: disabled ? 'transparent' : 'rgba(4, 120, 87, 0.08)',
+                      color: disabled ? '#94A3B8' : '#1D4ED8',
+                      backgroundColor: disabled ? 'transparent' : 'rgba(37, 99, 235, 0.08)',
                     },
                   }}
                 >
@@ -144,7 +144,7 @@ export const DatePickerField: FC<DatePickerFieldProps> = ({
                 borderColor: '#94A3B8',
               },
               '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                borderColor: '#047857',
+                borderColor: '#1D4ED8',
               },
               ...inputSx,
             },

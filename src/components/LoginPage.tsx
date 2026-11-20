@@ -86,7 +86,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onLoginSuccess }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'radial-gradient(ellipse at 50% 50%, #1E293B 0%, #0F172A 60%, #020617 100%)',
+        background: 'radial-gradient(ellipse at 50% 50%, #0F2B5C 0%, #0A192F 50%, #030712 100%)',
         p: 2.5,
         boxSizing: 'border-box',
       }}
@@ -198,9 +198,9 @@ export const LoginPage: FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 borderColor: '#CBD5E1',
               },
               '&:focus-within': {
-                borderColor: '#047857',
+                borderColor: '#1D4ED8',
                 backgroundColor: '#FFFFFF',
-                boxShadow: '0 0 0 2px rgba(4, 120, 87, 0.12)',
+                boxShadow: '0 0 0 2px rgba(37, 99, 235, 0.12)',
               },
             }}
           >
@@ -266,9 +266,9 @@ export const LoginPage: FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 borderColor: '#CBD5E1',
               },
               '&:focus-within': {
-                borderColor: '#047857',
+                borderColor: '#1D4ED8',
                 backgroundColor: '#FFFFFF',
-                boxShadow: '0 0 0 2px rgba(4, 120, 87, 0.12)',
+                boxShadow: '0 0 0 2px rgba(37, 99, 235, 0.12)',
               },
             }}
           >
@@ -334,7 +334,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onLoginSuccess }) => {
           disabled={loading}
           endIcon={!loading && <ArrowForwardRoundedIcon sx={{ fontSize: '18px !important' }} />}
           sx={{
-            backgroundColor: '#047857',
+            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
             color: '#FFFFFF',
             height: '46px',
             borderRadius: '9px',
@@ -342,10 +342,10 @@ export const LoginPage: FC<LoginPageProps> = ({ onLoginSuccess }) => {
             fontWeight: 700,
             textTransform: 'none',
             letterSpacing: '-0.01em',
-            boxShadow: '0 2px 6px rgba(4, 120, 87, 0.25)',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.35)',
             transition: 'background-color 0.15s ease',
             '&:hover': {
-              backgroundColor: '#064E3B',
+              background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
             },
             '&.Mui-disabled': {
               backgroundColor: '#CBD5E1',

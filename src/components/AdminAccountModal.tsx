@@ -117,7 +117,7 @@ export const AdminAccountModal: FC<AdminAccountModalProps> = ({ open, onClose })
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#047857',
+              color: '#1D4ED8',
             }}
           >
             <AdminPanelSettingsRoundedIcon sx={{ fontSize: 22 }} />
@@ -212,13 +212,13 @@ export const AdminAccountModal: FC<AdminAccountModalProps> = ({ open, onClose })
           onClick={handleSave}
           disabled={loading || fetching}
           sx={{
-            backgroundColor: '#047857',
+            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
             color: '#FFFFFF',
             fontWeight: 700,
             textTransform: 'none',
             borderRadius: '8px',
             px: 2.5,
-            '&:hover': { backgroundColor: '#064E3B' },
+            '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
           }}
         >
           {loading ? <CircularProgress size={20} sx={{ color: '#FFFFFF' }} /> : 'Update Credentials'}

@@ -132,8 +132,8 @@ export const Navbar: FC<NavbarProps> = ({
       component="header"
       sx={{
         width: '100%',
-        backgroundColor: '#0F172A',
-        borderBottom: '1px solid #1E293B',
+        background: 'linear-gradient(90deg, #081426 0%, #0D2342 50%, #113460 100%)',
+        borderBottom: '1px solid rgba(56, 189, 248, 0.22)',
         px: { xs: 2, md: 4 },
         height: '64px',
         display: 'flex',
@@ -169,11 +169,11 @@ export const Navbar: FC<NavbarProps> = ({
               width: 36,
               height: 36,
               borderRadius: '9px',
-              background: 'linear-gradient(135deg, #DC2626 0%, #EA580C 50%, #CA8A04 100%)',
+              background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 50%, #38BDF8 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 2px 6px rgba(220, 38, 38, 0.35)',
+              boxShadow: '0 2px 8px rgba(37, 99, 235, 0.4)',
               color: '#FFFFFF',
               fontWeight: 900,
               fontSize: '13px',
@@ -201,7 +201,7 @@ export const Navbar: FC<NavbarProps> = ({
             sx={{
               fontSize: '10px',
               fontWeight: 700,
-              color: '#F59E0B',
+              color: '#38BDF8',
               letterSpacing: '0.06em',
               textTransform: 'uppercase',
             }}
@@ -241,7 +241,7 @@ export const Navbar: FC<NavbarProps> = ({
                     sx={{
                       fontWeight: isActive ? 700 : 500,
                       fontSize: '14.5px',
-                      color: isActive ? '#34D399' : '#94A3B8',
+                      color: isActive ? '#38BDF8' : '#94A3B8',
                       letterSpacing: '-0.01em',
                       transition: 'color 0.15s ease',
                       '&:hover': {
@@ -260,7 +260,7 @@ export const Navbar: FC<NavbarProps> = ({
                         left: 0,
                         right: 0,
                         height: '3px',
-                        backgroundColor: '#10B981',
+                        background: 'linear-gradient(90deg, #1E3A8A 0%, #2563EB 50%, #38BDF8 100%)',
                         borderTopLeftRadius: '2px',
                         borderTopRightRadius: '2px',
                       }}
@@ -288,7 +288,7 @@ export const Navbar: FC<NavbarProps> = ({
                     sx={{
                       fontWeight: isActive ? 600 : 500,
                       fontSize: '14px',
-                      color: isActive ? '#34D399' : '#94A3B8',
+                      color: isActive ? '#38BDF8' : '#94A3B8',
                       letterSpacing: '-0.01em',
                       px: 0.5,
                       transition: 'color 0.15s ease',
@@ -309,7 +309,7 @@ export const Navbar: FC<NavbarProps> = ({
                         left: 0,
                         right: 0,
                         height: '3px',
-                        backgroundColor: '#10B981',
+                        background: 'linear-gradient(90deg, #1E3A8A 0%, #2563EB 50%, #38BDF8 100%)',
                         borderTopLeftRadius: '2px',
                         borderTopRightRadius: '2px',
                       }}
@@ -337,22 +337,22 @@ export const Navbar: FC<NavbarProps> = ({
             fontSize: '11px',
             backgroundColor:
               user?.role === 'superadmin'
-                ? 'rgba(239, 68, 68, 0.15)'
+                ? 'rgba(239, 68, 68, 0.18)'
                 : user?.role === 'admin'
-                ? 'rgba(16, 185, 129, 0.15)'
-                : 'rgba(52, 211, 153, 0.15)',
+                ? 'rgba(37, 99, 235, 0.22)'
+                : 'rgba(56, 189, 248, 0.2)',
             color:
               user?.role === 'superadmin'
                 ? '#F87171'
                 : user?.role === 'admin'
-                ? '#34D399'
-                : '#6EE7B7',
+                ? '#60A5FA'
+                : '#7DD3FC',
             border: `1px solid ${
               user?.role === 'superadmin'
-                ? 'rgba(239, 68, 68, 0.3)'
+                ? 'rgba(239, 68, 68, 0.35)'
                 : user?.role === 'admin'
-                ? 'rgba(16, 185, 129, 0.3)'
-                : 'rgba(52, 211, 153, 0.3)'
+                ? 'rgba(96, 165, 250, 0.4)'
+                : 'rgba(56, 189, 248, 0.4)'
             }`,
             display: { xs: 'none', sm: 'inline-flex' },
           }}
@@ -364,18 +364,18 @@ export const Navbar: FC<NavbarProps> = ({
             width: 36,
             height: 36,
             borderRadius: '50%',
-            backgroundColor:
+            background:
               user?.role === 'superadmin'
-                ? '#DC2626'
+                ? 'linear-gradient(135deg, #991B1B 0%, #DC2626 100%)'
                 : user?.role === 'admin'
-                ? '#047857'
-                : '#16A34A',
+                ? 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)'
+                : 'linear-gradient(135deg, #0284C7 0%, #38BDF8 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             cursor: 'pointer',
             transition: 'all 0.2s ease',
-            boxShadow: '0 2px 5px rgba(0,0,0,0.25)',
+            boxShadow: '0 2px 8px rgba(37, 99, 235, 0.35)',
             '&:hover': {
               transform: 'scale(1.05)',
             },
@@ -392,9 +392,9 @@ export const Navbar: FC<NavbarProps> = ({
             color: '#FFFFFF',
             p: 0.8,
             borderRadius: '8px',
-            backgroundColor: '#1E293B',
+            backgroundColor: '#0D2342',
             '&:hover': {
-              backgroundColor: '#334155',
+              backgroundColor: '#1E3A8A',
             },
           }}
           aria-label="Open navigation menu"
@@ -427,7 +427,7 @@ export const Navbar: FC<NavbarProps> = ({
               {user?.role === 'superadmin' ? (
                 <ShieldRoundedIcon sx={{ fontSize: 22, color: '#DC2626' }} />
               ) : user?.role === 'admin' ? (
-                <AdminPanelSettingsRoundedIcon sx={{ fontSize: 22, color: '#047857' }} />
+                <AdminPanelSettingsRoundedIcon sx={{ fontSize: 22, color: '#1D4ED8' }} />
               ) : (
                 <AccountCircleRoundedIcon sx={{ fontSize: 22, color: '#16A34A' }} />
               )}
@@ -457,7 +457,7 @@ export const Navbar: FC<NavbarProps> = ({
                 sx={{ py: 1 }}
               >
                 <ListItemIcon>
-                  <LockResetRoundedIcon sx={{ fontSize: 18, color: '#047857' }} />
+                  <LockResetRoundedIcon sx={{ fontSize: 18, color: '#1D4ED8' }} />
                 </ListItemIcon>
                 <Box>
                   <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
@@ -582,7 +582,7 @@ export const Navbar: FC<NavbarProps> = ({
                 height: 38,
                 borderRadius: '50%',
                 backgroundColor:
-                  user?.role === 'superadmin' ? '#DC2626' : user?.role === 'admin' ? '#047857' : '#16A34A',
+                  user?.role === 'superadmin' ? '#DC2626' : user?.role === 'admin' ? '#1D4ED8' : '#16A34A',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -615,8 +615,8 @@ export const Navbar: FC<NavbarProps> = ({
                   fontSize: '10px',
                   fontWeight: 700,
                   mt: 0.3,
-                  backgroundColor: user?.role === 'superadmin' ? '#FEF2F2' : user?.role === 'admin' ? '#ECFDF5' : '#F0FDF4',
-                  color: user?.role === 'superadmin' ? '#DC2626' : user?.role === 'admin' ? '#047857' : '#16A34A',
+                  backgroundColor: user?.role === 'superadmin' ? '#FEF2F2' : user?.role === 'admin' ? '#F0F9FF' : '#F0FDF4',
+                  color: user?.role === 'superadmin' ? '#DC2626' : user?.role === 'admin' ? '#1D4ED8' : '#16A34A',
                 }}
               />
             </Box>
@@ -637,14 +637,14 @@ export const Navbar: FC<NavbarProps> = ({
                       borderRadius: '8px',
                       py: 1,
                       px: 1.5,
-                      backgroundColor: isActive ? '#ECFDF5' : 'transparent',
-                      color: isActive ? '#047857' : '#334155',
+                      backgroundColor: isActive ? '#F0F9FF' : 'transparent',
+                      color: isActive ? '#1D4ED8' : '#334155',
                       '&:hover': {
-                        backgroundColor: isActive ? '#ECFDF5' : '#F8FAFC',
+                        backgroundColor: isActive ? '#F0F9FF' : '#F8FAFC',
                       },
                     }}
                   >
-                    <ListItemIcon sx={{ minWidth: 34, color: isActive ? '#047857' : '#64748B' }}>
+                    <ListItemIcon sx={{ minWidth: 34, color: isActive ? '#1D4ED8' : '#64748B' }}>
                       {getTabIcon(tab)}
                     </ListItemIcon>
                     <ListItemText
@@ -654,7 +654,7 @@ export const Navbar: FC<NavbarProps> = ({
                             fontSize: '13.5px',
                             fontWeight: isActive ? 800 : 600,
                             letterSpacing: '-0.01em',
-                            color: isActive ? '#047857' : '#334155',
+                            color: isActive ? '#1D4ED8' : '#334155',
                           }}
                         >
                           {tab}
@@ -678,7 +678,7 @@ export const Navbar: FC<NavbarProps> = ({
               }}
               sx={{ borderRadius: '8px', py: 1, px: 1.5, mb: 0.8 }}
             >
-              <ListItemIcon sx={{ minWidth: 34, color: '#047857' }}>
+              <ListItemIcon sx={{ minWidth: 34, color: '#1D4ED8' }}>
                 <LockResetRoundedIcon sx={{ fontSize: 20 }} />
               </ListItemIcon>
               <ListItemText
