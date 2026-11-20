@@ -567,35 +567,20 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     setEditingRowId(null);
   };
 
-  // Navigate to Performa Page for customer to add products
+  // Navigate to Performa Page for customer to add/update products
   const handleGoToCustomerPerforma = () => {
     const cust = currentCustomerName || filterCustomer || '';
     if (cust) {
       localStorage.setItem('gpk_active_customer', cust);
     }
     localStorage.setItem('gpk_active_tab', 'Performa');
+    localStorage.setItem('gpk_performa_subtab', 'Customer Performa List');
     setWarningDialog((prev) => ({ ...prev, open: false }));
     if (onNavigateToPerforma) {
       onNavigateToPerforma(cust);
     } else {
       window.location.reload();
     }
-  };
-
-  // Confirm adding product from Warning Dialog (Exceeded cases only; unquoted products are strictly blocked)
-  const handleConfirmWarningAdd = () => {
-    if (warningDialog.type === 'NEW_PRODUCT') {
-      return;
-    }
-    if (warningDialog.pendingRowData) {
-      const { particular, quantity, rate, pktUnit, isEdit, editId } = warningDialog.pendingRowData;
-      if (isEdit && editId) {
-        executeSaveEditRow(editId, particular, quantity, rate, pktUnit, true);
-      } else {
-        executeAddProductRow(particular, quantity, rate, pktUnit, true);
-      }
-    }
-    setWarningDialog((prev) => ({ ...prev, open: false }));
   };
 
   // Quick-import all remaining performa items
@@ -4590,12 +4575,23 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
             </Box>
           ) : (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              <Alert severity="warning" sx={{ borderRadius: '8px', fontSize: '13px', fontWeight: 500 }}>
-                Performa <strong>{warningDialog.performaNumber}</strong> has only <strong>{warningDialog.remainingCases} remaining cases</strong> for &quot;{warningDialog.productName}&quot;, but you entered <strong>{warningDialog.quantity} cases</strong>.
+              <Alert
+                severity="error"
+                sx={{
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: 600,
+                  backgroundColor: '#FEF2F2',
+                  border: '1px solid #FECACA',
+                  color: '#991B1B',
+                  '& .MuiAlert-icon': { color: '#DC2626' },
+                }}
+              >
+                Performa <strong>{warningDialog.performaNumber}</strong> has only <strong>{warningDialog.remainingCases} remaining cases</strong> for &quot;{warningDialog.productName}&quot;, but you entered <strong>{warningDialog.quantity} cases</strong> (+{warningDialog.extraCases} extra cases).
               </Alert>
 
               <Typography sx={{ fontSize: '13.5px', color: '#334155', lineHeight: 1.6 }}>
-                The extra <strong>{warningDialog.extraCases} cases</strong> will be billed as additional items beyond the quotation quota.
+                You cannot add extra cases directly on this bill. Please go to <strong>Performa</strong>, update the quotation quantity for <strong>&quot;{warningDialog.productName}&quot;</strong> first, and then return here to bill it.
               </Typography>
 
               <Box sx={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '8px', p: 2 }}>
@@ -4608,11 +4604,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     <Typography sx={{ fontWeight: 700, color: '#166534' }}>{warningDialog.remainingCases} cases</Typography>
                   </Box>
                   <Box>
-                    <Typography sx={{ fontSize: '11px', color: '#B45309' }}>Extra / Additional</Typography>
-                    <Typography sx={{ fontWeight: 700, color: '#B45309' }}>+{warningDialog.extraCases} cases</Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#DC2626' }}>Extra Cases</Typography>
+                    <Typography sx={{ fontWeight: 700, color: '#DC2626' }}>+{warningDialog.extraCases} cases</Typography>
                   </Box>
                   <Box>
-                    <Typography sx={{ fontSize: '11px', color: '#0F172A' }}>Total Being Added</Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#0F172A' }}>Entered Cases</Typography>
                     <Typography sx={{ fontWeight: 700, color: '#0F172A' }}>{warningDialog.quantity} cases</Typography>
                   </Box>
                 </Box>
@@ -4637,60 +4633,25 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
             Cancel
           </Button>
 
-          {warningDialog.type === 'NEW_PRODUCT' ? (
-            <Button
-              variant="contained"
-              disableElevation
-              onClick={handleGoToCustomerPerforma}
-              startIcon={<ReceiptLongRoundedIcon sx={{ fontSize: 18 }} />}
-              sx={{
-                backgroundColor: '#0B4DB7',
-                color: '#FFFFFF',
-                textTransform: 'none',
-                fontWeight: 700,
-                px: 2.5,
-                borderRadius: '6px',
-                '&:hover': { backgroundColor: '#083B8D' },
-              }}
-            >
-              Go to Performa to Add Product
-            </Button>
-          ) : (
-            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <Button
-                variant="outlined"
-                size="small"
-                onClick={handleGoToCustomerPerforma}
-                startIcon={<ReceiptLongRoundedIcon sx={{ fontSize: 16 }} />}
-                sx={{
-                  borderColor: '#CBD5E1',
-                  color: '#334155',
-                  textTransform: 'none',
-                  fontWeight: 600,
-                  fontSize: '12.5px',
-                  borderRadius: '6px',
-                  '&:hover': { borderColor: '#94A3B8', backgroundColor: '#F1F5F9' },
-                }}
-              >
-                Go to Performa
-              </Button>
-              <Button
-                variant="contained"
-                disableElevation
-                onClick={handleConfirmWarningAdd}
-                sx={{
-                  backgroundColor: '#D97706',
-                  textTransform: 'none',
-                  fontWeight: 700,
-                  px: 2.5,
-                  borderRadius: '6px',
-                  '&:hover': { backgroundColor: '#B45309' },
-                }}
-              >
-                Proceed &amp; Add Extra Cases
-              </Button>
-            </Box>
-          )}
+          <Button
+            variant="contained"
+            disableElevation
+            onClick={handleGoToCustomerPerforma}
+            startIcon={<ReceiptLongRoundedIcon sx={{ fontSize: 18 }} />}
+            sx={{
+              backgroundColor: '#0B4DB7',
+              color: '#FFFFFF',
+              textTransform: 'none',
+              fontWeight: 700,
+              px: 2.5,
+              borderRadius: '6px',
+              '&:hover': { backgroundColor: '#083B8D' },
+            }}
+          >
+            {warningDialog.type === 'NEW_PRODUCT'
+              ? 'Go to Performa to Add Product'
+              : 'Go to Performa to Update Quantity'}
+          </Button>
         </DialogActions>
       </Dialog>
     </Box>
