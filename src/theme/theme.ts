@@ -4,9 +4,15 @@ export const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#1E40AF', // Deep Royal Blue
-      light: '#EFF6FF',
-      dark: '#1E3A8A',
+      main: '#047857', // Deep Emerald Green (Professional Billing Theme)
+      light: '#ECFDF5',
+      dark: '#064E3B',
+      contrastText: '#FFFFFF',
+    },
+    secondary: {
+      main: '#0F172A', // Slate Obsidian
+      light: '#334155',
+      dark: '#020617',
       contrastText: '#FFFFFF',
     },
     text: {

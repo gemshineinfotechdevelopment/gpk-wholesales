@@ -151,7 +151,7 @@ export const DateRangePrintModal: FC<DateRangePrintModalProps> = ({
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <CalendarMonthRoundedIcon sx={{ color: '#1E40AF', fontSize: 24 }} />
+          <CalendarMonthRoundedIcon sx={{ color: '#047857', fontSize: 24 }} />
           <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>
             {title || 'Select Date Range for Print'}
           </Typography>
@@ -174,10 +174,10 @@ export const DateRangePrintModal: FC<DateRangePrintModalProps> = ({
             sx={{
               fontWeight: 600,
               fontSize: '12px',
-              backgroundColor: activePreset === 'ALL' ? '#1E40AF' : '#F1F5F9',
+              backgroundColor: activePreset === 'ALL' ? '#047857' : '#F1F5F9',
               color: activePreset === 'ALL' ? '#FFFFFF' : '#334155',
               cursor: 'pointer',
-              '&:hover': { backgroundColor: activePreset === 'ALL' ? '#1E3A8A' : '#E2E8F0' },
+              '&:hover': { backgroundColor: activePreset === 'ALL' ? '#064E3B' : '#E2E8F0' },
             }}
           />
           <Chip
@@ -186,10 +186,10 @@ export const DateRangePrintModal: FC<DateRangePrintModalProps> = ({
             sx={{
               fontWeight: 600,
               fontSize: '12px',
-              backgroundColor: activePreset === 'TODAY' ? '#1E40AF' : '#F1F5F9',
+              backgroundColor: activePreset === 'TODAY' ? '#047857' : '#F1F5F9',
               color: activePreset === 'TODAY' ? '#FFFFFF' : '#334155',
               cursor: 'pointer',
-              '&:hover': { backgroundColor: activePreset === 'TODAY' ? '#1E3A8A' : '#E2E8F0' },
+              '&:hover': { backgroundColor: activePreset === 'TODAY' ? '#064E3B' : '#E2E8F0' },
             }}
           />
           <Chip
@@ -198,10 +198,10 @@ export const DateRangePrintModal: FC<DateRangePrintModalProps> = ({
             sx={{
               fontWeight: 600,
               fontSize: '12px',
-              backgroundColor: activePreset === 'THIS_MONTH' ? '#1E40AF' : '#F1F5F9',
+              backgroundColor: activePreset === 'THIS_MONTH' ? '#047857' : '#F1F5F9',
               color: activePreset === 'THIS_MONTH' ? '#FFFFFF' : '#334155',
               cursor: 'pointer',
-              '&:hover': { backgroundColor: activePreset === 'THIS_MONTH' ? '#1E3A8A' : '#E2E8F0' },
+              '&:hover': { backgroundColor: activePreset === 'THIS_MONTH' ? '#064E3B' : '#E2E8F0' },
             }}
           />
           <Chip
@@ -210,10 +210,10 @@ export const DateRangePrintModal: FC<DateRangePrintModalProps> = ({
             sx={{
               fontWeight: 600,
               fontSize: '12px',
-              backgroundColor: activePreset === 'LAST_MONTH' ? '#1E40AF' : '#F1F5F9',
+              backgroundColor: activePreset === 'LAST_MONTH' ? '#047857' : '#F1F5F9',
               color: activePreset === 'LAST_MONTH' ? '#FFFFFF' : '#334155',
               cursor: 'pointer',
-              '&:hover': { backgroundColor: activePreset === 'LAST_MONTH' ? '#1E3A8A' : '#E2E8F0' },
+              '&:hover': { backgroundColor: activePreset === 'LAST_MONTH' ? '#064E3B' : '#E2E8F0' },
             }}
           />
           <Chip
@@ -222,10 +222,10 @@ export const DateRangePrintModal: FC<DateRangePrintModalProps> = ({
             sx={{
               fontWeight: 600,
               fontSize: '12px',
-              backgroundColor: activePreset === 'LAST_30_DAYS' ? '#1E40AF' : '#F1F5F9',
+              backgroundColor: activePreset === 'LAST_30_DAYS' ? '#047857' : '#F1F5F9',
               color: activePreset === 'LAST_30_DAYS' ? '#FFFFFF' : '#334155',
               cursor: 'pointer',
-              '&:hover': { backgroundColor: activePreset === 'LAST_30_DAYS' ? '#1E3A8A' : '#E2E8F0' },
+              '&:hover': { backgroundColor: activePreset === 'LAST_30_DAYS' ? '#064E3B' : '#E2E8F0' },
             }}
           />
           <Chip
@@ -234,10 +234,10 @@ export const DateRangePrintModal: FC<DateRangePrintModalProps> = ({
             sx={{
               fontWeight: 600,
               fontSize: '12px',
-              backgroundColor: activePreset === 'THIS_YEAR' ? '#1E40AF' : '#F1F5F9',
+              backgroundColor: activePreset === 'THIS_YEAR' ? '#047857' : '#F1F5F9',
               color: activePreset === 'THIS_YEAR' ? '#FFFFFF' : '#334155',
               cursor: 'pointer',
-              '&:hover': { backgroundColor: activePreset === 'THIS_YEAR' ? '#1E3A8A' : '#E2E8F0' },
+              '&:hover': { backgroundColor: activePreset === 'THIS_YEAR' ? '#064E3B' : '#E2E8F0' },
             }}
           />
         </Box>
@@ -343,13 +343,13 @@ export const DateRangePrintModal: FC<DateRangePrintModalProps> = ({
           disabled={filteredItems.length === 0}
           startIcon={<PrintOutlinedIcon sx={{ fontSize: 18 }} />}
           sx={{
-            backgroundColor: '#1E40AF',
+            backgroundColor: '#047857',
             color: '#FFFFFF',
             fontWeight: 700,
             textTransform: 'none',
             px: 2.5,
             borderRadius: '6px',
-            '&:hover': { backgroundColor: '#1E3A8A' },
+            '&:hover': { backgroundColor: '#064E3B' },
           }}
         >
           Print A4 Report ({filteredItems.length})

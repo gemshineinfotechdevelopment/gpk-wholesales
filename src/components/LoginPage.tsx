@@ -86,7 +86,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onLoginSuccess }) => {
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        background: 'radial-gradient(ellipse at 50% 50%, #F8FAFC 0%, #EEF2F6 50%, #E2E8F0 100%)',
+        background: 'radial-gradient(ellipse at 50% 50%, #1E293B 0%, #0F172A 60%, #020617 100%)',
         p: 2.5,
         boxSizing: 'border-box',
       }}
@@ -198,9 +198,9 @@ export const LoginPage: FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 borderColor: '#CBD5E1',
               },
               '&:focus-within': {
-                borderColor: '#1E40AF',
+                borderColor: '#047857',
                 backgroundColor: '#FFFFFF',
-                boxShadow: '0 0 0 2px rgba(30, 64, 175, 0.12)',
+                boxShadow: '0 0 0 2px rgba(4, 120, 87, 0.12)',
               },
             }}
           >
@@ -266,9 +266,9 @@ export const LoginPage: FC<LoginPageProps> = ({ onLoginSuccess }) => {
                 borderColor: '#CBD5E1',
               },
               '&:focus-within': {
-                borderColor: '#1E40AF',
+                borderColor: '#047857',
                 backgroundColor: '#FFFFFF',
-                boxShadow: '0 0 0 2px rgba(30, 64, 175, 0.12)',
+                boxShadow: '0 0 0 2px rgba(4, 120, 87, 0.12)',
               },
             }}
           >
@@ -334,7 +334,7 @@ export const LoginPage: FC<LoginPageProps> = ({ onLoginSuccess }) => {
           disabled={loading}
           endIcon={!loading && <ArrowForwardRoundedIcon sx={{ fontSize: '18px !important' }} />}
           sx={{
-            backgroundColor: '#1E40AF',
+            backgroundColor: '#047857',
             color: '#FFFFFF',
             height: '46px',
             borderRadius: '9px',
@@ -342,10 +342,10 @@ export const LoginPage: FC<LoginPageProps> = ({ onLoginSuccess }) => {
             fontWeight: 700,
             textTransform: 'none',
             letterSpacing: '-0.01em',
-            boxShadow: '0 2px 6px rgba(30, 64, 175, 0.25)',
+            boxShadow: '0 2px 6px rgba(4, 120, 87, 0.25)',
             transition: 'background-color 0.15s ease',
             '&:hover': {
-              backgroundColor: '#1E3A8A',
+              backgroundColor: '#064E3B',
             },
             '&.Mui-disabled': {
               backgroundColor: '#CBD5E1',

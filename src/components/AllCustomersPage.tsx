@@ -408,8 +408,8 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                 borderColor: '#CBD5E1',
               },
               '&:focus-within': {
-                borderColor: '#1E40AF',
-                boxShadow: '0 0 0 2px rgba(30, 64, 175, 0.1)',
+                borderColor: '#047857',
+                boxShadow: '0 0 0 2px rgba(4, 120, 87, 0.1)',
               },
             }}
           >
@@ -475,7 +475,7 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
               onClick={onAddNewCustomer}
               startIcon={<AddRoundedIcon sx={{ fontSize: 20 }} />}
               sx={{
-                backgroundColor: '#1E40AF',
+                backgroundColor: '#047857',
                 color: '#FFFFFF',
                 height: '40px',
                 px: 2.4,
@@ -485,9 +485,9 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                 textTransform: 'none',
                 letterSpacing: '-0.01em',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 2px 4px rgba(30, 64, 175, 0.2)',
+                boxShadow: '0 2px 4px rgba(4, 120, 87, 0.2)',
                 '&:hover': {
-                  backgroundColor: '#1E3A8A',
+                  backgroundColor: '#064E3B',
                 },
               }}
             >
@@ -531,8 +531,8 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                 width: 44,
                 height: 44,
                 borderRadius: '10px',
-                backgroundColor: '#EFF6FF',
-                color: '#1E40AF',
+                backgroundColor: '#ECFDF5',
+                color: '#047857',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -718,13 +718,13 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
           sx={{
             fontWeight: 600,
             fontSize: '13px',
-            backgroundColor: statusFilter === 'ALL' ? '#1E40AF' : '#FFFFFF',
+            backgroundColor: statusFilter === 'ALL' ? '#047857' : '#FFFFFF',
             color: statusFilter === 'ALL' ? '#FFFFFF' : '#475569',
             border: '1px solid',
-            borderColor: statusFilter === 'ALL' ? '#1E40AF' : '#E2E8F0',
+            borderColor: statusFilter === 'ALL' ? '#047857' : '#E2E8F0',
             cursor: 'pointer',
             '&:hover': {
-              backgroundColor: statusFilter === 'ALL' ? '#1E3A8A' : '#F1F5F9',
+              backgroundColor: statusFilter === 'ALL' ? '#064E3B' : '#F1F5F9',
             },
           }}
         />
@@ -954,7 +954,7 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={32} sx={{ color: '#1E40AF' }} />
+                    <CircularProgress size={32} sx={{ color: '#047857' }} />
                   </TableCell>
                 </TableRow>
               ) : filteredCustomers.length === 0 ? (
@@ -1023,8 +1023,8 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                               width: 36,
                               height: 36,
                               borderRadius: '50%',
-                              backgroundColor: customer.avatarBg || '#DBEAFE',
-                              color: customer.avatarColor || '#1E40AF',
+                              backgroundColor: customer.avatarBg || '#D1FAE5',
+                              color: customer.avatarColor || '#047857',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -1044,7 +1044,7 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                                   color: '#0F172A',
                                   letterSpacing: '-0.01em',
                                   '&:hover': {
-                                    color: '#1E40AF',
+                                    color: '#047857',
                                     textDecoration: 'underline',
                                   },
                                 }}
@@ -1059,7 +1059,7 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                                     height: '19px',
                                     fontSize: '10.5px',
                                     fontWeight: 800,
-                                    backgroundColor: '#EFF6FF',
+                                    backgroundColor: '#ECFDF5',
                                     color: '#1D4ED8',
                                   }}
                                 />
@@ -1281,12 +1281,12 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                                 fontSize: '11.5px',
                                 fontWeight: 700,
                                 textTransform: 'none',
-                                color: '#1E40AF',
+                                color: '#047857',
                                 borderColor: '#BFDBFE',
-                                backgroundColor: '#EFF6FF',
+                                backgroundColor: '#ECFDF5',
                                 borderRadius: '6px',
                                 '&:hover': {
-                                  backgroundColor: '#DBEAFE',
+                                  backgroundColor: '#D1FAE5',
                                   borderColor: '#93C5FD',
                                 },
                               }}
@@ -1353,8 +1353,8 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                                 p: 0.7,
                                 transition: 'all 0.15s ease',
                                 '&:hover': {
-                                  color: '#1E40AF',
-                                  backgroundColor: '#EFF6FF',
+                                  color: '#047857',
+                                  backgroundColor: '#ECFDF5',
                                   borderColor: '#BFDBFE',
                                 },
                               }}
@@ -1544,7 +1544,7 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                           borderColor: '#94A3B8',
                         },
                         '&.Mui-focused fieldset': {
-                          borderColor: '#1E40AF',
+                          borderColor: '#047857',
                           borderWidth: '1.5px',
                         },
                       },
@@ -1687,13 +1687,13 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
             onClick={handleSaveEdit}
             disabled={editLoading}
             sx={{
-              backgroundColor: '#1E40AF',
+              backgroundColor: '#047857',
               color: '#FFFFFF',
               fontWeight: 700,
               textTransform: 'none',
               px: 2.5,
               borderRadius: '6px',
-              '&:hover': { backgroundColor: '#1E3A8A' },
+              '&:hover': { backgroundColor: '#064E3B' },
             }}
           >
             {editLoading ? 'Saving...' : 'Save Changes'}

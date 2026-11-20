@@ -298,7 +298,7 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                 borderColor: '#CBD5E1',
               },
               '&:focus-within': {
-                borderColor: '#1E40AF',
+                borderColor: '#047857',
               },
             }}
           >
@@ -364,7 +364,7 @@ export const CustomersPage: FC<CustomersPageProps> = ({
               onClick={onAddNew}
               startIcon={<AddRoundedIcon sx={{ fontSize: 19 }} />}
               sx={{
-                backgroundColor: '#1E40AF',
+                backgroundColor: '#047857',
                 color: '#FFFFFF',
                 height: '38px',
                 px: 2,
@@ -374,9 +374,9 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                 textTransform: 'none',
                 letterSpacing: '-0.01em',
                 whiteSpace: 'nowrap',
-                boxShadow: '0 1px 2px rgba(30, 64, 175, 0.15)',
+                boxShadow: '0 1px 2px rgba(4, 120, 87, 0.15)',
                 '&:hover': {
-                  backgroundColor: '#1E3A8A',
+                  backgroundColor: '#064E3B',
                 },
               }}
             >
@@ -529,7 +529,7 @@ export const CustomersPage: FC<CustomersPageProps> = ({
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={7} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={32} sx={{ color: '#1E40AF' }} />
+                    <CircularProgress size={32} sx={{ color: '#047857' }} />
                   </TableCell>
                 </TableRow>
               ) : filteredCustomers.length === 0 ? (
@@ -596,8 +596,8 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                               width: 34,
                               height: 34,
                               borderRadius: '50%',
-                              backgroundColor: customer.avatarBg || '#DBEAFE',
-                              color: customer.avatarColor || '#1E40AF',
+                              backgroundColor: customer.avatarBg || '#D1FAE5',
+                              color: customer.avatarColor || '#047857',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -616,7 +616,7 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                                 color: '#0F172A',
                                 letterSpacing: '-0.01em',
                                 '&:hover': {
-                                  color: '#1E40AF',
+                                  color: '#047857',
                                   textDecoration: 'underline',
                                 },
                               }}
@@ -793,15 +793,15 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                               size="small"
                               onClick={() => onSelectCustomerForParticular?.(customer.name, 'Account Details')}
                               sx={{
-                                color: '#1E40AF',
-                                backgroundColor: '#EFF6FF',
+                                color: '#047857',
+                                backgroundColor: '#ECFDF5',
                                 border: '1px solid #BFDBFE',
                                 borderRadius: '6px',
                                 p: 0.7,
                                 '&:hover': {
                                   color: '#FFFFFF',
-                                  backgroundColor: '#1E40AF',
-                                  borderColor: '#1E40AF',
+                                  backgroundColor: '#047857',
+                                  borderColor: '#047857',
                                 },
                               }}
                             >
@@ -843,8 +843,8 @@ export const CustomersPage: FC<CustomersPageProps> = ({
                                 borderRadius: '6px',
                                 p: 0.7,
                                 '&:hover': {
-                                  color: '#1E40AF',
-                                  backgroundColor: '#EFF6FF',
+                                  color: '#047857',
+                                  backgroundColor: '#ECFDF5',
                                   borderColor: '#BFDBFE',
                                 },
                               }}
@@ -1082,13 +1082,13 @@ export const CustomersPage: FC<CustomersPageProps> = ({
             onClick={handleSaveEdit}
             disabled={editLoading}
             sx={{
-              backgroundColor: '#1E40AF',
+              backgroundColor: '#047857',
               color: '#FFFFFF',
               fontWeight: 700,
               textTransform: 'none',
               px: 2.5,
               borderRadius: '6px',
-              '&:hover': { backgroundColor: '#1E3A8A' },
+              '&:hover': { backgroundColor: '#064E3B' },
             }}
           >
             {editLoading ? 'Saving...' : 'Save Changes'}

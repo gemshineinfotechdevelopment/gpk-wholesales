@@ -136,8 +136,8 @@ export const CustomerPasswordModal: FC<CustomerPasswordModalProps> = ({
               width: 36,
               height: 36,
               borderRadius: '10px',
-              backgroundColor: '#EFF6FF',
-              color: '#1E40AF',
+              backgroundColor: '#ECFDF5',
+              color: '#047857',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -176,7 +176,7 @@ export const CustomerPasswordModal: FC<CustomerPasswordModalProps> = ({
             Account: <strong style={{ color: '#0F172A' }}>{customerName || 'Customer'}</strong>
           </Typography>
           <Typography sx={{ fontSize: '12px', color: '#64748B', fontWeight: 500, mt: 0.3 }}>
-            Login Mobile: <strong style={{ color: '#1E40AF' }}>{mobile || 'Registered Phone'}</strong>
+            Login Mobile: <strong style={{ color: '#047857' }}>{mobile || 'Registered Phone'}</strong>
           </Typography>
         </Box>
 
@@ -246,8 +246,8 @@ export const CustomerPasswordModal: FC<CustomerPasswordModalProps> = ({
             borderRadius: '8px',
             textTransform: 'none',
             fontWeight: 700,
-            backgroundColor: '#1E40AF',
-            '&:hover': { backgroundColor: '#1E3A8A' },
+            backgroundColor: '#047857',
+            '&:hover': { backgroundColor: '#064E3B' },
           }}
         >
           {loading ? 'Saving...' : 'Save Password'}

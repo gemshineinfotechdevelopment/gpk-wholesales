@@ -144,7 +144,7 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
           style={{
             fontSize: '26px',
             fontWeight: 900,
-            color: '#1E40AF',
+            color: '#047857',
             margin: '0 0 2px 0',
             letterSpacing: '-0.01em',
             textTransform: 'uppercase',
@@ -179,7 +179,7 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
         <div>
           <div style={{ display: 'flex', marginBottom: '4px' }}>
             <span style={{ width: '120px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Bill No:</span>
-            <strong style={{ color: '#1E40AF', fontSize: '14px' }}>#{bill.billNo || '-'}</strong>
+            <strong style={{ color: '#047857', fontSize: '14px' }}>#{bill.billNo || '-'}</strong>
           </div>
           <div style={{ display: 'flex', marginBottom: '4px' }}>
             <span style={{ width: '120px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Customer Name:</span>
@@ -203,7 +203,7 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
           </div>
           <div style={{ display: 'flex', marginBottom: '4px' }}>
             <span style={{ width: '100px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Total Cases:</span>
-            <strong style={{ color: '#1E40AF', fontSize: '13.5px' }}>{computedCases}</strong>
+            <strong style={{ color: '#047857', fontSize: '13.5px' }}>{computedCases}</strong>
           </div>
           <div style={{ display: 'flex', marginBottom: '4px' }}>
             <span style={{ width: '100px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Phone:</span>

@@ -100,7 +100,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
             justifyContent: 'space-between',
             px: 3,
             py: 1.8,
-            backgroundColor: '#1E40AF',
+            backgroundColor: '#047857',
             color: '#FFFFFF',
           }}
         >
@@ -108,7 +108,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
             <Typography sx={{ fontSize: '16px', fontWeight: 800 }}>
               Bill Preview - #{bill.billNo || 'New'}
             </Typography>
-            <Typography sx={{ fontSize: '12px', color: '#DBEAFE', fontWeight: 500 }}>
+            <Typography sx={{ fontSize: '12px', color: '#D1FAE5', fontWeight: 500 }}>
               {bill.customerName} | {bill.companyName}
             </Typography>
           </Box>
@@ -251,7 +251,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
               onClick={handleTriggerPrint}
               startIcon={<PrintOutlinedIcon sx={{ fontSize: '18px !important' }} />}
               sx={{
-                backgroundColor: '#1E40AF',
+                backgroundColor: '#047857',
                 color: '#FFFFFF',
                 fontSize: '13px',
                 fontWeight: 700,
@@ -260,7 +260,7 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
                 py: 0.8,
                 borderRadius: '6px',
                 '&:hover': {
-                  backgroundColor: '#1E3A8A',
+                  backgroundColor: '#064E3B',
                 },
               }}
             >

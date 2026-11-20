@@ -1337,14 +1337,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 sx={{
                   fontSize: '14px',
                   fontWeight: isActive ? 700 : 600,
-                  color: isActive ? '#1E40AF' : '#475569',
-                  backgroundColor: isActive && tab === 'Add Credit' ? '#EFF6FF' : 'transparent',
+                  color: isActive ? '#047857' : '#475569',
+                  backgroundColor: isActive && tab === 'Add Credit' ? '#ECFDF5' : 'transparent',
                   px: isActive && tab === 'Add Credit' ? 1.5 : 0.5,
                   py: isActive && tab === 'Add Credit' ? 0.6 : 0,
                   borderRadius: '6px',
                   transition: 'all 0.15s ease',
                   '&:hover': {
-                    color: '#1E40AF',
+                    color: '#047857',
                   },
                 }}
               >
@@ -1360,7 +1360,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     left: 0,
                     right: 0,
                     height: '2.5px',
-                    backgroundColor: '#1E40AF',
+                    backgroundColor: '#047857',
                     borderTopLeftRadius: '2px',
                     borderTopRightRadius: '2px',
                   }}
@@ -1386,7 +1386,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         >
           <Box
             sx={{
-              backgroundColor: '#1E40AF',
+              backgroundColor: '#047857',
               px: { xs: 2, sm: 3 },
               py: 1.6,
               minHeight: '52px',
@@ -1476,7 +1476,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                             borderColor: '#94A3B8',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: '#1E40AF',
+                            borderColor: '#047857',
                             borderWidth: '1.5px',
                           },
                         },
@@ -1491,7 +1491,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     disableElevation
                     onClick={handleSelectCustomerClick}
                     sx={{
-                      backgroundColor: '#1E40AF',
+                      backgroundColor: '#047857',
                       color: '#FFFFFF',
                       fontSize: '13.5px',
                       fontWeight: 700,
@@ -1501,7 +1501,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                       borderRadius: '6px',
                       lineHeight: 1.3,
                       '&:hover': {
-                        backgroundColor: '#1E3A8A',
+                        backgroundColor: '#064E3B',
                       },
                     }}
                   >
@@ -1541,7 +1541,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
           >
             <Box
               sx={{
-                backgroundColor: '#1E40AF',
+                backgroundColor: '#047857',
                 px: 2.2,
                 py: 1.4,
                 minHeight: '48px',
@@ -1607,7 +1607,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                               borderColor: '#94A3B8',
                             },
                             '&.Mui-focused fieldset': {
-                              borderColor: '#1E40AF',
+                              borderColor: '#047857',
                               borderWidth: '1.5px',
                             },
                           },
@@ -1680,9 +1680,9 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                         fontWeight: 700,
                         fontSize: '10.5px',
                         backgroundColor:
-                          performaSummary.masterPerforma.status === 'ACTIVE' ? '#DBEAFE' : '#FEF3C7',
+                          performaSummary.masterPerforma.status === 'ACTIVE' ? '#D1FAE5' : '#FEF3C7',
                         color:
-                          performaSummary.masterPerforma.status === 'ACTIVE' ? '#1E40AF' : '#92400E',
+                          performaSummary.masterPerforma.status === 'ACTIVE' ? '#047857' : '#92400E',
                       }}
                     />
                   </Box>
@@ -1753,7 +1753,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                               borderColor: '#94A3B8',
                             },
                             '&.Mui-focused fieldset': {
-                              borderColor: '#1E40AF',
+                              borderColor: '#047857',
                               borderWidth: '1.5px',
                             },
                           },
@@ -1941,7 +1941,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                       py: 0.7,
                       fontSize: '13px',
                       fontWeight: 700,
-                      color: '#1E40AF',
+                      color: '#047857',
                       textAlign: 'right',
                     }}
                   >
@@ -2008,7 +2008,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
           >
             <Box
               sx={{
-                backgroundColor: '#1E40AF',
+                backgroundColor: '#047857',
                 px: 2.2,
                 py: 1.4,
                 minHeight: '48px',
@@ -2055,7 +2055,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                       gap: 0.5,
                     }}
                   >
-                    <Inventory2RoundedIcon sx={{ fontSize: 16, color: '#1E40AF' }} />
+                    <Inventory2RoundedIcon sx={{ fontSize: 16, color: '#047857' }} />
                     Quotation Items:
                   </Typography>
                   {performaSummary.masterPerforma.products.map((p: any, idx: number) => {
@@ -2070,11 +2070,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                         sx={{
                           fontSize: '11px',
                           fontWeight: 600,
-                          backgroundColor: isFulfilled ? '#F1F5F9' : '#EFF6FF',
+                          backgroundColor: isFulfilled ? '#F1F5F9' : '#ECFDF5',
                           color: isFulfilled ? '#94A3B8' : '#1D4ED8',
                           border: isFulfilled ? '1px dashed #CBD5E1' : '1px solid #BFDBFE',
                           cursor: isFulfilled ? 'default' : 'pointer',
-                          '&:hover': isFulfilled ? {} : { backgroundColor: '#DBEAFE' },
+                          '&:hover': isFulfilled ? {} : { backgroundColor: '#D1FAE5' },
                         }}
                       />
                     );
@@ -2089,14 +2089,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     fontSize: '11.5px',
                     fontWeight: 700,
                     textTransform: 'none',
-                    borderColor: '#1E40AF',
-                    color: '#1E40AF',
+                    borderColor: '#047857',
+                    color: '#047857',
                     borderRadius: '6px',
                     py: 0.4,
                     px: 1.2,
                     '&:hover': {
-                      backgroundColor: '#EFF6FF',
-                      borderColor: '#1E3A8A',
+                      backgroundColor: '#ECFDF5',
+                      borderColor: '#064E3B',
                     },
                   }}
                 >
@@ -2144,7 +2144,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                           borderColor: '#94A3B8',
                         },
                         '&.Mui-focused fieldset': {
-                          borderColor: '#1E40AF',
+                          borderColor: '#047857',
                           borderWidth: '1.5px',
                         },
                       },
@@ -2236,7 +2236,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 disableElevation
                 onClick={handleAddProductRow}
                 sx={{
-                  backgroundColor: '#1E40AF',
+                  backgroundColor: '#047857',
                   color: '#FFFFFF',
                   minWidth: '36px',
                   width: '36px',
@@ -2244,7 +2244,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   p: 0,
                   borderRadius: '6px',
                   '&:hover': {
-                    backgroundColor: '#1E3A8A',
+                    backgroundColor: '#064E3B',
                   },
                 }}
               >
@@ -2447,7 +2447,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                                     sx={{
                                       fontSize: '10px',
                                       fontWeight: 700,
-                                      backgroundColor: '#EFF6FF',
+                                      backgroundColor: '#ECFDF5',
                                       color: '#1D4ED8',
                                       border: '1px solid #BFDBFE',
                                       height: '20px',
@@ -2598,7 +2598,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                               borderRight: '1px solid #E2E8F0',
                               fontWeight: 700,
                               fontSize: '13px',
-                              color: isEditing ? '#1E40AF' : '#0F172A',
+                              color: isEditing ? '#047857' : '#0F172A',
                               py: isEditing ? 0.8 : 1.2,
                             }}
                           >
@@ -2650,13 +2650,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                                     size="small"
                                     onClick={() => handleStartEditRow(row)}
                                     sx={{
-                                      backgroundColor: '#EFF6FF',
-                                      color: '#1E40AF',
+                                      backgroundColor: '#ECFDF5',
+                                      color: '#047857',
                                       borderRadius: '5px',
                                       width: '26px',
                                       height: '26px',
                                       p: 0,
-                                      '&:hover': { backgroundColor: '#DBEAFE' },
+                                      '&:hover': { backgroundColor: '#D1FAE5' },
                                     }}
                                   >
                                     <ModeEditOutlineRoundedIcon sx={{ fontSize: 15 }} />
@@ -2843,7 +2843,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
           >
             <Box
               sx={{
-                backgroundColor: '#1E40AF',
+                backgroundColor: '#047857',
                 px: { xs: 2, sm: 3 },
                 py: 1.5,
                 display: 'flex',
@@ -3029,7 +3029,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   {accountLoading ? (
                     <TableRow>
                       <TableCell colSpan={8 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6 }}>
-                        <CircularProgress size={32} sx={{ color: '#1E40AF' }} />
+                        <CircularProgress size={32} sx={{ color: '#047857' }} />
                       </TableCell>
                     </TableRow>
                   ) : accountDetails.length === 0 ? (
@@ -3058,7 +3058,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                             {row.date}
                           </TableCell>
                           {!isSingleCustomer && (
-                            <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 700, color: '#1E40AF', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 700, color: '#047857', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                               {row.customerName}
                             </TableCell>
                           )}
@@ -3135,7 +3135,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         >
           <Box
             sx={{
-              backgroundColor: '#1E40AF',
+              backgroundColor: '#047857',
               px: { xs: 2, sm: 3 },
               py: 1.5,
               display: 'flex',
@@ -3349,7 +3349,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 label={`Total Booked: ${particularCasesSummary.totalBooked} Cases`}
                 size="small"
                 sx={{
-                  backgroundColor: '#EFF6FF',
+                  backgroundColor: '#ECFDF5',
                   color: '#1D4ED8',
                   border: '1px solid #BFDBFE',
                   fontWeight: 800,
@@ -3446,7 +3446,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 {particularLoading ? (
                   <TableRow>
                     <TableCell colSpan={isSingleCustomer ? 13 : 14} align="center" sx={{ py: 6 }}>
-                      <CircularProgress size={32} sx={{ color: '#1E40AF' }} />
+                      <CircularProgress size={32} sx={{ color: '#047857' }} />
                     </TableCell>
                   </TableRow>
                 ) : filteredParticularRows.length === 0 ? (
@@ -3484,7 +3484,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                           {row.billNo}
                         </TableCell>
                         {!isSingleCustomer && (
-                          <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '13px', fontWeight: 700, color: '#1E40AF', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
+                          <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '13px', fontWeight: 700, color: '#047857', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                             {row.customerName}
                           </TableCell>
                         )}
@@ -3501,7 +3501,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                                 size="small"
                                 label={`${totalCustCasesVal} Cases`}
                                 sx={{
-                                  backgroundColor: '#EFF6FF',
+                                  backgroundColor: '#ECFDF5',
                                   color: '#1D4ED8',
                                   fontWeight: 800,
                                   fontSize: '11.5px',
@@ -3591,13 +3591,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                                   size="small"
                                   onClick={() => handleOpenBillPrint(row, false)}
                                   sx={{
-                                    backgroundColor: '#1E40AF',
+                                    backgroundColor: '#047857',
                                     color: '#FFFFFF',
                                     borderRadius: '6px',
                                     width: '32px',
                                     height: '28px',
                                     p: 0,
-                                    '&:hover': { backgroundColor: '#1E3A8A' },
+                                    '&:hover': { backgroundColor: '#064E3B' },
                                   }}
                                 >
                                   <VisibilityRoundedIcon sx={{ fontSize: 16 }} />
@@ -3628,13 +3628,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                                     size="small"
                                     onClick={() => handleOpenBillPrint(row, false)}
                                     sx={{
-                                      backgroundColor: '#1E40AF',
+                                      backgroundColor: '#047857',
                                       color: '#FFFFFF',
                                       borderRadius: '4px',
                                       width: '24px',
                                       height: '22px',
                                       p: 0,
-                                      '&:hover': { backgroundColor: '#1E3A8A' },
+                                      '&:hover': { backgroundColor: '#064E3B' },
                                     }}
                                   >
                                     <VisibilityRoundedIcon sx={{ fontSize: 14 }} />
@@ -3735,7 +3735,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
           >
             <Box
               sx={{
-                backgroundColor: '#1E40AF',
+                backgroundColor: '#047857',
                 px: { xs: 2.5, sm: 3.5 },
                 py: 2,
                 minHeight: '52px',
@@ -3813,7 +3813,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                             borderColor: '#94A3B8',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: '#1E40AF',
+                            borderColor: '#047857',
                             borderWidth: '1.5px',
                           },
                         },
@@ -3872,7 +3872,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                             borderColor: '#94A3B8',
                           },
                           '&.Mui-focused fieldset': {
-                            borderColor: '#1E40AF',
+                            borderColor: '#047857',
                             borderWidth: '1.5px',
                           },
                         },
@@ -4028,7 +4028,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   onClick={handleAddCreditSubmit}
                   disabled={creditLoading}
                   sx={{
-                    backgroundColor: '#1E40AF',
+                    backgroundColor: '#047857',
                     color: '#FFFFFF',
                     height: '42px',
                     fontSize: '14px',
@@ -4037,7 +4037,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     borderRadius: '6px',
                     px: 3.5,
                     '&:hover': {
-                      backgroundColor: '#1E3A8A',
+                      backgroundColor: '#064E3B',
                     },
                   }}
                 >
@@ -4128,7 +4128,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
           }}
         >
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <ModeEditOutlineRoundedIcon sx={{ color: '#1E40AF', fontSize: 24 }} />
+            <ModeEditOutlineRoundedIcon sx={{ color: '#047857', fontSize: 24 }} />
             <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#0F172A' }}>
               Edit Bill #{editBillForm.billNo} {editBillForm.customerName ? `- ${editBillForm.customerName}` : ''}
             </Typography>
@@ -4440,7 +4440,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
               <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase' }}>
                 Updated Net Total
               </Typography>
-              <Typography sx={{ fontSize: '18px', fontWeight: 900, color: '#1E40AF' }}>
+              <Typography sx={{ fontSize: '18px', fontWeight: 900, color: '#047857' }}>
                 ₹ {parseFloat(editFinalTotal).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
               </Typography>
             </Box>
@@ -4457,13 +4457,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
             onClick={handleSaveEditParticular}
             disabled={editBillLoading}
             sx={{
-              backgroundColor: '#1E40AF',
+              backgroundColor: '#047857',
               color: '#FFFFFF',
               fontWeight: 700,
               textTransform: 'none',
               px: 3,
               borderRadius: '6px',
-              '&:hover': { backgroundColor: '#1E3A8A' },
+              '&:hover': { backgroundColor: '#064E3B' },
             }}
           >
             {editBillLoading ? 'Saving...' : 'Save Bill Changes'}
@@ -4644,13 +4644,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
             onClick={handleGoToCustomerPerforma}
             startIcon={<ReceiptLongRoundedIcon sx={{ fontSize: 18 }} />}
             sx={{
-              backgroundColor: '#1E40AF',
+              backgroundColor: '#047857',
               color: '#FFFFFF',
               textTransform: 'none',
               fontWeight: 700,
               px: 2.5,
               borderRadius: '6px',
-              '&:hover': { backgroundColor: '#1E3A8A' },
+              '&:hover': { backgroundColor: '#064E3B' },
             }}
           >
             {warningDialog.type === 'NEW_PRODUCT'

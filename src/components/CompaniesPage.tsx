@@ -255,7 +255,7 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
             onClick={onAddCompany}
             startIcon={<AddRoundedIcon sx={{ fontSize: 19 }} />}
             sx={{
-              backgroundColor: '#1E40AF',
+              backgroundColor: '#047857',
               color: '#FFFFFF',
               height: '38px',
               px: 2,
@@ -265,9 +265,9 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
               textTransform: 'none',
               letterSpacing: '-0.01em',
               whiteSpace: 'nowrap',
-              boxShadow: '0 1px 2px rgba(30, 64, 175, 0.15)',
+              boxShadow: '0 1px 2px rgba(4, 120, 87, 0.15)',
               '&:hover': {
-                backgroundColor: '#1E3A8A',
+                backgroundColor: '#064E3B',
               },
             }}
           >
@@ -367,7 +367,7 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
-                    <CircularProgress size={32} sx={{ color: '#1E40AF' }} />
+                    <CircularProgress size={32} sx={{ color: '#047857' }} />
                   </TableCell>
                 </TableRow>
               ) : filteredCompanies.length === 0 ? (
@@ -421,8 +421,8 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
                               width: 32,
                               height: 32,
                               borderRadius: '50%',
-                              backgroundColor: company.avatarBg || '#DBEAFE',
-                              color: company.avatarColor || '#1E40AF',
+                              backgroundColor: company.avatarBg || '#D1FAE5',
+                              color: company.avatarColor || '#047857',
                               display: 'flex',
                               alignItems: 'center',
                               justifyContent: 'center',
@@ -497,8 +497,8 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
                                 p: 0.7,
                                 transition: 'all 0.15s ease',
                                 '&:hover': {
-                                  color: '#1E40AF',
-                                  backgroundColor: '#EFF6FF',
+                                  color: '#047857',
+                                  backgroundColor: '#ECFDF5',
                                   borderColor: '#BFDBFE',
                                 },
                               }}
@@ -619,13 +619,13 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
             onClick={handleSaveEdit}
             disabled={editLoading}
             sx={{
-              backgroundColor: '#1E40AF',
+              backgroundColor: '#047857',
               color: '#FFFFFF',
               fontWeight: 700,
               textTransform: 'none',
               px: 2.5,
               borderRadius: '6px',
-              '&:hover': { backgroundColor: '#1E3A8A' },
+              '&:hover': { backgroundColor: '#064E3B' },
             }}
           >
             {editLoading ? 'Saving...' : 'Save Changes'}

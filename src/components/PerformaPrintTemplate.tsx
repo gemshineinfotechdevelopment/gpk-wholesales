@@ -205,7 +205,7 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
         <div>
           <div style={{ marginBottom: '6px' }}>
             <span style={{ color: '#64748B', fontWeight: 600 }}>Performa No: </span>
-            <span style={{ fontWeight: 800, color: '#1E40AF', fontSize: '15px' }}>{performa.performaNumber}</span>
+            <span style={{ fontWeight: 800, color: '#047857', fontSize: '15px' }}>{performa.performaNumber}</span>
           </div>
           <div style={{ marginBottom: '6px' }}>
             <span style={{ color: '#64748B', fontWeight: 600 }}>Date: </span>
@@ -308,7 +308,7 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
                       <div style={{ fontSize: '10.5px', color: '#64748B' }}>Code: {item.productCode}</div>
                     )}
                   </td>
-                  <td style={{ padding: '7px 8px', color: '#1E40AF', fontWeight: 600, border: '1px solid #CBD5E1', fontSize: '11.5px' }}>
+                  <td style={{ padding: '7px 8px', color: '#047857', fontWeight: 600, border: '1px solid #CBD5E1', fontSize: '11.5px' }}>
                     {(item.companyName && item.companyName.trim()) || (item as any).productSnapshot?.companyName || performa.companyName || '-'}
                   </td>
                   <td style={{ padding: '7px 6px', textAlign: 'center', fontWeight: 800, color: '#0F172A', border: '1px solid #CBD5E1' }}>
@@ -380,10 +380,10 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
               display: 'flex',
               justifyContent: 'space-between',
               paddingTop: '6px',
-              borderTop: '2px solid #1E40AF',
+              borderTop: '2px solid #047857',
               marginTop: '4px',
               fontSize: '13px',
-              color: '#1E40AF',
+              color: '#047857',
             }}
           >
             <span style={{ fontWeight: 800 }}>Total Value:</span>

@@ -51,8 +51,8 @@ export const AddCompanyPage: FC<AddCompanyPageProps> = ({
         gstin: formData.gstNumber.trim() || 'N/A',
         address: formData.registeredAddress.trim(),
         avatarLetter: formData.companyName.trim().charAt(0).toUpperCase(),
-        avatarBg: '#DBEAFE',
-        avatarColor: '#1E40AF',
+        avatarBg: '#D1FAE5',
+        avatarColor: '#047857',
       });
       if (onSubmitSuccess) {
         onSubmitSuccess();
@@ -91,7 +91,7 @@ export const AddCompanyPage: FC<AddCompanyPageProps> = ({
             fontWeight: 600,
             color: '#64748B',
             cursor: 'pointer',
-            '&:hover': { color: '#1E40AF' },
+            '&:hover': { color: '#047857' },
           }}
         >
           Companies
@@ -109,7 +109,7 @@ export const AddCompanyPage: FC<AddCompanyPageProps> = ({
           sx={{
             fontSize: '13.5px',
             fontWeight: 700,
-            color: '#1E40AF',
+            color: '#047857',
           }}
         >
           Add New Company
@@ -161,9 +161,9 @@ export const AddCompanyPage: FC<AddCompanyPageProps> = ({
                   height: '42px',
                   transition: 'all 0.15s ease',
                   '&:focus-within': {
-                    borderColor: '#1E40AF',
+                    borderColor: '#047857',
                     backgroundColor: '#FFFFFF',
-                    boxShadow: '0 0 0 3px rgba(30, 64, 175, 0.1)',
+                    boxShadow: '0 0 0 3px rgba(4, 120, 87, 0.1)',
                   },
                 }}
               >
@@ -209,9 +209,9 @@ export const AddCompanyPage: FC<AddCompanyPageProps> = ({
                   height: '42px',
                   transition: 'all 0.15s ease',
                   '&:focus-within': {
-                    borderColor: '#1E40AF',
+                    borderColor: '#047857',
                     backgroundColor: '#FFFFFF',
-                    boxShadow: '0 0 0 3px rgba(30, 64, 175, 0.1)',
+                    boxShadow: '0 0 0 3px rgba(4, 120, 87, 0.1)',
                   },
                 }}
               >
@@ -257,9 +257,9 @@ export const AddCompanyPage: FC<AddCompanyPageProps> = ({
                   height: '42px',
                   transition: 'all 0.15s ease',
                   '&:focus-within': {
-                    borderColor: '#1E40AF',
+                    borderColor: '#047857',
                     backgroundColor: '#FFFFFF',
-                    boxShadow: '0 0 0 3px rgba(30, 64, 175, 0.1)',
+                    boxShadow: '0 0 0 3px rgba(4, 120, 87, 0.1)',
                   },
                 }}
               >
@@ -330,11 +330,11 @@ export const AddCompanyPage: FC<AddCompanyPageProps> = ({
                 borderRadius: '8px',
                 fontSize: '13.5px',
                 fontWeight: 700,
-                backgroundColor: '#1E40AF',
+                backgroundColor: '#047857',
                 color: '#FFFFFF',
                 textTransform: 'none',
                 '&:hover': {
-                  backgroundColor: '#1E3A8A',
+                  backgroundColor: '#064E3B',
                 },
               }}
             >
