@@ -11,7 +11,6 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 5032,
-        MONGODB_URI: 'mongodb://127.0.0.1:27017/gpk_billing',
       },
     },
   ],

@@ -57,12 +57,22 @@ import {
 interface PendingCasesPageProps {
   onSelectCustomerForBill?: (customerName: string, subTab?: any) => void;
   onNavigateToCustomerPerforma?: (customerName: string) => void;
+  userRole?: 'superadmin' | 'admin' | 'user';
 }
 
 export const PendingCasesPage: FC<PendingCasesPageProps> = ({
   onSelectCustomerForBill,
   onNavigateToCustomerPerforma,
+  userRole,
 }) => {
+  const isSuperAdmin = userRole ? userRole === 'superadmin' : (() => {
+    try {
+      const u = localStorage.getItem('gpk_auth_user') || localStorage.getItem('dheeksha_auth_user');
+      return u ? JSON.parse(u).role === 'superadmin' : false;
+    } catch {
+      return false;
+    }
+  })();
   const [subTab, setSubTab] = useState<'customer' | 'company'>('customer');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [loading, setLoading] = useState<boolean>(true);
@@ -556,7 +566,11 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
       <Box
         sx={{
           display: 'grid',
-          gridTemplateColumns: { xs: 'repeat(2, 1fr)', sm: 'repeat(4, 1fr)' },
+          gridTemplateColumns: {
+            xs: 'repeat(1, 1fr)',
+            sm: isSuperAdmin ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
+            md: isSuperAdmin ? 'repeat(4, 1fr)' : 'repeat(3, 1fr)',
+          },
           gap: 1.5,
           mb: 2.5,
         }}
@@ -573,17 +587,19 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
           </CardContent>
         </Card>
 
-        <Card sx={{ borderRadius: '10px', border: '1px solid #E2E8F0', boxShadow: 'none', backgroundColor: '#FFFFFF' }}>
-          <CardContent sx={{ p: '14px !important' }}>
-            <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
-              Total Pending Value
-            </Typography>
-            <Typography sx={{ fontSize: '22px', fontWeight: 900, color: '#1D4ED8', mt: 0.2 }}>
-              ₹{data?.summary?.totalPendingAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
-            </Typography>
-            <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>Expected billing volume</Typography>
-          </CardContent>
-        </Card>
+        {isSuperAdmin && (
+          <Card sx={{ borderRadius: '10px', border: '1px solid #E2E8F0', boxShadow: 'none', backgroundColor: '#FFFFFF' }}>
+            <CardContent sx={{ p: '14px !important' }}>
+              <Typography sx={{ fontSize: '11px', fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                Total Pending Value
+              </Typography>
+              <Typography sx={{ fontSize: '22px', fontWeight: 900, color: '#1D4ED8', mt: 0.2 }}>
+                ₹{data?.summary?.totalPendingAmount?.toLocaleString('en-IN', { minimumFractionDigits: 2 }) || '0.00'}
+              </Typography>
+              <Typography sx={{ fontSize: '11px', color: '#94A3B8' }}>Expected billing volume</Typography>
+            </CardContent>
+          </Card>
+        )}
 
         <Card sx={{ borderRadius: '10px', border: '1px solid #E2E8F0', boxShadow: 'none', backgroundColor: '#FFFFFF' }}>
           <CardContent sx={{ p: '14px !important' }}>

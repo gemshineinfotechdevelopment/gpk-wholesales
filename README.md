@@ -81,5 +81,5 @@ npm run dev:all
 
 # Or run separately:
 npm run dev           # Client on http://localhost:5173
-npm run dev:server    # Backend API on http://localhost:5004
+npm run dev:server    # Backend API on http://localhost:5032
 ```

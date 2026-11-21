@@ -230,6 +230,7 @@ function App() {
                 setSelectedCustomerName(custName);
                 setActiveTab('Performa');
               }}
+              userRole={currentUser?.role}
             />
           )}
 

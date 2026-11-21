@@ -1357,40 +1357,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                 </Table>
               </TableContainer>
 
-              {/* Linked Particulars Purchase Bills */}
-              {selectedPerformaForView.customerBills && selectedPerformaForView.customerBills.length > 0 && (
-                <Box sx={{ mb: 3 }}>
-                  <Typography sx={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', mb: 1.5 }}>
-                    Linked Particulars Purchase Bills ({selectedPerformaForView.customerBills.length})
-                  </Typography>
-                  <TableContainer sx={{ border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#FFFFFF' }}>
-                    <Table size="small">
-                      <TableHead sx={{ backgroundColor: '#F1F5F9' }}>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 800 }}>Bill No</TableCell>
-                          <TableCell sx={{ fontWeight: 800 }}>Date</TableCell>
-                          <TableCell sx={{ fontWeight: 800 }}>Company</TableCell>
-                          <TableCell sx={{ fontWeight: 800, textAlign: 'center' }}>Total Cases</TableCell>
-                          <TableCell sx={{ fontWeight: 800, textAlign: 'right' }}>Bill Amount (₹)</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {selectedPerformaForView.customerBills.map((bill: any, idx: number) => (
-                          <TableRow key={idx}>
-                            <TableCell sx={{ fontWeight: 700, color: '#1D4ED8' }}>{bill.billNo || '-'}</TableCell>
-                            <TableCell sx={{ fontSize: '12.5px' }}>{bill.date || '-'}</TableCell>
-                            <TableCell sx={{ fontSize: '12.5px' }}>{bill.companyName || bill.company || '-'}</TableCell>
-                            <TableCell sx={{ textAlign: 'center', fontWeight: 700 }}>{bill.caseCount || bill.cases || 0}</TableCell>
-                            <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: '#0F172A' }}>
-                              ₹{(bill.netTotal || bill.total || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Box>
-              )}
+
 
               {/* Audit / Consumption History */}
               {selectedPerformaForView.auditHistory && selectedPerformaForView.auditHistory.length > 0 && (

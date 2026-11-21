@@ -274,21 +274,25 @@ export const ProductsPage: FC = () => {
               variant="contained"
               disableElevation
               onClick={handleOpenAdd}
-              startIcon={<AddRoundedIcon sx={{ fontSize: 18 }} />}
+              startIcon={<AddRoundedIcon sx={{ fontSize: 18, color: '#FFFFFF' }} />}
               sx={{
-                backgroundColor: '#FFFFFF',
-                color: '#1D4ED8',
+                background: '#0F172A',
+                color: '#FFFFFF !important',
                 fontSize: '13px',
                 fontWeight: 700,
                 textTransform: 'none',
                 px: 2,
                 height: '36px',
                 borderRadius: '6px',
-                boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.2)',
                 minWidth: 'auto',
                 whiteSpace: 'nowrap',
+                '& .MuiSvgIcon-root': {
+                  color: '#FFFFFF',
+                },
                 '&:hover': {
-                  backgroundColor: '#F8FAFC',
+                  background: '#1E293B',
                 },
               }}
             >
