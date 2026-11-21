@@ -1306,16 +1306,26 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
         fullWidth
         sx={{ '& .MuiDialog-paper': { borderRadius: '12px' } }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0F172A', color: '#FFFFFF', py: 1.8 }}>
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+            color: '#FFFFFF',
+            py: 1.8,
+            px: 2.5,
+          }}
+        >
           <Box>
-            <Typography sx={{ fontWeight: 800, fontSize: '17px' }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '17px', color: '#FFFFFF' }}>
               Performa Details - {selectedPerformaForView?.performaNumber}
             </Typography>
-            <Typography sx={{ fontSize: '12px', color: '#94A3B8' }}>
+            <Typography sx={{ fontSize: '12px', color: '#FFFFFF', opacity: 0.95 }}>
               {selectedPerformaForView?.companyName || selectedPerformaForView?.customerSnapshot?.companyName || 'General'} | {selectedPerformaForView?.customerSnapshot?.name} | {selectedPerformaForView?.date}
             </Typography>
           </Box>
-          <IconButton onClick={() => setViewModalOpen(false)} sx={{ color: '#FFFFFF' }}>
+          <IconButton onClick={() => setViewModalOpen(false)} sx={{ color: '#FFFFFF', '&:hover': { backgroundColor: 'rgba(255,255,255,0.15)' } }}>
             <CloseRoundedIcon sx={{ fontSize: 20 }} />
           </IconButton>
         </DialogTitle>

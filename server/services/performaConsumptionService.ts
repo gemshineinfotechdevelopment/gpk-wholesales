@@ -278,11 +278,19 @@ export const consumeBillAgainstPerforma = async (
       name: { $regex: new RegExp(`^${escapedCustomerName}$`, 'i') },
     });
 
-    const masterPerforma = await getCustomerMasterPerforma(customer ? String(customer._id) : customerName);
+    const customerPerformas = await Performa.find({
+      $or: [
+        { 'customerSnapshot.name': { $regex: new RegExp(`^${escapedCustomerName}$`, 'i') } },
+        { customerName: { $regex: new RegExp(`^${escapedCustomerName}$`, 'i') } },
+      ],
+      status: { $nin: ['CANCELLED', 'cancelled'] },
+    }).sort({ date: 1, createdAt: 1, _id: 1 });
 
-    if (!masterPerforma) {
+    if (customerPerformas.length === 0) {
       return result;
     }
+
+    const masterPerforma = customerPerformas[0];
 
     // Try fetching the actual Particular document to guarantee exact Net Total calculation
     let actualParticular: any = null;
@@ -302,6 +310,7 @@ export const consumeBillAgainstPerforma = async (
     const scaleRatio = totalBillSubtotal > 0 && billNetTotal > 0 ? billNetTotal / totalBillSubtotal : 1;
 
     let totalBillAmountConsumed = 0;
+    const modifiedPerformas = new Set<any>();
 
     for (const billItem of products) {
       const billedCases = cleanNumber(billItem.quantity);
@@ -313,86 +322,121 @@ export const consumeBillAgainstPerforma = async (
 
       let remainingCasesToConsume = billedCases;
 
-      for (const pProd of masterPerforma.products) {
+      // Consume across ALL customer performas (FIFO order)
+      for (const perf of customerPerformas) {
         if (remainingCasesToConsume <= 0) break;
 
-        const pName = pProd.productSnapshot.productName.trim().toLowerCase();
-        const pCode = (pProd.productSnapshot.productCode || '').trim().toLowerCase();
+        for (const pProd of perf.products) {
+          if (remainingCasesToConsume <= 0) break;
 
-        // Match by SKU or Name
-        if (pName === billedNameNormalized || (pCode && pCode === billedNameNormalized)) {
-          const availableCases = pProd.remainingCases || 0;
-          if (availableCases <= 0) continue;
+          const pName = pProd.productSnapshot.productName.trim().toLowerCase();
+          const pCode = (pProd.productSnapshot.productCode || '').trim().toLowerCase();
 
-          const casesToConsume = Math.min(remainingCasesToConsume, availableCases);
-          if (casesToConsume <= 0) continue;
+          // Match by SKU or Name
+          if (pName === billedNameNormalized || (pCode && pCode === billedNameNormalized)) {
+            const availableCases = pProd.remainingCases || 0;
+            if (availableCases <= 0) continue;
 
-          // Consume bill item amount proportionally scaled by Net Total (including Tax & Packing)
-          let rawItemConsumed = 0;
-          if (billedCases > 0 && itemAmount > 0) {
-            rawItemConsumed = (casesToConsume / billedCases) * itemAmount;
-          } else {
-            rawItemConsumed = casesToConsume * itemRate;
+            const casesToConsume = Math.min(remainingCasesToConsume, availableCases);
+            if (casesToConsume <= 0) continue;
+
+            // Consume bill item amount proportionally scaled by Net Total (including Tax & Packing)
+            let rawItemConsumed = 0;
+            if (billedCases > 0 && itemAmount > 0) {
+              rawItemConsumed = (casesToConsume / billedCases) * itemAmount;
+            } else {
+              rawItemConsumed = casesToConsume * itemRate;
+            }
+            const consumedAmount = Number((rawItemConsumed * scaleRatio).toFixed(2));
+
+            pProd.usedCases = Number((pProd.usedCases + casesToConsume).toFixed(2));
+            pProd.caseOut = Number((pProd.caseOut + casesToConsume).toFixed(2));
+            pProd.remainingCases = Math.max(0, Number((pProd.requiredCases - pProd.usedCases).toFixed(2)));
+            pProd.usedAmount = Number((pProd.usedAmount + consumedAmount).toFixed(2));
+            pProd.remainingAmount = Math.max(0, Number((pProd.allocatedAmount - pProd.usedAmount).toFixed(2)));
+
+            totalBillAmountConsumed += consumedAmount;
+
+            // Record audit log for product case consumption with net total share
+            await PerformaAudit.create({
+              customerId: customer?._id || perf.customerId,
+              customerName: customerName.trim(),
+              performaId: perf._id,
+              performaNumber: perf.performaNumber,
+              particularId: new mongoose.Types.ObjectId(particularId),
+              billNo: billNo,
+              productId: pProd.productId,
+              productName: pProd.productSnapshot.productName,
+              cases: casesToConsume,
+              amount: consumedAmount,
+              type: 'PERFORMA_CONSUMED',
+              date: billDate,
+              reference: `Bill #${billNo}`,
+              notes: `Consumed ${casesToConsume} cases (₹${consumedAmount.toFixed(2)}) for bill #${billNo} from ${perf.performaNumber}`,
+              createdBy: 'System',
+            });
+
+            result.consumed = true;
+            result.totalCasesConsumed += casesToConsume;
+            result.totalAmountConsumed += consumedAmount;
+            result.items.push({
+              performaId: String(perf._id),
+              performaNumber: perf.performaNumber,
+              productId: pProd.productId ? String(pProd.productId) : undefined,
+              productName: pProd.productSnapshot.productName,
+              casesConsumed: casesToConsume,
+              amountConsumed: consumedAmount,
+              remainingCasesInPerforma: pProd.remainingCases,
+            });
+
+            remainingCasesToConsume -= casesToConsume;
+            modifiedPerformas.add(perf);
           }
-          const consumedAmount = Number((rawItemConsumed * scaleRatio).toFixed(2));
-
-          pProd.usedCases = Number((pProd.usedCases + casesToConsume).toFixed(2));
-          pProd.caseOut = Number((pProd.caseOut + casesToConsume).toFixed(2));
-          pProd.remainingCases = Math.max(0, Number((pProd.requiredCases - pProd.usedCases).toFixed(2)));
-          pProd.usedAmount = Number((pProd.usedAmount + consumedAmount).toFixed(2));
-          pProd.remainingAmount = Math.max(0, Number((pProd.allocatedAmount - pProd.usedAmount).toFixed(2)));
-
-          totalBillAmountConsumed += consumedAmount;
-
-          // Record audit log for product case consumption with net total share
-          await PerformaAudit.create({
-            customerId: customer?._id || masterPerforma.customerId,
-            customerName: customerName.trim(),
-            performaId: masterPerforma._id,
-            performaNumber: masterPerforma.performaNumber,
-            particularId: new mongoose.Types.ObjectId(particularId),
-            billNo: billNo,
-            productId: pProd.productId,
-            productName: pProd.productSnapshot.productName,
-            cases: casesToConsume,
-            amount: consumedAmount,
-            type: 'PERFORMA_CONSUMED',
-            date: billDate,
-            reference: `Bill #${billNo}`,
-            notes: `Consumed ${casesToConsume} cases (₹${consumedAmount.toFixed(2)}) for bill #${billNo}`,
-            createdBy: 'System',
-          });
-
-          result.consumed = true;
-          result.totalCasesConsumed += casesToConsume;
-          result.totalAmountConsumed += consumedAmount;
-          result.items.push({
-            performaId: String(masterPerforma._id),
-            performaNumber: masterPerforma.performaNumber,
-            productId: pProd.productId ? String(pProd.productId) : undefined,
-            productName: pProd.productSnapshot.productName,
-            casesConsumed: casesToConsume,
-            amountConsumed: consumedAmount,
-            remainingCasesInPerforma: pProd.remainingCases,
-          });
-
-          remainingCasesToConsume -= casesToConsume;
         }
       }
     }
 
-    // Check for additional products or items marked as additional outside performa quotation
+    // Save all modified performas
+    for (const perf of modifiedPerformas) {
+      perf.totalUsedCases = Number(
+        perf.products.reduce((acc: number, curr: any) => acc + curr.usedCases, 0).toFixed(2)
+      );
+      perf.totalRemainingCases = Math.max(
+        0,
+        Number((perf.totalRequiredCases - perf.totalUsedCases).toFixed(2))
+      );
+      perf.totalUsedAmount = Number(
+        perf.products.reduce((acc: number, curr: any) => acc + curr.usedAmount, 0).toFixed(2)
+      );
+      perf.totalRemainingAmount = Math.max(
+        0,
+        Number((perf.totalAllocatedAmount - perf.totalUsedAmount).toFixed(2))
+      );
+
+      const allItemsFulfilled = perf.products.every((p: any) => p.remainingCases <= 0);
+      if (allItemsFulfilled) {
+        perf.status = 'COMPLETED';
+      } else if (perf.totalUsedCases > 0) {
+        perf.status = 'PARTIALLY_USED';
+      }
+
+      await perf.save();
+    }
+
+    // Check for additional products or items marked as additional outside all performa quotations
     for (const billItem of products) {
       const billedCases = cleanNumber(billItem.quantity);
       const billedNameNormalized = billItem.particular.replace(/\s*\(additional\)/i, '').trim().toLowerCase();
-      const pProd = masterPerforma.products.find((p) => {
-        const pName = p.productSnapshot.productName.trim().toLowerCase();
-        const pCode = (p.productSnapshot.productCode || '').trim().toLowerCase();
-        return pName === billedNameNormalized || (pCode && pCode === billedNameNormalized);
-      });
+      const isFoundInAnyPerforma = customerPerformas.some((perf) =>
+        perf.products.some((p: any) => {
+          const pName = p.productSnapshot.productName.trim().toLowerCase();
+          const pCode = (p.productSnapshot.productCode || '').trim().toLowerCase();
+          return pName === billedNameNormalized || (pCode && pCode === billedNameNormalized);
+        })
+      );
 
       const isExplicitAdditional = (billItem as any).isAdditional === true;
-      if (!pProd || isExplicitAdditional) {
+      if (!isFoundInAnyPerforma || isExplicitAdditional) {
         await PerformaAudit.create({
           customerId: customer?._id || masterPerforma.customerId,
           customerName: customerName.trim(),
@@ -633,6 +677,75 @@ export const getCustomerPerformaSummary = async (customerIdentifier: string): Pr
 
   const masterPerforma = await getCustomerMasterPerforma(customerId ? String(customerId) : customerName);
 
+  // Fetch all non-cancelled performas for this customer
+  const performaQuery: any = {
+    $or: [
+      { 'customerSnapshot.name': { $regex: new RegExp(`^${escapeRegex(customerName)}$`, 'i') } },
+      { customerName: { $regex: new RegExp(`^${escapeRegex(customerName)}$`, 'i') } },
+    ],
+    status: { $nin: ['CANCELLED', 'cancelled'] },
+  };
+  if (customerId) performaQuery.$or.push({ customerId });
+
+  const allCustomerPerformas = await Performa.find(performaQuery).sort({ date: 1, createdAt: 1, _id: 1 });
+
+  // Filter performas that have pending/balance cases to dispatch
+  const performasWithPending = allCustomerPerformas.filter(
+    (perf) =>
+      (perf.totalRemainingCases || 0) > 0 ||
+      (perf.products || []).some(
+        (p) =>
+          (p.remainingCases !== undefined && p.remainingCases !== null
+            ? Number(p.remainingCases) || 0
+            : (Number(p.requiredCases) || 0) - (Number(p.usedCases) || 0)) > 0
+      )
+  );
+
+  // Collect all products across active performas (or all performas if none pending)
+  const allPerformaProducts: any[] = [];
+  const targetPerformas = performasWithPending.length > 0 ? performasWithPending : allCustomerPerformas;
+
+  for (const perf of targetPerformas) {
+    for (const p of perf.products || []) {
+      const rem =
+        p.remainingCases !== undefined && p.remainingCases !== null
+          ? Number(p.remainingCases) || 0
+          : Math.max(0, (Number(p.requiredCases) || 0) - (Number(p.usedCases) || 0));
+
+      allPerformaProducts.push({
+        performaId: String(perf._id),
+        performaNumber: perf.performaNumber,
+        performaDate: perf.date,
+        performaStatus: perf.status,
+        productId: p.productId ? String(p.productId) : undefined,
+        productCode: p.productSnapshot?.productCode || '',
+        productName: p.productSnapshot?.productName || '',
+        companyName: p.productSnapshot?.companyName || perf.companyName || '',
+        category: p.productSnapshot?.category || '',
+        requiredCases: p.requiredCases || 0,
+        usedCases: p.usedCases || 0,
+        remainingCases: rem,
+        rate: p.rate || 0,
+        pktPerUnit: p.pktPerUnit || 1,
+        allocatedAmount: p.allocatedAmount || 0,
+        usedAmount: p.usedAmount || 0,
+        remainingAmount: p.remainingAmount || 0,
+      });
+    }
+  }
+
+  // Sort so items with pending cases to dispatch (remainingCases > 0) come first
+  allPerformaProducts.sort((a, b) => b.remainingCases - a.remainingCases);
+
+  const totalRequiredCasesAcrossAll = allCustomerPerformas.reduce((sum, p) => sum + (p.totalRequiredCases || 0), 0);
+  const totalUsedCasesAcrossAll = allCustomerPerformas.reduce((sum, p) => sum + (p.totalUsedCases || 0), 0);
+  const totalRemainingCasesAcrossAll = allCustomerPerformas.reduce((sum, p) => sum + (p.totalRemainingCases || 0), 0);
+  const totalAllocatedAmountAcrossAll = allCustomerPerformas.reduce((sum, p) => sum + (p.totalAllocatedAmount || 0), 0);
+
+  const activePerfNumbers = performasWithPending.length > 0
+    ? performasWithPending.map((p) => p.performaNumber).join(', ')
+    : (allCustomerPerformas.length > 0 ? allCustomerPerformas.map((p) => p.performaNumber).join(', ') : '');
+
   // Get all ledger entries for this customer
   const ledgerEntries = await AccountLedger.find({
     customerName: { $regex: new RegExp(`^${escapeRegex(customerName)}$`, 'i') },
@@ -825,39 +938,36 @@ export const getCustomerPerformaSummary = async (customerIdentifier: string): Pr
     phone: customer?.mobile || masterPerforma?.customerSnapshot?.phone || '',
     address: customer?.address || masterPerforma?.customerSnapshot?.address || '',
     gst: customer?.gst || masterPerforma?.customerSnapshot?.gst || '',
-    hasMasterPerforma: !!masterPerforma,
-    masterPerforma: masterPerforma
+    hasMasterPerforma: allCustomerPerformas.length > 0,
+    masterPerforma: masterPerforma || allCustomerPerformas[0]
       ? {
-          _id: String(masterPerforma._id),
-          performaNumber: masterPerforma.performaNumber,
-          date: masterPerforma.date,
-          status: masterPerforma.status,
-          companyName: masterPerforma.companyName,
+          _id: String((masterPerforma || allCustomerPerformas[0])._id),
+          performaNumber: activePerfNumbers || (masterPerforma || allCustomerPerformas[0]).performaNumber,
+          date: (masterPerforma || allCustomerPerformas[0]).date,
+          status: totalRemainingCasesAcrossAll > 0 ? (totalUsedCasesAcrossAll > 0 ? 'PARTIALLY_USED' : 'ACTIVE') : 'COMPLETED',
+          companyName: (masterPerforma || allCustomerPerformas[0]).companyName,
           initialAdvance: Number(initialAdvance.toFixed(2)),
           additionalCredits: Number(additionalCredits.toFixed(2)),
           totalAdvanceReceived,
           totalUsedByBills,
           availableAmount,
-          totalRequiredCases: masterPerforma.totalRequiredCases,
-          totalUsedCases: masterPerforma.totalUsedCases,
-          totalRemainingCases: masterPerforma.totalRemainingCases,
-          products: masterPerforma.products.map((p) => ({
-            productId: p.productId ? String(p.productId) : undefined,
-            productCode: p.productSnapshot.productCode,
-            productName: p.productSnapshot.productName,
-            companyName: p.productSnapshot.companyName,
-            category: p.productSnapshot.category,
-            requiredCases: p.requiredCases,
-            usedCases: p.usedCases,
-            remainingCases: p.remainingCases,
-            rate: p.rate,
-            pktPerUnit: p.pktPerUnit,
-            allocatedAmount: p.allocatedAmount,
-            usedAmount: p.usedAmount,
-            remainingAmount: p.remainingAmount,
-          })),
+          totalRequiredCases: totalRequiredCasesAcrossAll,
+          totalUsedCases: totalUsedCasesAcrossAll,
+          totalRemainingCases: totalRemainingCasesAcrossAll,
+          products: allPerformaProducts,
         }
       : null,
+    activePerformas: allCustomerPerformas.map((perf) => ({
+      _id: String(perf._id),
+      performaNumber: perf.performaNumber,
+      date: perf.date,
+      status: perf.status,
+      companyName: perf.companyName,
+      totalRequiredCases: perf.totalRequiredCases,
+      totalUsedCases: perf.totalUsedCases,
+      totalRemainingCases: perf.totalRemainingCases,
+    })),
+    allProducts: allPerformaProducts,
     initialAdvance: Number(initialAdvance.toFixed(2)),
     additionalCredits: Number(additionalCredits.toFixed(2)),
     totalAdvanceReceived,
@@ -867,11 +977,11 @@ export const getCustomerPerformaSummary = async (customerIdentifier: string): Pr
     availableAmount,
     balanceAmount,
     customerPendingAmount,
-    performaTotalValue: performaTotalVal,
+    performaTotalValue: totalAllocatedAmountAcrossAll > 0 ? totalAllocatedAmountAcrossAll : performaTotalVal,
     performaRemainingAmount,
-    totalAllocatedCases: masterPerforma?.totalRequiredCases || 0,
-    totalUsedCases: masterPerforma?.totalUsedCases || 0,
-    totalRemainingCases: masterPerforma?.totalRemainingCases || 0,
+    totalAllocatedCases: totalRequiredCasesAcrossAll,
+    totalUsedCases: totalUsedCasesAcrossAll,
+    totalRemainingCases: totalRemainingCasesAcrossAll,
     ledgerTotalCredit: Number(ledgerTotalCredit.toFixed(2)),
     ledgerTotalDebit: Number(ledgerTotalDebit.toFixed(2)),
     ledgerCreditBalance,

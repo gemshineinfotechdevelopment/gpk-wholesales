@@ -811,9 +811,6 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                       <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>
                         Customer Name & Info
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>
-                        Performa Refs
-                      </TableCell>
                       <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>
                         Ordered
                       </TableCell>
@@ -887,28 +884,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                           </Box>
                         </TableCell>
 
-                        {/* 3. Performa Orders */}
-                        <TableCell>
-                          <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
-                            {customer.performaNumbers.map((num) => (
-                              <Chip
-                                key={num}
-                                label={num}
-                                size="small"
-                                sx={{
-                                  height: 20,
-                                  fontSize: '10.5px',
-                                  fontWeight: 700,
-                                  backgroundColor: '#F0F9FF',
-                                  color: '#1D4ED8',
-                                  border: '1px solid #BFDBFE',
-                                }}
-                              />
-                            ))}
-                          </Box>
-                        </TableCell>
-
-                        {/* 4. Ordered Cases */}
+                        {/* 3. Ordered Cases */}
                         <TableCell sx={{ textAlign: 'center', fontWeight: 600, color: '#334155', fontSize: '13px' }}>
                           {customer.totalRequiredCases} cs
                         </TableCell>

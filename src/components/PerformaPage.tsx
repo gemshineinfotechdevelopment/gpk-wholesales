@@ -42,7 +42,6 @@ import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import ModeEditOutlineRoundedIcon from '@mui/icons-material/ModeEditOutlineRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
-import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
 import BusinessRoundedIcon from '@mui/icons-material/BusinessRounded';
 import ListAltRoundedIcon from '@mui/icons-material/ListAltRounded';
@@ -145,7 +144,6 @@ export const PerformaPage: FC<PerformaPageProps> = ({
   // Customer Performa List Sub-page State
   const [customerPerformas, setCustomerPerformas] = useState<any[]>([]);
   const [customerPerformasLoading, setCustomerPerformasLoading] = useState<boolean>(false);
-  const [customerPerformaSearch, setCustomerPerformaSearch] = useState<string>('');
 
   // View Details Modal State
   const [selectedPerformaForView, setSelectedPerformaForView] = useState<any | null>(null);
@@ -283,7 +281,6 @@ export const PerformaPage: FC<PerformaPageProps> = ({
         PerformasApi.getCustomerSummary(customer._id || customer.name).catch(() => null),
         PerformasApi.getAll({
           customerName: customer.name,
-          search: customerPerformaSearch || undefined,
           sortBy: 'date',
           sortOrder: 'desc',
         }).catch(() => []),
@@ -307,7 +304,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
     if (selectedCustomer) {
       fetchCustomerPerformaData(selectedCustomer);
     }
-  }, [selectedCustomer, customerPerformaSearch]);
+  }, [selectedCustomer]);
 
   // Filter available products by selected productCompany for smart autofill/selection
   const filteredProductsForEntry = useMemo(() => {
@@ -2323,41 +2320,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
             </Box>
           )}
 
-          {/* Filter Bar */}
-          <Paper
-            elevation={0}
-            sx={{
-              p: 2,
-              mb: 3,
-              borderRadius: '12px',
-              border: '1px solid #E2E8F0',
-              backgroundColor: '#FFFFFF',
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 2,
-              alignItems: 'center',
-              justifyContent: 'space-between',
-            }}
-          >
-            <Box sx={{ display: 'flex', gap: 1.5, flex: 1, minWidth: '220px' }}>
-              <TextField
-                size="small"
-                placeholder="Search by Performa No, SKU..."
-                value={customerPerformaSearch}
-                onChange={(e) => setCustomerPerformaSearch(e.target.value)}
-                fullWidth
-                slotProps={{
-                  input: {
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <SearchRoundedIcon sx={{ color: '#94A3B8', fontSize: 18 }} />
-                      </InputAdornment>
-                    ),
-                  },
-                }}
-              />
-            </Box>
-          </Paper>
+
 
           {/* Customer Performas Table */}
           <Paper
@@ -2548,16 +2511,26 @@ export const PerformaPage: FC<PerformaPageProps> = ({
         fullWidth
         sx={{ '& .MuiDialog-paper': { borderRadius: '12px' } }}
       >
-        <DialogTitle sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#0F172A', color: '#FFFFFF', py: 1.8 }}>
+        <DialogTitle
+          sx={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+            color: '#FFFFFF',
+            py: 1.8,
+            px: 2.5,
+          }}
+        >
           <Box>
-            <Typography sx={{ fontWeight: 800, fontSize: '17px' }}>
+            <Typography sx={{ fontWeight: 800, fontSize: '17px', color: '#FFFFFF' }}>
               Performa Details - {selectedPerformaForView?.performaNumber}
             </Typography>
-            <Typography sx={{ fontSize: '12px', color: '#94A3B8' }}>
+            <Typography sx={{ fontSize: '12px', color: '#FFFFFF', opacity: 0.95 }}>
               {selectedPerformaForView?.companyName || selectedPerformaForView?.customerSnapshot?.companyName || 'General'} | {selectedPerformaForView?.customerSnapshot?.name} | {selectedPerformaForView?.date}
             </Typography>
           </Box>
-          <IconButton onClick={() => setViewModalOpen(false)} sx={{ color: '#FFFFFF' }}>
+          <IconButton onClick={() => setViewModalOpen(false)} sx={{ color: '#FFFFFF', '&:hover': { backgroundColor: 'rgba(255,255,255,0.15)' } }}>
             <CloseRoundedIcon sx={{ fontSize: 20 }} />
           </IconButton>
         </DialogTitle>

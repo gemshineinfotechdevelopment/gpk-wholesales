@@ -590,7 +590,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       (p: any) => (p.remainingCases || 0) > 0
     );
     if (activeProducts.length === 0) {
-      alert('All products in this performa quotation have already been fulfilled/consumed!');
+      alert('All products in customer performa quotation(s) have already been fulfilled/consumed!');
       return;
     }
 
@@ -611,8 +611,9 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     });
 
     setProductRows((prev) => [...prev, ...importedRows]);
-    if (performaSummary.masterPerforma.companyName && !company) {
-      setCompany(performaSummary.masterPerforma.companyName);
+    const firstCompany = activeProducts.find((p: any) => p.companyName)?.companyName || performaSummary.masterPerforma.companyName;
+    if (firstCompany && !company) {
+      setCompany(firstCompany);
     }
   };
 
@@ -622,6 +623,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     setQuantity(String(p.remainingCases > 0 ? p.remainingCases : p.requiredCases || 1));
     setRate(String(p.rate || ''));
     setPkt(String(p.pktPerUnit || ''));
+    const comp = p.companyName || p.productSnapshot?.companyName;
+    if (comp && !company) {
+      setCompany(comp);
+    }
   };
 
   // Subtab 2: Product Line Addition with Performa Validation
@@ -639,19 +644,18 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     const activeMasterPerforma = performaSummary?.hasMasterPerforma ? performaSummary.masterPerforma : null;
     const isPerformaActive =
       activeMasterPerforma &&
-      (activeMasterPerforma.status === 'ACTIVE' || activeMasterPerforma.status === 'PARTIALLY_USED') &&
       activeMasterPerforma.products &&
       activeMasterPerforma.products.length > 0;
 
     if (isPerformaActive) {
       const normInput = selectedProduct.trim().toLowerCase();
-      const matchedP = activeMasterPerforma.products.find((p: any) => {
+      const matchingProducts = activeMasterPerforma.products.filter((p: any) => {
         const pName = (p.productName || '').trim().toLowerCase();
         const pCode = (p.productCode || '').trim().toLowerCase();
         return pName === normInput || (pCode && pCode === normInput);
       });
 
-      if (!matchedP) {
+      if (matchingProducts.length === 0) {
         // Warning: Product not in performa quotation
         setWarningDialog({
           open: true,
@@ -674,19 +678,27 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         return;
       }
 
-      // Check cases against performa remaining quota
+      // Check cases against performa remaining quota across all matching performas
+      const totalRemCases = matchingProducts.reduce(
+        (sum: number, p: any) => sum + (parseFloat(p.remainingCases) || 0),
+        0
+      );
+
       const existingCasesInTable = productRows
         .filter((r) => {
           const rName = r.particular.trim().toLowerCase();
-          return rName === normInput || (matchedP.productCode && rName === matchedP.productCode.trim().toLowerCase());
+          return (
+            rName === normInput ||
+            matchingProducts.some((mp: any) => mp.productCode && rName === mp.productCode.trim().toLowerCase())
+          );
         })
         .reduce((sum, r) => sum + (parseFloat(r.quantity) || 0), 0);
 
       const totalWillBe = existingCasesInTable + caseVal;
-      const remCases = matchedP.remainingCases || 0;
 
-      if (totalWillBe > remCases) {
-        const extra = Number((totalWillBe - remCases).toFixed(2));
+      if (totalWillBe > totalRemCases) {
+        const extra = Number((totalWillBe - totalRemCases).toFixed(2));
+        const perfNums = Array.from(new Set(matchingProducts.map((p: any) => p.performaNumber).filter(Boolean))).join(', ') || activeMasterPerforma.performaNumber;
         setWarningDialog({
           open: true,
           type: 'EXCEEDED_CASES',
@@ -694,8 +706,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
           quantity: quantity.trim(),
           rate: rate.trim(),
           pkt: pkt ? pkt.trim() : '-',
-          performaNumber: activeMasterPerforma.performaNumber,
-          remainingCases: remCases,
+          performaNumber: perfNums,
+          remainingCases: totalRemCases,
           extraCases: extra,
           pendingRowData: {
             particular: selectedProduct.trim(),
@@ -739,19 +751,18 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     const activeMasterPerforma = performaSummary?.hasMasterPerforma ? performaSummary.masterPerforma : null;
     const isPerformaActive =
       activeMasterPerforma &&
-      (activeMasterPerforma.status === 'ACTIVE' || activeMasterPerforma.status === 'PARTIALLY_USED') &&
       activeMasterPerforma.products &&
       activeMasterPerforma.products.length > 0;
 
     if (isPerformaActive) {
       const normInput = editRowData.particular.trim().toLowerCase();
-      const matchedP = activeMasterPerforma.products.find((p: any) => {
+      const matchingProducts = activeMasterPerforma.products.filter((p: any) => {
         const pName = (p.productName || '').trim().toLowerCase();
         const pCode = (p.productCode || '').trim().toLowerCase();
         return pName === normInput || (pCode && pCode === normInput);
       });
 
-      if (!matchedP) {
+      if (matchingProducts.length === 0) {
         setWarningDialog({
           open: true,
           type: 'NEW_PRODUCT',
@@ -774,21 +785,28 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         return;
       }
 
-      // Check cases excluding current row being edited
+      // Check cases excluding current row being edited across all matching performas
+      const totalRemCases = matchingProducts.reduce(
+        (sum: number, p: any) => sum + (parseFloat(p.remainingCases) || 0),
+        0
+      );
+
       const otherCasesInTable = productRows
         .filter(
           (r) =>
             r.id !== id &&
             (r.particular.trim().toLowerCase() === normInput ||
-              (matchedP.productCode && r.particular.trim().toLowerCase() === matchedP.productCode.trim().toLowerCase()))
+              matchingProducts.some(
+                (mp: any) => mp.productCode && r.particular.trim().toLowerCase() === mp.productCode.trim().toLowerCase()
+              ))
         )
         .reduce((sum, r) => sum + (parseFloat(r.quantity) || 0), 0);
 
       const totalWillBe = otherCasesInTable + caseVal;
-      const remCases = matchedP.remainingCases || 0;
 
-      if (totalWillBe > remCases) {
-        const extra = Number((totalWillBe - remCases).toFixed(2));
+      if (totalWillBe > totalRemCases) {
+        const extra = Number((totalWillBe - totalRemCases).toFixed(2));
+        const perfNums = Array.from(new Set(matchingProducts.map((p: any) => p.performaNumber).filter(Boolean))).join(', ') || activeMasterPerforma.performaNumber;
         setWarningDialog({
           open: true,
           type: 'EXCEEDED_CASES',
@@ -796,8 +814,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
           quantity: editRowData.quantity.trim(),
           rate: editRowData.rate.trim(),
           pkt: editRowData.pktUnit ? editRowData.pktUnit.trim() : '-',
-          performaNumber: activeMasterPerforma.performaNumber,
-          remainingCases: remCases,
+          performaNumber: perfNums,
+          remainingCases: totalRemCases,
           extraCases: extra,
           pendingRowData: {
             particular: editRowData.particular.trim(),
@@ -1667,18 +1685,24 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     gap: 1,
                   }}
                 >
-                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
-                      <Chip
-                        size="small"
-                        label={performaSummary.masterPerforma.performaNumber}
-                        sx={{
-                          fontWeight: 800,
-                          backgroundColor: '#DCFCE7',
-                          color: '#166534',
-                          fontSize: '11.5px',
-                        }}
-                      />
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 0.8 }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8, flexWrap: 'wrap' }}>
+                      {(performaSummary.activePerformas && performaSummary.activePerformas.length > 0
+                        ? performaSummary.activePerformas
+                        : [{ performaNumber: performaSummary.masterPerforma.performaNumber, status: performaSummary.masterPerforma.status }]
+                      ).map((ap: any, i: number) => (
+                        <Chip
+                          key={i}
+                          size="small"
+                          label={ap.performaNumber}
+                          sx={{
+                            fontWeight: 800,
+                            backgroundColor: '#DCFCE7',
+                            color: '#166534',
+                            fontSize: '11.5px',
+                          }}
+                        />
+                      ))}
                       <Typography sx={{ fontSize: '12px', fontWeight: 700, color: '#166534' }}>
                         Linked Performa Active
                       </Typography>
@@ -1719,7 +1743,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     </Box>
                     <Box>
                       <Typography sx={{ fontSize: '10.5px', color: '#64748B', fontWeight: 600 }}>
-                        Remaining Cases
+                        Total Balance Cases
                       </Typography>
                       <Typography sx={{ fontSize: '13px', fontWeight: 800, color: '#0F172A' }}>
                         {performaSummary.masterPerforma.totalRemainingCases || 0} Cases
@@ -2076,7 +2100,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                         size="small"
                         clickable={!isFulfilled}
                         onClick={() => !isFulfilled && handleQuickSelectPerformaProduct(p)}
-                        label={`${p.productName} (${p.remainingCases || 0} rem @ ₹${p.rate})`}
+                        label={
+                          p.performaNumber
+                            ? `${p.productName} (${p.remainingCases || 0} rem @ ₹${p.rate}) • ${p.performaNumber}`
+                            : `${p.productName} (${p.remainingCases || 0} rem @ ₹${p.rate})`
+                        }
                         sx={{
                           fontSize: '11px',
                           fontWeight: 600,
