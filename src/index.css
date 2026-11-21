@@ -66,4 +66,16 @@ input[type='number'] {
   }
 }
 
+/* Global Print Styles: Removes browser default headers and footers (date, title, URL, page # in 4 corners) */
+@media print {
+  @page {
+    size: auto;
+    margin: 0;
+  }
+  body {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+}
+
 

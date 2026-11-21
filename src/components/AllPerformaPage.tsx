@@ -164,7 +164,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
   });
 
   // Load Performas, Customers, Companies, and Products
-  const fetchPerformas = async () => {
+  const fetchPerformas = async (queryOverride?: string) => {
     try {
       setLoading(true);
       const effectiveCustomer = userRole === 'user' ? (customerFilter || selectedCustomerFilter) : selectedCustomerFilter;
@@ -173,11 +173,12 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
         setLoading(false);
         return;
       }
+      const currentSearch = queryOverride !== undefined ? queryOverride : searchQuery;
       const res = await PerformasApi.getAll({
         customerName: effectiveCustomer,
         companyName: selectedCompanyFilter,
         status: selectedStatusFilter,
-        search: searchQuery,
+        search: currentSearch.trim() || undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
         sortBy,
@@ -216,9 +217,13 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
     }
   }, [customerFilter]);
 
+  // Debounced search on typing or immediate fetch on filter changes
   useEffect(() => {
-    fetchPerformas();
-  }, [selectedCustomerFilter, selectedCompanyFilter, selectedStatusFilter, startDate, endDate, sortBy, sortOrder]);
+    const timer = setTimeout(() => {
+      fetchPerformas();
+    }, 350);
+    return () => clearTimeout(timer);
+  }, [searchQuery, selectedCustomerFilter, selectedCompanyFilter, selectedStatusFilter, startDate, endDate, sortBy, sortOrder]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -234,6 +239,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
     setEndDate('');
     setSortBy('date');
     setSortOrder('desc');
+    fetchPerformas('');
   };
 
   const handleSortRequest = (column: string) => {
@@ -769,7 +775,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
           >
             Share on WhatsApp
           </Button>
-          <IconButton onClick={fetchPerformas} sx={{ border: '1px solid #E2E8F0', borderRadius: '8px' }}>
+          <IconButton onClick={() => fetchPerformas()} sx={{ border: '1px solid #E2E8F0', borderRadius: '8px' }}>
             <RefreshRoundedIcon sx={{ color: '#475569', fontSize: 20 }} />
           </IconButton>
           {onAddNewPerforma && userRole !== 'user' && (
@@ -862,7 +868,11 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
           onSubmit={handleSearchSubmit}
           sx={{
             display: 'grid',
-            gridTemplateColumns: { xs: '1fr', sm: '1.2fr 1fr 1fr 1fr', md: '1.4fr 1fr 1fr 1fr 1.2fr 0.9fr 0.9fr auto' },
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: '1.4fr 1fr 1fr 1fr 1.1fr 0.9fr 0.9fr auto auto',
+            },
             gap: 1.5,
             alignItems: 'center',
           }}
@@ -878,9 +888,31 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
               input: {
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchRoundedIcon sx={{ color: '#94A3B8', fontSize: 18 }} />
+                    <IconButton
+                      size="small"
+                      type="submit"
+                      sx={{ p: 0.3, color: '#1D4ED8' }}
+                      title="Search"
+                    >
+                      <SearchRoundedIcon sx={{ fontSize: 19 }} />
+                    </IconButton>
                   </InputAdornment>
                 ),
+                endAdornment: searchQuery ? (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setSearchQuery('');
+                        fetchPerformas('');
+                      }}
+                      sx={{ p: 0.3, color: '#94A3B8' }}
+                      title="Clear search"
+                    >
+                      <CloseRoundedIcon sx={{ fontSize: 16 }} />
+                    </IconButton>
+                  </InputAdornment>
+                ) : null,
               },
             }}
           />
@@ -986,6 +1018,30 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
             slotProps={{ inputLabel: { shrink: true } }}
           />
 
+          {/* Search Button */}
+          <Button
+            type="submit"
+            variant="contained"
+            disableElevation
+            startIcon={<SearchRoundedIcon sx={{ fontSize: 18 }} />}
+            sx={{
+              background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+              color: '#FFFFFF',
+              fontWeight: 700,
+              textTransform: 'none',
+              height: '40px',
+              borderRadius: '8px',
+              px: 2.2,
+              whiteSpace: 'nowrap',
+              boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+              },
+            }}
+          >
+            Search
+          </Button>
+
           {/* Reset Filters */}
           <Button
             variant="outlined"
@@ -997,7 +1053,12 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
               textTransform: 'none',
               height: '40px',
               borderRadius: '8px',
+              px: 2,
               whiteSpace: 'nowrap',
+              '&:hover': {
+                borderColor: '#94A3B8',
+                backgroundColor: '#F1F5F9',
+              },
             }}
           >
             Clear
@@ -1094,7 +1155,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
               ) : (
                 performas.map((p) => {
                   const performaVal = p.totalAllocatedAmount !== undefined ? p.totalAllocatedAmount : (p.performaTotalValue || 0);
-                  const advAmt = p.advanceAmount || 0;
+                  const advAmt = Number(p.advanceAmount) > 0 ? Number(p.advanceAmount) : (Number(p.totalAdvanceReceived) > 0 ? Number(p.totalAdvanceReceived) : (Number(p.initialAdvance) || 0));
                   const balanceToPay = Math.max(0, performaVal - advAmt);
 
                   return (
@@ -1126,7 +1187,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                       <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: '#1D4ED8' }}>
                         ₹{performaVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </TableCell>
-                      <TableCell sx={{ textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>
+                      <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: advAmt > 0 ? '#166534' : '#64748B' }}>
                         ₹{advAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: balanceToPay > 0 ? '#DC2626' : '#15803D' }}>
@@ -1356,60 +1417,6 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                   </TableBody>
                 </Table>
               </TableContainer>
-
-
-
-              {/* Audit / Consumption History */}
-              {selectedPerformaForView.auditHistory && selectedPerformaForView.auditHistory.length > 0 && (
-                <Box>
-                  <Typography sx={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', mb: 1.5 }}>
-                    Audit & Bill Consumption Trail
-                  </Typography>
-                  <TableContainer sx={{ border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#FFFFFF' }}>
-                    <Table size="small">
-                      <TableHead sx={{ backgroundColor: '#F1F5F9' }}>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 800 }}>Date</TableCell>
-                          <TableCell sx={{ fontWeight: 800 }}>Type</TableCell>
-                          <TableCell sx={{ fontWeight: 800 }}>Reference / Bill</TableCell>
-                          <TableCell sx={{ fontWeight: 800 }}>Product</TableCell>
-                          <TableCell sx={{ fontWeight: 800, textAlign: 'center' }}>Cases</TableCell>
-                          <TableCell sx={{ fontWeight: 800, textAlign: 'right' }}>Amount (₹)</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {selectedPerformaForView.auditHistory.map((audit: any, idx: number) => (
-                          <TableRow key={idx}>
-                            <TableCell sx={{ fontSize: '12.5px' }}>{audit.date}</TableCell>
-                            <TableCell>
-                              <Chip
-                                label={audit.type}
-                                size="small"
-                                sx={{
-                                  fontSize: '10px',
-                                  fontWeight: 700,
-                                  backgroundColor:
-                                    audit.type === 'PERFORMA_CONSUMED'
-                                      ? '#FEF3C7'
-                                      : audit.type === 'ADVANCE_RECEIVED'
-                                      ? '#DCFCE7'
-                                      : '#F1F5F9',
-                                }}
-                              />
-                            </TableCell>
-                            <TableCell sx={{ fontSize: '12.5px' }}>{audit.reference || audit.billNo || '-'}</TableCell>
-                            <TableCell sx={{ fontSize: '12.5px' }}>{audit.productName || '-'}</TableCell>
-                            <TableCell sx={{ textAlign: 'center', fontWeight: 700 }}>{audit.cases || '-'}</TableCell>
-                            <TableCell sx={{ textAlign: 'right', fontWeight: 700 }}>
-                              ₹{audit.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Box>
-              )}
             </Box>
           )}
         </DialogContent>

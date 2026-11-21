@@ -11,6 +11,8 @@ export interface IParticularProductItem {
 
 export interface IParticular extends Document {
   customerName: string;
+  phone?: string;
+  preparedBy?: string;
   caseCount: string;
   companyName?: string;
   discount: string;
@@ -43,6 +45,8 @@ const ParticularProductItemSchema: Schema = new Schema({
 const ParticularSchema: Schema = new Schema(
   {
     customerName: { type: String, required: true, trim: true },
+    phone: { type: String, default: '', trim: true },
+    preparedBy: { type: String, default: '', trim: true },
     caseCount: { type: String, default: '0' },
     companyName: { type: String, default: '', trim: true },
     discount: { type: String, default: '' },

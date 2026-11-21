@@ -79,7 +79,7 @@ const seedSampleData = async () => {
         avatarBg: '#E0E7FF',
         avatarColor: '#3730A3',
         address: '45, Gandhi Road, Salem, Tamil Nadu - 636007',
-        mobile: '+91 98765 43210',
+        mobile: '+91 98420 11223',
         gst: '33AABCS1111A1Z1',
       },
       {

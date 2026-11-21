@@ -106,7 +106,7 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
     ? bill.caseCount
     : (bill.products || []).reduce((acc, p) => acc + (parseFloat(String(p.quantity)) || 0), 0);
 
-  const preparedBy = bill.preparedBy || 'S.Nagaraj';
+  const preparedBy = (bill.preparedBy && bill.preparedBy !== 'S.Nagaraj' && bill.preparedBy !== 'Nagaraj') ? bill.preparedBy.trim() : '';
   const transportName = bill.transport && bill.transport.trim() !== '' && bill.transport !== '-' ? bill.transport.trim() : '-';
 
   // Check for uploaded Lorry / Godown receipt (pdfData or pdfUrl)
@@ -128,18 +128,20 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
     >
       {/* Top Header */}
       <div style={{ position: 'relative', textAlign: 'center', borderBottom: '2px solid #0F172A', paddingBottom: '8px', marginBottom: '12px' }}>
-        <div
-          style={{
-            position: 'absolute',
-            right: 0,
-            top: 0,
-            fontSize: '12px',
-            fontWeight: 700,
-            color: '#475569',
-          }}
-        >
-          Prepared By: <b>{preparedBy}</b>
-        </div>
+        {preparedBy ? (
+          <div
+            style={{
+              position: 'absolute',
+              right: 0,
+              top: 0,
+              fontSize: '12px',
+              fontWeight: 700,
+              color: '#475569',
+            }}
+          >
+            Prepared By: <b>{preparedBy}</b>
+          </div>
+        ) : null}
         <h1
           style={{
             fontSize: '26px',
@@ -205,10 +207,12 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
             <span style={{ width: '100px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Total Cases:</span>
             <strong style={{ color: '#1D4ED8', fontSize: '13.5px' }}>{computedCases}</strong>
           </div>
-          <div style={{ display: 'flex', marginBottom: '4px' }}>
-            <span style={{ width: '100px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Phone:</span>
-            <strong style={{ color: '#0F172A' }}>{bill.phone || '+91 98765 43210'}</strong>
-          </div>
+          {bill.phone && bill.phone.trim() && bill.phone !== '+91 98765 43210' ? (
+            <div style={{ display: 'flex', marginBottom: '4px' }}>
+              <span style={{ width: '100px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Phone:</span>
+              <strong style={{ color: '#0F172A' }}>{bill.phone.trim()}</strong>
+            </div>
+          ) : null}
         </div>
       </div>
 

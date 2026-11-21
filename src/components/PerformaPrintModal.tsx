@@ -69,8 +69,12 @@ export const PerformaPrintModal: React.FC<PerformaPrintModalProps> = ({ open, on
               display: none !important;
             }
             @page {
-              size: A4 portrait;
-              margin: 10mm;
+              size: auto;
+              margin: 0;
+            }
+            body {
+              margin: 0 !important;
+              padding: 0 !important;
             }
           }
         `}

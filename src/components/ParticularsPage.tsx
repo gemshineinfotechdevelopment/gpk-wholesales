@@ -100,7 +100,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   });
 
   // Live Dropdown options
-  const [customerOptions, setCustomerOptions] = useState<{ id: string; name: string }[]>([]);
+  const [customerOptions, setCustomerOptions] = useState<{ id: string; name: string; mobile?: string }[]>([]);
   const [companyOptions, setCompanyOptions] = useState<{ id: string; name: string }[]>([]);
   const [productOptions, setProductOptions] = useState<{ id: string; name: string }[]>([]);
 
@@ -393,7 +393,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         ]);
 
         if (custRes && custRes.length > 0) {
-          const mapped = custRes.map((c: any) => ({ id: c._id || c.id, name: c.name }));
+          const mapped = custRes.map((c: any) => ({ id: c._id || c.id, name: c.name, mobile: c.mobile || '' }));
           setCustomerOptions(mapped);
 
           if (currentCustomerName) {
@@ -908,12 +908,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       });
 
       const assignedBillNo = created?.billNo || billNo.trim();
+      const matchedCustomer = customerOptions.find((c) => c.name.toLowerCase() === (currentCustomerName || '').toLowerCase());
+      const customerMobile = matchedCustomer?.mobile || '';
       const createdBillData: BillPrintData = {
         billNo: assignedBillNo,
         customerName: currentCustomerName || 'General',
         companyName: company ? company.trim() : '',
-        preparedBy: 'Admin',
-        phone: '+91 98765 43210',
+        preparedBy: '',
+        phone: customerMobile,
         email: 'info@gpkcrackers.com',
         website: 'www.gpkcrackers.com',
         transport: transport && transport.trim() !== '' && transport !== '-' ? transport.trim() : '-',
@@ -1061,13 +1063,17 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   };
 
   const handleOpenBillPrint = (billData: any, autoTrigger = false) => {
+    const custName = billData.customerName || currentCustomerName || '';
+    const matchedCustomer = customerOptions.find((c) => c.name.toLowerCase() === custName.toLowerCase());
+    const customerMobile = (billData.phone && billData.phone !== '+91 98765 43210' ? billData.phone : '') || matchedCustomer?.mobile || '';
+
     const formattedBill: BillPrintData = {
       billNo: billData.billNo || '',
       date: billData.date || '',
-      customerName: billData.customerName || currentCustomerName || '',
+      customerName: custName,
       companyName: billData.companyName || company || '',
-      preparedBy: billData.preparedBy || 'S.Nagaraj',
-      phone: '+91 98765 43210',
+      preparedBy: (billData.preparedBy && billData.preparedBy !== 'S.Nagaraj' && billData.preparedBy !== 'Nagaraj') ? billData.preparedBy : '',
+      phone: customerMobile,
       email: 'info@gpkcrackers.com',
       website: 'www.gpkcrackers.com',
       transport: billData.transport && billData.transport.trim() !== '' && billData.transport !== '-' ? billData.transport.trim() : '-',
@@ -1101,12 +1107,16 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   // WhatsApp Share Handlers
   const handleShareBillWhatsApp = async (billData: any) => {
     try {
+      const custName = billData.customerName || 'General';
+      const matchedCustomer = customerOptions.find((c) => c.name.toLowerCase() === custName.toLowerCase());
+      const customerMobile = (billData.phone && billData.phone !== '+91 98765 43210' ? billData.phone : '') || matchedCustomer?.mobile || '';
+
       const formattedBill: BillPrintData = {
         billNo: billData.billNo || '',
-        customerName: billData.customerName || 'General',
+        customerName: custName,
         companyName: billData.companyName || '',
-        preparedBy: 'S.Nagaraj',
-        phone: billData.phone || '+91 98765 43210',
+        preparedBy: (billData.preparedBy && billData.preparedBy !== 'S.Nagaraj' && billData.preparedBy !== 'Nagaraj') ? billData.preparedBy : '',
+        phone: customerMobile,
         email: 'info@gpkcrackers.com',
         website: 'www.gpkcrackers.com',
         transport: billData.transport && billData.transport !== '-' ? billData.transport : '-',

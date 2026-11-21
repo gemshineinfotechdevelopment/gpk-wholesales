@@ -210,7 +210,7 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
               >
                 <InputBase
                   fullWidth
-                  placeholder="e.g. +91 98765 43210"
+                  placeholder="Enter 10-digit mobile number"
                   value={formData.mobileNumber}
                   onChange={handleChange('mobileNumber')}
                   sx={{

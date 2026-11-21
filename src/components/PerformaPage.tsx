@@ -675,7 +675,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
           address: selectedCustomer.address || '',
           gst: selectedCustomer.gst || '',
         },
-        advanceAmount: 0,
+        advanceAmount: totalReceivedAmount || 0,
         date: date,
         notes: notes.trim(),
         discount: discount || '0',
@@ -2671,71 +2671,6 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   </TableBody>
                 </Table>
               </TableContainer>
-
-
-
-              {/* Performa Transaction History */}
-              {selectedPerformaForView.transactionHistory && selectedPerformaForView.transactionHistory.length > 0 && (
-                <Box sx={{ mt: 2 }}>
-                  <Typography sx={{ fontSize: '14px', fontWeight: 800, color: '#0F172A', mb: 1.5 }}>
-                    Performa Financial Transaction History
-                  </Typography>
-                  <TableContainer sx={{ border: '1px solid #E2E8F0', borderRadius: '8px', backgroundColor: '#FFFFFF' }}>
-                    <Table size="small">
-                      <TableHead sx={{ backgroundColor: '#F1F5F9' }}>
-                        <TableRow>
-                          <TableCell sx={{ fontWeight: 800 }}>Date</TableCell>
-                          <TableCell sx={{ fontWeight: 800 }}>Type</TableCell>
-                          <TableCell sx={{ fontWeight: 800 }}>Reference / Bill No</TableCell>
-                          <TableCell sx={{ fontWeight: 800 }}>Payment Mode</TableCell>
-                          <TableCell sx={{ fontWeight: 800, textAlign: 'right' }}>Amount (₹)</TableCell>
-                          <TableCell sx={{ fontWeight: 800, textAlign: 'right' }}>Running Balance (₹)</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {selectedPerformaForView.transactionHistory.map((tx: any, idx: number) => {
-                          const isNegative = tx.delta < 0 || tx.rawType === 'PERFORMA_CONSUMED';
-                          return (
-                            <TableRow key={idx}>
-                              <TableCell sx={{ fontSize: '12.5px' }}>{tx.date}</TableCell>
-                              <TableCell>
-                                <Chip
-                                  label={tx.type || tx.rawType}
-                                  size="small"
-                                  sx={{
-                                    fontSize: '10.5px',
-                                    fontWeight: 800,
-                                    backgroundColor:
-                                      tx.rawType === 'PERFORMA_CONSUMED'
-                                        ? '#FEF2F2'
-                                        : tx.rawType === 'ADVANCE_RECEIVED'
-                                        ? '#DCFCE7'
-                                        : '#F0F9FF',
-                                    color:
-                                      tx.rawType === 'PERFORMA_CONSUMED'
-                                        ? '#991B1B'
-                                        : tx.rawType === 'ADVANCE_RECEIVED'
-                                        ? '#166534'
-                                        : '#1D4ED8',
-                                  }}
-                                />
-                              </TableCell>
-                              <TableCell sx={{ fontSize: '12.5px' }}>{tx.reference || tx.billNo || '-'}</TableCell>
-                              <TableCell sx={{ fontSize: '12.5px' }}>{tx.paymentMode || 'Bank'}</TableCell>
-                              <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: isNegative ? '#DC2626' : '#166534' }}>
-                                {isNegative ? '-' : '+'}₹{tx.amount?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                              </TableCell>
-                              <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: '#0F172A' }}>
-                                ₹{tx.balance?.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                </Box>
-              )}
             </Box>
           )}
         </DialogContent>
