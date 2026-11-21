@@ -86,30 +86,61 @@ export const getPerformas = async (req: Request, res: Response, next: NextFuncti
 
     const performas = await Performa.find(filter).sort(sortObj).lean();
 
+    // Map each unique customer to fetch their actual advance summary
+    const uniqueCustomerKeys = Array.from(
+      new Set(
+        performas.map((p: any) => String(p.customerId || p.customerSnapshot?.name || '')).filter(Boolean)
+      )
+    );
+    const customerSummaryMap = new Map<string, any>();
+    await Promise.all(
+      uniqueCustomerKeys.map(async (key) => {
+        try {
+          const sum = await getCustomerPerformaSummary(key);
+          customerSummaryMap.set(key, sum);
+          if (sum?.customerName) customerSummaryMap.set(sum.customerName.toLowerCase(), sum);
+        } catch {
+          // ignore error to allow performa list to load
+        }
+      })
+    );
+
     let totalAdvance = 0;
     let totalRemainingAdvance = 0;
     let totalRequiredCases = 0;
 
     const enrichedPerformas = performas.map((p: any) => {
-      const adv = Number((p.advanceAmount || 0).toFixed(2));
+      const custKey = String(p.customerId || p.customerSnapshot?.name || '');
+      const custSummary =
+        customerSummaryMap.get(custKey) ||
+        (p.customerSnapshot?.name ? customerSummaryMap.get(p.customerSnapshot.name.toLowerCase()) : null);
+
+      const adv =
+        Number(p.advanceAmount) > 0
+          ? Number(Number(p.advanceAmount).toFixed(2))
+          : Number(p.totalAdvanceReceived) > 0
+          ? Number(Number(p.totalAdvanceReceived).toFixed(2))
+          : (custSummary?.totalAdvanceReceived ?? custSummary?.initialAdvance ?? 0);
+
       const performaTotalValue = Number((p.totalAllocatedAmount || 0).toFixed(2));
       const balanceAmount = Math.max(0, Number((performaTotalValue - adv).toFixed(2)));
 
       totalAdvance += adv;
-      totalRemainingAdvance += adv;
+      totalRemainingAdvance += (custSummary?.availableAmount ?? adv);
       totalRequiredCases += p.totalRequiredCases || 0;
 
       return {
         ...p,
-        initialAdvance: adv,
-        additionalCredits: 0,
-        totalAdvanceReceived: adv,
-        totalAvailableAmount: adv,
+        advanceAmount: adv,
+        initialAdvance: custSummary?.initialAdvance ?? adv,
+        additionalCredits: custSummary?.additionalCredits ?? (p.additionalCredits || 0),
+        totalAdvanceReceived: custSummary?.totalAdvanceReceived ?? (p.totalAdvanceReceived || adv),
+        totalAvailableAmount: custSummary?.availableAmount ?? adv,
         performaTotalValue,
-        usedAmount: 0,
-        remainingAmount: adv,
-        advanceUsedAmount: 0,
-        remainingAdvanceAmount: adv,
+        usedAmount: custSummary?.totalAdvanceUsed ?? (p.advanceUsedAmount || 0),
+        remainingAmount: custSummary?.availableAmount ?? (p.remainingAdvanceAmount || adv),
+        advanceUsedAmount: custSummary?.totalAdvanceUsed ?? (p.advanceUsedAmount || 0),
+        remainingAdvanceAmount: custSummary?.availableAmount ?? (p.remainingAdvanceAmount || adv),
         balanceAmount,
         customerPendingAmount: balanceAmount,
         performaRemainingAmount: balanceAmount,

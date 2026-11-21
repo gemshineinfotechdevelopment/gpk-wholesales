@@ -675,7 +675,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
           address: selectedCustomer.address || '',
           gst: selectedCustomer.gst || '',
         },
-        advanceAmount: 0,
+        advanceAmount: totalReceivedAmount || 0,
         date: date,
         notes: notes.trim(),
         discount: discount || '0',

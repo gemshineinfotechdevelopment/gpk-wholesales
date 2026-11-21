@@ -148,8 +148,8 @@ export const generateBillHtml = (bill: BillPrintData): string => {
   <title>Bill #${bill.billNo || 'Invoice'} - GPK Crackers</title>
   <style>
     @page {
-      size: A4 portrait;
-      margin: 8mm 10mm;
+      size: auto;
+      margin: 0;
     }
     *, *:before, *:after {
       box-sizing: border-box;
@@ -162,6 +162,7 @@ export const generateBillHtml = (bill: BillPrintData): string => {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      padding: 8mm 10mm;
     }
     .bill-wrapper {
       width: 100%;
@@ -698,8 +699,8 @@ export const generateCustomerListPrintHtml = (
   <title>${reportTitle} - ${currentDate}</title>
   <style>
     @page {
-      size: A4 portrait;
-      margin: 6mm 8mm;
+      size: auto;
+      margin: 0;
     }
     *, *:before, *:after {
       box-sizing: border-box;
@@ -712,6 +713,7 @@ export const generateCustomerListPrintHtml = (
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      padding: 8mm 10mm;
     }
     .print-page {
       width: 100%;
@@ -1115,8 +1117,8 @@ export const generateLedgerStatementHtml = (
   <title>Account Statement - ${customerName} - ${currentDate}</title>
   <style>
     @page {
-      size: A4 portrait;
-      margin: 6mm 8mm;
+      size: auto;
+      margin: 0;
     }
     *, *:before, *:after {
       box-sizing: border-box;
@@ -1129,6 +1131,7 @@ export const generateLedgerStatementHtml = (
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      padding: 8mm 10mm;
     }
     .print-page {
       width: 100%;
@@ -1536,8 +1539,8 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
   <title>Particulars Bills Master Report - ${currentDate}</title>
   <style>
     @page {
-      size: A4 portrait;
-      margin: 6mm 8mm;
+      size: auto;
+      margin: 0;
     }
     *, *:before, *:after {
       box-sizing: border-box;
@@ -1550,6 +1553,7 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      padding: 8mm 10mm;
     }
     .print-page {
       width: 100%;
@@ -1779,9 +1783,9 @@ export const generateCompaniesListPrintHtml = (companies: any[]): string => {
   <meta charset="utf-8" />
   <title>Companies List - ${currentDate}</title>
   <style>
-    @page { size: A4 portrait; margin: 8mm 10mm; }
+    @page { size: auto; margin: 0; }
     *, *:before, *:after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin:0; padding:8px; color:#0F172A; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin:0; padding:8mm 10mm; color:#0F172A; }
     .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0F172A; padding-bottom: 8px; margin-bottom: 12px; }
     .table { width: 100%; border-collapse: collapse; font-size: 11.5px; border: 1px solid #0F172A; }
     .table th { background: #0F172A; color:#FFFFFF; border: 1px solid #0F172A; padding: 7px; font-weight: 800; font-size: 11px; text-transform: uppercase; }
@@ -1847,9 +1851,9 @@ export const generateProductsListPrintHtml = (products: any[]): string => {
   <meta charset="utf-8" />
   <title>Products Catalog - ${currentDate}</title>
   <style>
-    @page { size: A4 portrait; margin: 8mm 10mm; }
+    @page { size: auto; margin: 0; }
     *, *:before, *:after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin:0; padding:8px; color:#0F172A; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin:0; padding:8mm 10mm; color:#0F172A; }
     .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0F172A; padding-bottom: 8px; margin-bottom: 12px; }
     .table { width: 100%; border-collapse: collapse; font-size: 11.5px; border: 1px solid #0F172A; }
     .table th { background: #0F172A; color:#FFFFFF; border: 1px solid #0F172A; padding: 7px; font-weight: 800; font-size: 11px; text-transform: uppercase; }
@@ -1993,9 +1997,9 @@ export const generatePerformaHtml = (performa: any): string => {
         <meta charset="utf-8" />
         <title>Performa - ${performa.performaNumber || 'Quotation'}</title>
         <style>
-          @page { size: A4 portrait; margin: 8mm 10mm; }
+          @page { size: auto; margin: 0; }
           *, *:before, *:after { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 8px; color: #0F172A; background: #FFFFFF; }
+          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 8mm 10mm; color: #0F172A; background: #FFFFFF; }
           .banner { background-color: #0F172A; color: #FFFFFF; text-align: center; padding: 6px 12px; border-radius: 4px; font-weight: 800; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px; }
           .meta-card { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; border: 1px solid #CBD5E1; border-radius: 6px; padding: 12px 16px; margin-bottom: 14px; background-color: #F8FAFC; font-size: 12.5px; }
           table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; border: 1px solid #0F172A; }
@@ -2280,8 +2284,8 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
   <title>${reportTitle} - ${currentDate}</title>
   <style>
     @page {
-      size: A4 portrait;
-      margin: 6mm 8mm;
+      size: auto;
+      margin: 0;
     }
     *, *:before, *:after {
       box-sizing: border-box;
@@ -2294,6 +2298,7 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
+      padding: 8mm 10mm;
     }
     .print-page {
       width: 100%;

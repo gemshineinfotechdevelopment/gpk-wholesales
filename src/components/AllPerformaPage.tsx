@@ -1094,7 +1094,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
               ) : (
                 performas.map((p) => {
                   const performaVal = p.totalAllocatedAmount !== undefined ? p.totalAllocatedAmount : (p.performaTotalValue || 0);
-                  const advAmt = p.advanceAmount || 0;
+                  const advAmt = Number(p.advanceAmount) > 0 ? Number(p.advanceAmount) : (Number(p.totalAdvanceReceived) > 0 ? Number(p.totalAdvanceReceived) : (Number(p.initialAdvance) || 0));
                   const balanceToPay = Math.max(0, performaVal - advAmt);
 
                   return (
@@ -1126,7 +1126,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                       <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: '#1D4ED8' }}>
                         ₹{performaVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </TableCell>
-                      <TableCell sx={{ textAlign: 'right', fontWeight: 700, color: '#0F172A' }}>
+                      <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: advAmt > 0 ? '#166534' : '#64748B' }}>
                         ₹{advAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: balanceToPay > 0 ? '#DC2626' : '#15803D' }}>
