@@ -39,6 +39,15 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
       customerBillsTotalCases.set(cKey, (customerBillsTotalCases.get(cKey) || 0) + bCases);
     }
 
+    const { Customer } = await import('../models/Customer');
+    const allCustomers = await Customer.find({}, 'name mobile').lean();
+    const customerPhoneMap = new Map<string, string>();
+    for (const c of allCustomers) {
+      if (c.name && c.mobile) {
+        customerPhoneMap.set(c.name.trim().toLowerCase(), c.mobile.trim());
+      }
+    }
+
     const enriched = particulars.map((p: any) => {
       const pCustName = (p.customerName || '').trim();
       const pCustKey = pCustName.toLowerCase();
@@ -112,8 +121,14 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
         pending = Math.max(0, totalCustCases - delivered);
       }
 
+      const rawPhone = p.phone && p.phone !== '+91 98765 43210' ? p.phone : '';
+      const finalPhone = rawPhone || customerPhoneMap.get(pCustKey) || '';
+      const rawPreparedBy = p.preparedBy && p.preparedBy !== 'S.Nagaraj' && p.preparedBy !== 'Nagaraj' ? p.preparedBy : '';
+
       return {
         ...p,
+        phone: finalPhone,
+        preparedBy: rawPreparedBy,
         caseCount: computedBillCases,
         totalCustomerCases: totalCustCases,
         deliveredCaseCount: delivered,
@@ -168,6 +183,8 @@ export const createParticular = async (req: Request, res: Response, next: NextFu
     }
     const {
       customerName,
+      phone,
+      preparedBy,
       caseCount,
       companyName,
       discount,
@@ -182,6 +199,17 @@ export const createParticular = async (req: Request, res: Response, next: NextFu
       performaId,
       performaNumber,
     } = req.body;
+
+    let finalPhone = phone && phone !== '+91 98765 43210' ? String(phone).trim() : '';
+    if (!finalPhone && customerName) {
+      const { Customer } = await import('../models/Customer');
+      const matchedCust = await Customer.findOne({ name: { $regex: new RegExp(`^${escapeRegex(String(customerName).trim())}$`, 'i') } });
+      if (matchedCust?.mobile) {
+        finalPhone = matchedCust.mobile.trim();
+      }
+    }
+
+    const cleanPreparedBy = preparedBy && preparedBy !== 'S.Nagaraj' && preparedBy !== 'Nagaraj' ? String(preparedBy).trim() : '';
 
     let finalBillNo = billNo ? String(billNo).trim() : '';
     if (!finalBillNo) {
@@ -201,6 +229,8 @@ export const createParticular = async (req: Request, res: Response, next: NextFu
 
     const particular = await Particular.create({
       customerName: customerName || 'General',
+      phone: finalPhone,
+      preparedBy: cleanPreparedBy,
       caseCount: caseCount || '0',
       companyName: companyName ? String(companyName).trim() : '',
       discount: discount || '0',

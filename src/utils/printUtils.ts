@@ -121,7 +121,7 @@ export const generateBillHtml = (bill: BillPrintData): string => {
     ? bill.caseCount
     : (bill.products || []).reduce((acc, p) => acc + (parseFloat(String(p.quantity)) || 0), 0);
 
-  const preparedBy = bill.preparedBy || 'S.Nagaraj';
+  const preparedBy = (bill.preparedBy && bill.preparedBy !== 'S.Nagaraj' && bill.preparedBy !== 'Nagaraj') ? bill.preparedBy.trim() : '';
   const transportName = bill.transport && bill.transport.trim() !== '' && bill.transport !== '-' ? bill.transport.trim() : '-';
   const receiptSrc = bill.pdfData || bill.pdfUrl || '';
 
@@ -348,7 +348,7 @@ export const generateBillHtml = (bill: BillPrintData): string => {
   <div class="bill-wrapper">
     <!-- Header -->
     <div class="top-header">
-      <div class="signatory">Prepared By: <b>${preparedBy}</b></div>
+      ${preparedBy ? `<div class="signatory">Prepared By: <b>${preparedBy}</b></div>` : ''}
       <div class="comp-name">GPK Crackers</div>
       <div class="comp-sub">Wholesale & Retail Trading • Sivakasi</div>
       <div><span class="doc-type-badge">ESTIMATE / PARTICULAR BILL</span></div>
@@ -365,7 +365,7 @@ export const generateBillHtml = (bill: BillPrintData): string => {
       <div>
         <div class="meta-row"><span class="meta-label">Date:</span><span class="meta-val">${bill.date || '-'}</span></div>
         <div class="meta-row"><span class="meta-label">Total Cases:</span><span class="meta-val" style="font-size:13.5px; color:#1D4ED8;">${computedCases}</span></div>
-        <div class="meta-row"><span class="meta-label">Phone:</span><span class="meta-val">${bill.phone || '+91 98765 43210'}</span></div>
+        ${bill.phone && bill.phone.trim() && bill.phone !== '+91 98765 43210' ? `<div class="meta-row"><span class="meta-label">Phone:</span><span class="meta-val">${bill.phone.trim()}</span></div>` : ''}
       </div>
     </div>
 
@@ -2007,7 +2007,7 @@ export const generatePerformaHtml = (performa: any): string => {
       </head>
       <body>
         <div style="position: relative; text-align: center; border-bottom: 2px solid #0F172A; padding-bottom: 8px; margin-bottom: 10px;">
-          <div style="position: absolute; right: 0; top: 0; font-size: 12px; font-weight: 700; color: #475569;">Prepared By: <b>${performa.preparedBy || 'S.Nagaraj'}</b></div>
+          ${performa.preparedBy && performa.preparedBy !== 'S.Nagaraj' && performa.preparedBy !== 'Nagaraj' ? `<div style="position: absolute; right: 0; top: 0; font-size: 12px; font-weight: 700; color: #475569;">Prepared By: <b>${performa.preparedBy.trim()}</b></div>` : ''}
           <h1 style="font-size: 26px; font-weight: 900; color: #1D4ED8; margin: 0 0 2px 0; text-transform: uppercase;">GPK Crackers</h1>
           <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase;">Wholesale & Retail Trading • Sivakasi</div>
         </div>
