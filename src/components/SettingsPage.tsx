@@ -229,7 +229,7 @@ export const SettingsPage: FC<SettingsPageProps> = ({ currentUser, onSettingsUpd
           </Box>
           <Box sx={{ flex: 1, minWidth: 240 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap', mb: 0.5 }}>
-              <Typography sx={{ fontSize: '22px', fontWeight: 800, letterSpacing: '-0.02em' }}>
+              <Typography sx={{ fontSize: '22px', fontWeight: 800, letterSpacing: '-0.02em', color: '#FFFFFF' }}>
                 Security & Credentials
               </Typography>
               <Chip
@@ -245,7 +245,7 @@ export const SettingsPage: FC<SettingsPageProps> = ({ currentUser, onSettingsUpd
                 }}
               />
             </Box>
-            <Typography sx={{ fontSize: '13.5px', color: '#94A3B8' }}>
+            <Typography sx={{ fontSize: '13.5px', color: '#FFFFFF', opacity: 0.9 }}>
               Configure and manage Super Admin & Store Admin login usernames and passwords
             </Typography>
           </Box>
