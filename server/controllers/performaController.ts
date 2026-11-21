@@ -59,6 +59,10 @@ export const getPerformas = async (req: Request, res: Response, next: NextFuncti
         { 'products.productSnapshot.productName': searchRegex },
         { 'products.productSnapshot.productCode': searchRegex },
         { 'products.productSnapshot.companyName': searchRegex },
+        { 'products.productName': searchRegex },
+        { 'products.productCode': searchRegex },
+        { notes: searchRegex },
+        { date: searchRegex },
       ];
       if (filter.$or) {
         filter.$and = [{ $or: filter.$or }, { $or: searchConditions }];
