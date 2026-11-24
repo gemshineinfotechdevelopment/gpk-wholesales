@@ -3502,7 +3502,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '11.5px', fontWeight: 700, color: '#B45309', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '115px' }}>
                     PENDING CASES
                   </TableCell>
-                  <TableCell align="right" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '100px' }}>
+                  {/* SUBTOTAL, DISCOUNT, PACKING, TAX commented out */}
+                  {/* <TableCell align="right" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '100px' }}>
                     SUBTOTAL
                   </TableCell>
                   <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '80px' }}>
@@ -3513,7 +3514,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   </TableCell>
                   <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '75px' }}>
                     TAX
-                  </TableCell>
+                  </TableCell> */}
                   <TableCell align="right" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '110px' }}>
                     NET TOTAL
                   </TableCell>
@@ -3528,13 +3529,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
               <TableBody>
                 {particularLoading ? (
                   <TableRow>
-                    <TableCell colSpan={isSingleCustomer ? 13 : 14} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={isSingleCustomer ? 9 : 10} align="center" sx={{ py: 6 }}>
                       <CircularProgress size={32} sx={{ color: '#1D4ED8' }} />
                     </TableCell>
                   </TableRow>
                 ) : filteredParticularRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isSingleCustomer ? 13 : 14} align="center" sx={{ py: 6, color: '#64748B' }}>
+                    <TableCell colSpan={isSingleCustomer ? 9 : 10} align="center" sx={{ py: 6, color: '#64748B' }}>
                       No particular bills found {filterCustomer !== 'ALL' ? `for ${filterCustomer}` : ''}{filterParticularCompany !== 'ALL' ? ` under ${filterParticularCompany}` : ''}.
                     </TableCell>
                   </TableRow>
@@ -3542,11 +3543,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   filteredParticularRows.map((row, index) => {
                     const isLast = index === filteredParticularRows.length - 1;
                     const rowId = row._id || row.id || '';
-                    const subtotalNum = parseFloat(String(row.amount || row.total || '0').replace(/,/g, '')) || 0;
+                    // const subtotalNum = parseFloat(String(row.amount || row.total || '0').replace(/,/g, '')) || 0;
                     const totalNum = parseFloat(String(row.total || row.amount || '0').replace(/,/g, '')) || 0;
-                    const discStr = row.discount && parseFloat(row.discount) > 0 ? (parseFloat(row.discount) <= 100 ? `${row.discount}%` : `₹${row.discount}`) : '-';
-                    const packStr = row.packing && parseFloat(row.packing) > 0 ? (parseFloat(row.packing) <= 100 ? `${row.packing}%` : `₹${row.packing}`) : '-';
-                    const taxStr = row.tax && parseFloat(row.tax) > 0 ? `₹${parseFloat(row.tax).toLocaleString('en-IN')}` : '-';
+                    // const discStr = row.discount && parseFloat(row.discount) > 0 ? (parseFloat(row.discount) <= 100 ? `${row.discount}%` : `₹${row.discount}`) : '-';
+                    // const packStr = row.packing && parseFloat(row.packing) > 0 ? (parseFloat(row.packing) <= 100 ? `${row.packing}%` : `₹${row.packing}`) : '-';
+                    // const taxStr = row.tax && parseFloat(row.tax) > 0 ? `₹${parseFloat(row.tax).toLocaleString('en-IN')}` : '-';
                     const totalCustCasesVal = Number(row.totalCustomerCases) || 0;
                     const outCasesVal = Number(row.caseCount) || (row.products ? row.products.reduce((acc: number, p: any) => acc + (parseFloat(p.quantity) || 0), 0) : 0);
                     const totalOutVal = Number(row.deliveredCaseCount) || outCasesVal;
@@ -3648,7 +3649,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                             </Tooltip>
                           )}
                         </TableCell>
-                        <TableCell align="right" sx={{ py: 1.4, px: 1.5, fontSize: '13px', fontWeight: 600, color: '#475569', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
+                        {/* SUBTOTAL, DISCOUNT, PACKING, TAX commented out */}
+                        {/* <TableCell align="right" sx={{ py: 1.4, px: 1.5, fontSize: '13px', fontWeight: 600, color: '#475569', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           ₹{subtotalNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </TableCell>
                         <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '12.5px', fontWeight: 600, color: discStr !== '-' ? '#DC2626' : '#94A3B8', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
@@ -3659,7 +3661,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                         </TableCell>
                         <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '12.5px', fontWeight: 600, color: taxStr !== '-' ? '#0F172A' : '#94A3B8', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           {taxStr}
-                        </TableCell>
+                        </TableCell> */}
                         <TableCell align="right" sx={{ py: 1.4, px: 1.5, fontSize: '13.5px', fontWeight: 800, color: '#0F172A', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           ₹{totalNum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                         </TableCell>
