@@ -22,6 +22,7 @@ export interface IPerformaAudit extends Document {
   type: PerformaAuditType;
   date: string;
   paymentMode?: string;
+  depositAccount?: string;
   reference?: string;
   notes?: string;
   createdBy?: string;
@@ -70,6 +71,7 @@ const PerformaAuditSchema: Schema = new Schema(
     },
     date: { type: String, required: true },
     paymentMode: { type: String, trim: true, default: 'Bank' },
+    depositAccount: { type: String, trim: true, default: '' },
     reference: { type: String, trim: true, default: '' },
     notes: { type: String, trim: true, default: '' },
     createdBy: { type: String, trim: true, default: 'Admin' },

@@ -33,7 +33,7 @@ export const addCredit = async (req: Request, res: Response, next: NextFunction)
       res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to add credits.' });
       return;
     }
-    const { customerName, companyName, creditAmount, date, paymentMode, reference, notes } = req.body;
+    const { customerName, companyName, creditAmount, date, paymentMode, depositAccount, reference, notes } = req.body;
 
     const parsedCredit = parseFloat(String(creditAmount).replace(/,/g, '')) || 0;
     if (parsedCredit <= 0) {
@@ -42,6 +42,8 @@ export const addCredit = async (req: Request, res: Response, next: NextFunction)
     }
 
     const finalCustomerName = (customerName || 'General').trim();
+    const finalPaymentMode = paymentMode && String(paymentMode).trim() ? String(paymentMode).trim() : 'Bank';
+    const finalDepositAccount = depositAccount && String(depositAccount).trim() ? String(depositAccount).trim() : 'GPK Main Current A/C';
 
     const ledgerEntry = await AccountLedger.create({
       billNo: reference ? String(reference).trim() : '',
@@ -51,9 +53,10 @@ export const addCredit = async (req: Request, res: Response, next: NextFunction)
       debit: '0.00',
       credit: parsedCredit.toFixed(2),
       balance: '0.00',
-      paymentMode: paymentMode || 'Bank',
+      paymentMode: finalPaymentMode,
+      depositAccount: finalDepositAccount,
       reference: reference ? String(reference).trim() : '',
-      notes: notes || 'Payment / Credit received',
+      notes: notes || `Payment received via ${finalPaymentMode} deposited to ${finalDepositAccount}`,
       type: 'CREDIT',
     });
 

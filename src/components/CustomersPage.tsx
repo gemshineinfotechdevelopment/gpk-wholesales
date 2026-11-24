@@ -21,6 +21,9 @@ import {
   TextField,
   Chip,
   Autocomplete,
+  Select,
+  MenuItem,
+  FormControl,
 } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
@@ -29,7 +32,7 @@ import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded';
 import PaymentsRoundedIcon from '@mui/icons-material/PaymentsRounded';
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
-import { CustomersApi, AccountsApi, CompaniesApi } from '../services/api';
+import { CustomersApi, AccountsApi } from '../services/api';
 import { printCustomerListDirectly } from '../utils/printUtils';
 import { DateRangePrintModal } from './DateRangePrintModal';
 import { DatePickerField } from './DatePickerField';
@@ -86,10 +89,10 @@ export const CustomersPage: FC<CustomersPageProps> = ({
   const [openPaymentModal, setOpenPaymentModal] = useState(false);
   const [openDatePrintModal, setOpenDatePrintModal] = useState(false);
   const [paymentCustomer, setPaymentCustomer] = useState<Customer | null>(null);
-  const [companies, setCompanies] = useState<any[]>([]);
   const [paymentForm, setPaymentForm] = useState({
-    companyName: '',
     creditAmount: '',
+    paymentMode: 'Bank Transfer',
+    depositAccount: 'GPK Main Current A/C',
     date: new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
   });
   const [paymentLoading, setPaymentLoading] = useState(false);
@@ -106,21 +109,8 @@ export const CustomersPage: FC<CustomersPageProps> = ({
     }
   };
 
-  const fetchCompanies = async () => {
-    try {
-      const data = await CompaniesApi.getAll();
-      setCompanies(data || []);
-      if (data && data.length > 0 && !paymentForm.companyName) {
-        setPaymentForm((prev) => ({ ...prev, companyName: data[0].name }));
-      }
-    } catch (err) {
-      console.error('Failed to fetch companies:', err);
-    }
-  };
-
   useEffect(() => {
     fetchCustomers();
-    fetchCompanies();
   }, []);
 
   const handleOpenEdit = (customer: Customer) => {
@@ -188,8 +178,9 @@ export const CustomersPage: FC<CustomersPageProps> = ({
     setPaymentCustomer(customer);
     const due = customer.pendingDue || 0;
     setPaymentForm({
-      companyName: companies.length > 0 ? companies[0].name : 'General',
       creditAmount: due > 0 ? String(due) : '',
+      paymentMode: 'Bank Transfer',
+      depositAccount: 'GPK Main Current A/C',
       date: new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
     });
     setOpenPaymentModal(true);
@@ -207,7 +198,8 @@ export const CustomersPage: FC<CustomersPageProps> = ({
       setPaymentLoading(true);
       await AccountsApi.addCredit({
         customerName: paymentCustomer.name,
-        companyName: paymentForm.companyName || 'General',
+        paymentMode: paymentForm.paymentMode || 'Bank Transfer',
+        depositAccount: paymentForm.depositAccount || 'GPK Main Current A/C',
         creditAmount: amountNum.toFixed(2),
         date: paymentForm.date || new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
       });
@@ -930,22 +922,84 @@ export const CustomersPage: FC<CustomersPageProps> = ({
 
             <Box>
               <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                Company / Account
+                Payment Type
+              </Typography>
+              <FormControl fullWidth size="small">
+                <Select
+                  value={paymentForm.paymentMode}
+                  onChange={(e) => setPaymentForm({ ...paymentForm, paymentMode: e.target.value })}
+                  sx={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '6px',
+                    fontSize: '13.5px',
+                    fontWeight: 600,
+                    color: '#0F172A',
+                    '& .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#CBD5E1',
+                    },
+                    '&:hover .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#94A3B8',
+                    },
+                    '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                      borderColor: '#1D4ED8',
+                      borderWidth: '1.5px',
+                    },
+                  }}
+                >
+                  <MenuItem value="Bank Transfer">Bank Transfer (NEFT / RTGS / IMPS)</MenuItem>
+                  <MenuItem value="GPay / PhonePe / UPI">GPay / PhonePe / UPI</MenuItem>
+                  <MenuItem value="Cash">Cash Counter / In Hand</MenuItem>
+                  <MenuItem value="Cheque">Cheque</MenuItem>
+                  <MenuItem value="Net Banking">Net Banking</MenuItem>
+                </Select>
+              </FormControl>
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
+                Deposit Account
               </Typography>
               <Autocomplete
+                freeSolo
                 fullWidth
                 size="small"
-                autoHighlight
-                options={companies.length > 0 ? companies.map((c) => c.name) : ['General']}
-                value={paymentForm.companyName || null}
-                onChange={(_, val) => setPaymentForm({ ...paymentForm, companyName: val || '' })}
+                options={[
+                  'GPK Main Current A/C',
+                  'Cash Counter / In Hand',
+                  'SBI Current A/C',
+                  'HDFC Bank A/C',
+                  'ICICI Bank A/C',
+                  'GPay / UPI A/C',
+                ]}
+                value={paymentForm.depositAccount}
+                onInputChange={(_, newInputValue) => {
+                  setPaymentForm({ ...paymentForm, depositAccount: newInputValue });
+                }}
+                onChange={(_, val) => {
+                  setPaymentForm({ ...paymentForm, depositAccount: val || '' });
+                }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    placeholder="Select company..."
+                    placeholder="Select or enter deposit bank account..."
                     sx={{
                       backgroundColor: '#FFFFFF',
                       borderRadius: '6px',
+                      '& .MuiOutlinedInput-root': {
+                        fontSize: '13.5px',
+                        fontWeight: 500,
+                        borderRadius: '6px',
+                        '& fieldset': {
+                          borderColor: '#CBD5E1',
+                        },
+                        '&:hover fieldset': {
+                          borderColor: '#94A3B8',
+                        },
+                        '&.Mui-focused fieldset': {
+                          borderColor: '#1D4ED8',
+                          borderWidth: '1.5px',
+                        },
+                      },
                     }}
                   />
                 )}

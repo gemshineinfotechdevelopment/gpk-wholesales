@@ -979,11 +979,12 @@ export const generateLedgerStatementHtml = (
         <tr class="data-row" style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
           <td class="text-center" style="width:30px;">${globalIdx + 1}</td>
           <td class="text-center" style="width:75px; color:#334155;">${entry.date || '-'}</td>
-          <td style="font-weight:700; color:#0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${desc}</td>
-          <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 155px;">${entry.companyName || '-'}</td>
-          <td class="text-right" style="width:105px; color:#1E293B; font-weight:700;">${deb > 0 ? `₹ ${deb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
-          <td class="text-right" style="width:105px; color:#16A34A; font-weight:700;">${cred > 0 ? `₹ ${cred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
-          <td class="text-right" style="width:110px; font-weight:800; color:#1D4ED8;">₹ ${entry.balance || '0.00'}</td>
+          <td style="font-weight:700; color:#0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;">${desc}</td>
+          <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;">${entry.type === 'BILL' ? 'Bill Debit' : (entry.paymentMode || 'Credit')}</td>
+          <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 135px;">${entry.type === 'BILL' ? '-' : (entry.depositAccount || 'GPK Main Current A/C')}</td>
+          <td class="text-right" style="width:100px; color:#1E293B; font-weight:700;">${deb > 0 ? `₹ ${deb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
+          <td class="text-right" style="width:100px; color:#16A34A; font-weight:700;">${cred > 0 ? `₹ ${cred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
+          <td class="text-right" style="width:105px; font-weight:800; color:#1D4ED8;">₹ ${entry.balance || '0.00'}</td>
         </tr>
       `;
     }).join('');
@@ -1047,20 +1048,21 @@ export const generateLedgerStatementHtml = (
             <tr>
               <th class="text-center" style="width:30px;">#</th>
               <th class="text-center" style="width:75px;">Date</th>
-              <th style="width:150px;">Particulars / Description</th>
-              <th style="width:155px;">Company Name</th>
-              <th class="text-right" style="width:105px;">Debit (Dr)</th>
-              <th class="text-right" style="width:105px;">Credit (Cr)</th>
-              <th class="text-right" style="width:110px;">Balance (₹)</th>
+              <th style="width:130px;">Particulars</th>
+              <th style="width:110px;">Payment Type</th>
+              <th style="width:135px;">Deposit Account</th>
+              <th class="text-right" style="width:100px;">Debit (Dr)</th>
+              <th class="text-right" style="width:100px;">Credit (Cr)</th>
+              <th class="text-right" style="width:105px;">Balance (₹)</th>
             </tr>
           </thead>
           <tbody>
-            ${pageRowsHtml || '<tr><td colspan="7" class="text-center" style="padding:18px; color:#64748B;">No transaction entries found for the selected period.</td></tr>'}
+            ${pageRowsHtml || '<tr><td colspan="8" class="text-center" style="padding:18px; color:#64748B;">No transaction entries found for the selected period.</td></tr>'}
           </tbody>
           <tfoot>
             <!-- Page Total Row (Bottom of EVERY page) -->
             <tr class="page-total-row">
-              <td colspan="4" class="text-right" style="padding-right:8px;">PAGE ${pageIdx + 1} TOTAL (${pageEntries.length} Records):</td>
+              <td colspan="5" class="text-right" style="padding-right:8px;">PAGE ${pageIdx + 1} TOTAL (${pageEntries.length} Records):</td>
               <td class="text-right">₹ ${pageDeb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               <td class="text-right">₹ ${pageCred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               <td class="text-right">
@@ -1073,7 +1075,7 @@ export const generateLedgerStatementHtml = (
               isFinalPage
                 ? `
             <tr class="grand-total-row">
-              <td colspan="4" class="text-right" style="padding-right:8px;">OVERALL GRAND TOTALS (${ledgerEntries.length} Records):</td>
+              <td colspan="5" class="text-right" style="padding-right:8px;">OVERALL GRAND TOTALS (${ledgerEntries.length} Records):</td>
               <td class="text-right">₹ ${totalDeb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               <td class="text-right">₹ ${totalCred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               <td class="text-right">

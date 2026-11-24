@@ -148,6 +148,7 @@ export const addCustomerCreditToMasterPerforma = async (params: {
   creditAmount: number | string;
   date?: string;
   paymentMode?: string;
+  depositAccount?: string;
   reference?: string;
   notes?: string;
   createdBy?: string;
@@ -159,6 +160,7 @@ export const addCustomerCreditToMasterPerforma = async (params: {
     creditAmount,
     date = new Date().toISOString().split('T')[0],
     paymentMode = 'Bank',
+    depositAccount = 'GPK Main Current A/C',
     reference = '',
     notes = 'Additional customer advance via Add Credit',
     createdBy = 'Admin',
@@ -214,6 +216,7 @@ export const addCustomerCreditToMasterPerforma = async (params: {
     type: 'ADVANCE_RECEIVED',
     date,
     paymentMode,
+    depositAccount,
     reference: reference || (masterPerforma ? `Credit for ${masterPerforma.performaNumber}` : 'Customer Credit'),
     notes,
     createdBy,
@@ -231,6 +234,7 @@ export const addCustomerCreditToMasterPerforma = async (params: {
     credit: parsedCredit.toFixed(2),
     balance: '0.00',
     paymentMode,
+    depositAccount,
     reference: reference || (masterPerforma ? `Credit for ${masterPerforma.performaNumber}` : ''),
     notes,
     type: 'CREDIT',

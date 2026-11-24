@@ -22,6 +22,9 @@ import {
   DialogActions,
   Snackbar,
   Alert,
+  FormControl,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
@@ -257,9 +260,9 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
 
   // Subtab 5: Add Credit Form State
   const [addCreditCustomerName, setAddCreditCustomerName] = useState<string>('');
-  const [addCreditCompanyName, setAddCreditCompanyName] = useState<string>('');
+  const [creditPaymentMode, setCreditPaymentMode] = useState<string>('Bank Transfer');
+  const [creditDepositAccount, setCreditDepositAccount] = useState<string>('GPK Main Current A/C');
   const [creditAmount, setCreditAmount] = useState<string>('');
-  const [creditNotes, setCreditNotes] = useState<string>('Additional customer advance');
   const [creditDate, setCreditDate] = useState<string>(() => {
     const today = new Date();
     return today.toLocaleDateString('en-GB').replace(/\//g, '-');
@@ -1006,17 +1009,16 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       setCreditLoading(true);
       const res = await AccountsApi.addCredit({
         customerName: targetCust,
-        companyName: addCreditCompanyName ? addCreditCompanyName.trim() : '',
         creditAmount: creditAmount.trim(),
         date: creditDate,
-        paymentMode: 'Bank',
+        paymentMode: creditPaymentMode || 'Bank Transfer',
+        depositAccount: creditDepositAccount ? creditDepositAccount.trim() : 'GPK Main Current A/C',
         reference: '',
-        notes: creditNotes.trim(),
+        notes: `Payment via ${creditPaymentMode || 'Bank Transfer'} deposited to ${creditDepositAccount || 'GPK Main Current A/C'}`,
       });
 
       alert(res?.message || 'Credit added successfully!');
       setCreditAmount('');
-      setCreditNotes('Additional customer payment');
       
       // Refresh all financial states
       fetchAccounts(filterCustomer);
@@ -3050,8 +3052,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                         CUSTOMER
                       </TableCell>
                     )}
-                    <TableCell sx={{ py: 1.5, px: { xs: 2, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B' }}>
-                      COMPANY NAME
+                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '140px' }}>
+                      PAYMENT TYPE
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '170px' }}>
+                      DEPOSIT ACCOUNT
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '110px' }}>
                       DEBIT
@@ -3072,13 +3077,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 <TableBody>
                   {accountLoading ? (
                     <TableRow>
-                      <TableCell colSpan={8 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6 }}>
+                      <TableCell colSpan={9 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6 }}>
                         <CircularProgress size={32} sx={{ color: '#1D4ED8' }} />
                       </TableCell>
                     </TableRow>
                   ) : accountDetails.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6, color: '#64748B' }}>
+                      <TableCell colSpan={9 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6, color: '#64748B' }}>
                         No account details found {filterCustomer && filterCustomer !== 'ALL' ? `for ${filterCustomer}` : ''}.
                       </TableCell>
                     </TableRow>
@@ -3106,8 +3111,37 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                               {row.customerName}
                             </TableCell>
                           )}
-                          <TableCell sx={{ py: 1.6, px: { xs: 2, sm: 2.5 }, fontSize: '13.5px', fontWeight: 600, color: '#0F172A', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
-                            {row.companyName && row.companyName !== 'General' ? row.companyName : '-'}
+                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            {row.type === 'BILL' ? (
+                              <Chip
+                                label="Bill Debit"
+                                size="small"
+                                sx={{
+                                  height: 22,
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  backgroundColor: '#FEE2E2',
+                                  color: '#DC2626',
+                                  borderRadius: '4px',
+                                }}
+                              />
+                            ) : (
+                              <Chip
+                                label={row.paymentMode || 'Credit Received'}
+                                size="small"
+                                sx={{
+                                  height: 22,
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  backgroundColor: '#EFF6FF',
+                                  color: '#1D4ED8',
+                                  borderRadius: '4px',
+                                }}
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 600, color: '#334155', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            {row.type === 'BILL' ? '-' : (row.depositAccount || 'GPK Main Current A/C')}
                           </TableCell>
                           <TableCell align="right" sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 500, color: '#DC2626', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.debit}
@@ -3873,7 +3907,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 />
               </Box>
 
-              {/* Company Name */}
+              {/* Payment Type */}
               <Box
                 sx={{
                   display: 'flex',
@@ -3891,21 +3925,83 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     textAlign: { sm: 'right' },
                   }}
                 >
-                  Company Name
+                  Payment Type
+                </Typography>
+                <FormControl fullWidth size="small">
+                  <Select
+                    value={creditPaymentMode}
+                    onChange={(e: any) => setCreditPaymentMode(e.target.value)}
+                    sx={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '6px',
+                      height: '42px',
+                      fontSize: '13.5px',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#CBD5E1',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#94A3B8',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#1D4ED8',
+                        borderWidth: '1.5px',
+                      },
+                    }}
+                  >
+                    <MenuItem value="Bank Transfer">Bank Transfer (NEFT / RTGS / IMPS)</MenuItem>
+                    <MenuItem value="GPay / PhonePe / UPI">GPay / PhonePe / UPI</MenuItem>
+                    <MenuItem value="Cash">Cash Counter / In Hand</MenuItem>
+                    <MenuItem value="Cheque">Cheque</MenuItem>
+                    <MenuItem value="Net Banking">Net Banking</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+
+              {/* Deposit Account */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  gap: { xs: 1, sm: 3.5 },
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#0F172A',
+                    minWidth: '150px',
+                    textAlign: { sm: 'right' },
+                  }}
+                >
+                  Deposit Account
                 </Typography>
                 <Autocomplete
+                  freeSolo
                   fullWidth
                   size="small"
-                  autoHighlight
-                  options={companyOptions}
-                  getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
-                  isOptionEqualToValue={(option, val) => option.id === val.id || option.name === val.name}
-                  value={companyOptions.find((c) => c.name === addCreditCompanyName) || null}
-                  onChange={(_, val) => setAddCreditCompanyName(val ? val.name : '')}
+                  options={[
+                    'GPK Main Current A/C',
+                    'Cash Counter / In Hand',
+                    'SBI Current A/C',
+                    'HDFC Bank A/C',
+                    'ICICI Bank A/C',
+                    'GPay / UPI A/C',
+                  ]}
+                  value={creditDepositAccount}
+                  onInputChange={(_, newInputValue) => {
+                    setCreditDepositAccount(newInputValue);
+                  }}
+                  onChange={(_, val) => {
+                    setCreditDepositAccount(val || '');
+                  }}
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      placeholder="Search Company..."
+                      placeholder="Select or enter deposit bank account..."
                       sx={{
                         backgroundColor: '#FFFFFF',
                         borderRadius: '6px',
@@ -4024,44 +4120,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 />
               </Box>
 
-              {/* Notes */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  alignItems: { xs: 'flex-start', sm: 'center' },
-                  gap: { xs: 1, sm: 3.5 },
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#0F172A',
-                    minWidth: '150px',
-                    textAlign: { sm: 'right' },
-                  }}
-                >
-                  Notes
-                </Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Notes / Remarks"
-                  value={creditNotes}
-                  onChange={(e) => setCreditNotes(e.target.value)}
-                  slotProps={{
-                    input: {
-                      sx: {
-                        fontSize: '13.5px',
-                        height: '42px',
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '6px',
-                      },
-                    },
-                  }}
-                />
-              </Box>
 
               {/* Action Button */}
               <Box
