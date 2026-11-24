@@ -22,6 +22,10 @@ import {
   DialogActions,
   Snackbar,
   Alert,
+  FormControl,
+  Select,
+  MenuItem,
+  Menu,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
@@ -37,6 +41,7 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 import {
   CustomersApi,
   CompaniesApi,
@@ -168,6 +173,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   // Customer Active Performa Summary State
   const [performaSummary, setPerformaSummary] = useState<any | null>(null);
   const [_loadingPerforma, setLoadingPerforma] = useState<boolean>(false);
+  const [quotationMenuAnchor, setQuotationMenuAnchor] = useState<null | HTMLElement>(null);
+  const quotationMenuOpen = Boolean(quotationMenuAnchor);
 
   // Warning Dialog State for Additional Product / Exceeded Cases
   const [warningDialog, setWarningDialog] = useState<{
@@ -258,9 +265,9 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
 
   // Subtab 5: Add Credit Form State
   const [addCreditCustomerName, setAddCreditCustomerName] = useState<string>('');
-  const [addCreditCompanyName, setAddCreditCompanyName] = useState<string>('');
+  const [creditPaymentMode, setCreditPaymentMode] = useState<string>('Bank Transfer');
+  const [creditDepositAccount, setCreditDepositAccount] = useState<string>('');
   const [creditAmount, setCreditAmount] = useState<string>('');
-  const [creditNotes, setCreditNotes] = useState<string>('Additional customer advance');
   const [creditDate, setCreditDate] = useState<string>(() => {
     const today = new Date();
     return today.toLocaleDateString('en-GB').replace(/\//g, '-');
@@ -1015,17 +1022,17 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       setCreditLoading(true);
       const res = await AccountsApi.addCredit({
         customerName: targetCust,
-        companyName: addCreditCompanyName ? addCreditCompanyName.trim() : '',
         creditAmount: creditAmount.trim(),
         date: creditDate,
-        paymentMode: 'Bank',
+        paymentMode: creditPaymentMode || 'Bank Transfer',
+        depositAccount: creditDepositAccount ? creditDepositAccount.trim() : '-',
         reference: '',
-        notes: creditNotes.trim(),
+        notes: `Payment via ${creditPaymentMode || 'Bank Transfer'}${creditDepositAccount ? ` deposited to A/C: ${creditDepositAccount.trim()}` : ''}`,
       });
 
       alert(res?.message || 'Credit added successfully!');
       setCreditAmount('');
-      setCreditNotes('Additional customer payment');
+      setCreditDepositAccount('');
       
       // Refresh all financial states
       fetchAccounts(filterCustomer);
@@ -2060,96 +2067,186 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 justifyContent: 'space-between',
               }}
             >
-              <Typography
-                sx={{
-                  color: '#FFFFFF',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  letterSpacing: '-0.01em',
-                }}
-              >
-                Product Entry
-              </Typography>
-            </Box>
-
-            {/* Quick Pick Performa Products Bar */}
-            {performaSummary?.masterPerforma && performaSummary.masterPerforma.products && (
-              <Box
-                sx={{
-                  backgroundColor: '#F8FAFC',
-                  borderBottom: '1px solid #E2E8F0',
-                  px: 2,
-                  py: 1.2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: 1,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', flex: 1 }}>
-                  <Typography
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography
+                  sx={{
+                    color: '#FFFFFF',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  Product Entry
+                </Typography>
+                {performaSummary?.masterPerforma && (
+                  <Chip
+                    label={`Performa ${performaSummary.masterPerforma.performaNumber ? `#${performaSummary.masterPerforma.performaNumber}` : ''}`}
+                    size="small"
                     sx={{
-                      fontSize: '11.5px',
-                      fontWeight: 700,
-                      color: '#475569',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      color: '#FFFFFF',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      height: 22,
                     }}
-                  >
-                    <Inventory2RoundedIcon sx={{ fontSize: 16, color: '#1D4ED8' }} />
-                    Quotation Items:
-                  </Typography>
-                  {performaSummary.masterPerforma.products.map((p: any, idx: number) => {
-                    const isFulfilled = (p.remainingCases || 0) <= 0;
-                    return (
-                      <Chip
-                        key={idx}
-                        size="small"
-                        clickable={!isFulfilled}
-                        onClick={() => !isFulfilled && handleQuickSelectPerformaProduct(p)}
-                        label={
-                          p.performaNumber
-                            ? `${p.productName} (${p.remainingCases || 0} rem @ ₹${p.rate}) • ${p.performaNumber}`
-                            : `${p.productName} (${p.remainingCases || 0} rem @ ₹${p.rate})`
-                        }
-                        sx={{
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          backgroundColor: isFulfilled ? '#F1F5F9' : '#F0F9FF',
-                          color: isFulfilled ? '#94A3B8' : '#1D4ED8',
-                          border: isFulfilled ? '1px dashed #CBD5E1' : '1px solid #BFDBFE',
-                          cursor: isFulfilled ? 'default' : 'pointer',
-                          '&:hover': isFulfilled ? {} : { backgroundColor: '#BAE6FD' },
-                        }}
-                      />
-                    );
-                  })}
-                </Box>
+                  />
+                )}
+              </Box>
+
+              {/* Quotation Items Dropdown Button */}
+              {performaSummary?.masterPerforma?.products && performaSummary.masterPerforma.products.length > 0 && (
                 <Button
                   size="small"
-                  variant="outlined"
-                  onClick={handleImportAllPerformaProducts}
-                  startIcon={<AddRoundedIcon sx={{ fontSize: 16 }} />}
+                  onClick={(e) => setQuotationMenuAnchor(e.currentTarget)}
+                  startIcon={<Inventory2RoundedIcon sx={{ fontSize: 16 }} />}
+                  endIcon={<KeyboardArrowDownRoundedIcon sx={{ fontSize: 18 }} />}
                   sx={{
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    borderColor: '#1D4ED8',
+                    backgroundColor: '#FFFFFF',
                     color: '#1D4ED8',
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    textTransform: 'none',
                     borderRadius: '6px',
+                    px: 1.5,
                     py: 0.4,
-                    px: 1.2,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
                     '&:hover': {
-                      backgroundColor: '#F0F9FF',
-                      borderColor: '#172554',
+                      backgroundColor: '#F8FAFC',
                     },
                   }}
                 >
-                  Import All Remaining
+                  Quotation Items ({performaSummary.masterPerforma.products.filter((p: any) => (p.remainingCases || 0) > 0).length} Rem)
                 </Button>
-              </Box>
+              )}
+            </Box>
+
+            {/* Quotation Items Dropdown Menu */}
+            {performaSummary?.masterPerforma?.products && (
+              <Menu
+                anchorEl={quotationMenuAnchor}
+                open={quotationMenuOpen}
+                onClose={() => setQuotationMenuAnchor(null)}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      width: { xs: 320, sm: 420 },
+                      maxHeight: 460,
+                      borderRadius: '10px',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                      border: '1px solid #E2E8F0',
+                      p: 0,
+                    },
+                  },
+                }}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              >
+                <Box
+                  sx={{
+                    p: 1.5,
+                    pb: 1,
+                    backgroundColor: '#F8FAFC',
+                    borderBottom: '1px solid #E2E8F0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Box>
+                    <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+                      Quotation Items
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
+                      Click any item to load into entry form
+                    </Typography>
+                  </Box>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => {
+                      handleImportAllPerformaProducts();
+                      setQuotationMenuAnchor(null);
+                    }}
+                    startIcon={<AddRoundedIcon sx={{ fontSize: 14 }} />}
+                    sx={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      py: 0.3,
+                      px: 1,
+                      borderRadius: '5px',
+                    }}
+                  >
+                    Import All
+                  </Button>
+                </Box>
+
+                <Box sx={{ py: 0.5, maxHeight: 360, overflowY: 'auto' }}>
+                  {performaSummary.masterPerforma.products.map((p: any, idx: number) => {
+                    const remaining = p.remainingCases || 0;
+                    const isFulfilled = remaining <= 0;
+                    return (
+                      <MenuItem
+                        key={idx}
+                        disabled={isFulfilled}
+                        onClick={() => {
+                          handleQuickSelectPerformaProduct(p);
+                          setQuotationMenuAnchor(null);
+                        }}
+                        sx={{
+                          py: 1,
+                          px: 1.8,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          borderBottom: '1px solid #F1F5F9',
+                          '&:hover': {
+                            backgroundColor: '#EFF6FF',
+                          },
+                        }}
+                      >
+                        <Box sx={{ flex: 1, mr: 1 }}>
+                          <Typography sx={{ fontSize: '13px', fontWeight: 600, color: isFulfilled ? '#94A3B8' : '#0F172A' }}>
+                            {p.productName}
+                          </Typography>
+                          <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
+                            ₹{p.rate} / pkt • {p.pktPerUnit || 1} pkts/case {p.performaNumber ? `• ${p.performaNumber}` : ''}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                          {isFulfilled ? (
+                            <Chip
+                              label="Fulfilled"
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                backgroundColor: '#F1F5F9',
+                                color: '#64748B',
+                                borderRadius: '4px',
+                              }}
+                            />
+                          ) : (
+                            <Chip
+                              label={`${remaining} Rem`}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: '10.5px',
+                                fontWeight: 700,
+                                backgroundColor: '#EFF6FF',
+                                color: '#1D4ED8',
+                                borderRadius: '4px',
+                              }}
+                            />
+                          )}
+                        </Box>
+                      </MenuItem>
+                    );
+                  })}
+                </Box>
+              </Menu>
             )}
 
             <Box
@@ -3072,19 +3169,22 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
               <Table sx={{ width: '100%' }} aria-label="account details table">
                 <TableHead>
                   <TableRow sx={{ backgroundColor: '#F8FAFC' }}>
-                    <TableCell sx={{ py: 1.5, px: { xs: 2, sm: 3 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '60px' }}>
-                      SL.NO
-                    </TableCell>
                     <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '110px' }}>
                       DATE
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5, px: { xs: 2, sm: 3 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '60px' }}>
+                      SL.NO
                     </TableCell>
                     {!isSingleCustomer && (
                       <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '140px' }}>
                         CUSTOMER
                       </TableCell>
                     )}
-                    <TableCell sx={{ py: 1.5, px: { xs: 2, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B' }}>
-                      COMPANY NAME
+                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '140px' }}>
+                      PAYMENT TYPE
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '170px' }}>
+                      DEPOSIT ACCOUNT
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '110px' }}>
                       DEBIT
@@ -3105,13 +3205,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 <TableBody>
                   {accountLoading ? (
                     <TableRow>
-                      <TableCell colSpan={8 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6 }}>
+                      <TableCell colSpan={9 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6 }}>
                         <CircularProgress size={32} sx={{ color: '#1D4ED8' }} />
                       </TableCell>
                     </TableRow>
                   ) : accountDetails.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={8 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6, color: '#64748B' }}>
+                      <TableCell colSpan={9 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6, color: '#64748B' }}>
                         No account details found {filterCustomer && filterCustomer !== 'ALL' ? `for ${filterCustomer}` : ''}.
                       </TableCell>
                     </TableRow>
@@ -3128,19 +3228,48 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                             },
                           }}
                         >
-                          <TableCell sx={{ py: 1.6, px: { xs: 2, sm: 3 }, fontSize: '13.5px', fontWeight: 600, color: '#1E293B', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
-                            {index + 1}
-                          </TableCell>
                           <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 500, color: '#475569', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.date}
+                          </TableCell>
+                          <TableCell sx={{ py: 1.6, px: { xs: 2, sm: 3 }, fontSize: '13.5px', fontWeight: 600, color: '#1E293B', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            {index + 1}
                           </TableCell>
                           {!isSingleCustomer && (
                             <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 700, color: '#1D4ED8', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                               {row.customerName}
                             </TableCell>
                           )}
-                          <TableCell sx={{ py: 1.6, px: { xs: 2, sm: 2.5 }, fontSize: '13.5px', fontWeight: 600, color: '#0F172A', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
-                            {row.companyName && row.companyName !== 'General' ? row.companyName : '-'}
+                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            {row.type === 'BILL' ? (
+                              <Chip
+                                label="Bill Debit"
+                                size="small"
+                                sx={{
+                                  height: 22,
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  backgroundColor: '#FEE2E2',
+                                  color: '#DC2626',
+                                  borderRadius: '4px',
+                                }}
+                              />
+                            ) : (
+                              <Chip
+                                label={row.paymentMode || 'Credit Received'}
+                                size="small"
+                                sx={{
+                                  height: 22,
+                                  fontSize: '11px',
+                                  fontWeight: 700,
+                                  backgroundColor: '#EFF6FF',
+                                  color: '#1D4ED8',
+                                  borderRadius: '4px',
+                                }}
+                              />
+                            )}
+                          </TableCell>
+                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 600, color: '#334155', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            {row.type === 'BILL' ? '-' : (row.depositAccount || '-')}
                           </TableCell>
                           <TableCell align="right" sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 500, color: '#DC2626', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.debit}
@@ -3908,7 +4037,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 />
               </Box>
 
-              {/* Company Name */}
+              {/* Payment Type */}
               <Box
                 sx={{
                   display: 'flex',
@@ -3926,44 +4055,87 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     textAlign: { sm: 'right' },
                   }}
                 >
-                  Company Name
+                  Payment Type
                 </Typography>
-                <Autocomplete
+                <FormControl fullWidth size="small">
+                  <Select
+                    value={creditPaymentMode}
+                    onChange={(e: any) => setCreditPaymentMode(e.target.value)}
+                    sx={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '6px',
+                      height: '42px',
+                      fontSize: '13.5px',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#CBD5E1',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#94A3B8',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#1D4ED8',
+                        borderWidth: '1.5px',
+                      },
+                    }}
+                  >
+                    <MenuItem value="Bank Transfer">Bank Transfer (NEFT / RTGS / IMPS)</MenuItem>
+                    <MenuItem value="GPay / PhonePe / UPI">GPay / PhonePe / UPI</MenuItem>
+                    <MenuItem value="Cash">Cash Counter / In Hand</MenuItem>
+                    <MenuItem value="Cheque">Cheque</MenuItem>
+                    <MenuItem value="Net Banking">Net Banking</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
+
+              {/* Deposit Account */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  gap: { xs: 1, sm: 3.5 },
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#0F172A',
+                    minWidth: '150px',
+                    textAlign: { sm: 'right' },
+                  }}
+                >
+                  Deposit Account
+                </Typography>
+                <TextField
                   fullWidth
                   size="small"
-                  autoHighlight
-                  options={companyOptions}
-                  getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
-                  isOptionEqualToValue={(option, val) => option.id === val.id || option.name === val.name}
-                  value={companyOptions.find((c) => c.name === addCreditCompanyName) || null}
-                  onChange={(_, val) => setAddCreditCompanyName(val ? val.name : '')}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder="Search Company..."
-                      sx={{
+                  placeholder="Enter Account Number (e.g. 1234567890 / Bank A/C)"
+                  value={creditDepositAccount}
+                  onChange={(e) => setCreditDepositAccount(e.target.value)}
+                  slotProps={{
+                    input: {
+                      sx: {
+                        fontSize: '13.5px',
+                        fontWeight: 600,
+                        height: '42px',
                         backgroundColor: '#FFFFFF',
                         borderRadius: '6px',
-                        '& .MuiOutlinedInput-root': {
-                          height: '42px',
-                          borderRadius: '6px',
-                          fontSize: '13.5px',
-                          fontWeight: 500,
-                          color: '#0F172A',
-                          '& fieldset': {
-                            borderColor: '#CBD5E1',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: '#94A3B8',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#1D4ED8',
-                            borderWidth: '1.5px',
-                          },
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#CBD5E1',
                         },
-                      }}
-                    />
-                  )}
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#94A3B8',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#1D4ED8',
+                          borderWidth: '1.5px',
+                        },
+                      },
+                    },
+                  }}
                 />
               </Box>
 
@@ -4059,44 +4231,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 />
               </Box>
 
-              {/* Notes */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  alignItems: { xs: 'flex-start', sm: 'center' },
-                  gap: { xs: 1, sm: 3.5 },
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#0F172A',
-                    minWidth: '150px',
-                    textAlign: { sm: 'right' },
-                  }}
-                >
-                  Notes
-                </Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Notes / Remarks"
-                  value={creditNotes}
-                  onChange={(e) => setCreditNotes(e.target.value)}
-                  slotProps={{
-                    input: {
-                      sx: {
-                        fontSize: '13.5px',
-                        height: '42px',
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '6px',
-                      },
-                    },
-                  }}
-                />
-              </Box>
 
               {/* Action Button */}
               <Box
