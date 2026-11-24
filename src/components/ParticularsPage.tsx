@@ -28,6 +28,7 @@ import {
   Menu,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
+import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import ModeEditOutlineRoundedIcon from '@mui/icons-material/ModeEditOutlineRounded';
@@ -634,6 +635,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     if (comp && !company) {
       setCompany(comp);
     }
+  };
+
+  // Clear product entry input fields
+  const handleClearProductEntry = () => {
+    setSelectedProduct('');
+    setQuantity('');
+    setRate('');
+    setPkt('');
   };
 
   // Subtab 2: Product Line Addition with Performa Validation
@@ -2366,25 +2375,49 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 sx={{ flex: { xs: '1 1 45%', sm: 1.2 } }}
               />
 
-              <Button
-                variant="contained"
-                disableElevation
-                onClick={handleAddProductRow}
-                sx={{
-                  background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
-                  color: '#FFFFFF',
-                  minWidth: '36px',
-                  width: '36px',
-                  height: '36px',
-                  p: 0,
-                  borderRadius: '6px',
-                  '&:hover': {
-                    background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
-                  },
-                }}
-              >
-                <AddRoundedIcon sx={{ fontSize: 20 }} />
-              </Button>
+              <Tooltip title="Add Product" arrow>
+                <Button
+                  variant="contained"
+                  disableElevation
+                  onClick={handleAddProductRow}
+                  sx={{
+                    background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                    color: '#FFFFFF',
+                    minWidth: '36px',
+                    width: '36px',
+                    height: '36px',
+                    p: 0,
+                    borderRadius: '6px',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                    },
+                  }}
+                >
+                  <AddRoundedIcon sx={{ fontSize: 20 }} />
+                </Button>
+              </Tooltip>
+
+              <Tooltip title="Clear Product Entry" arrow>
+                <Button
+                  variant="contained"
+                  disableElevation
+                  onClick={handleClearProductEntry}
+                  sx={{
+                    background: 'linear-gradient(135deg, #DC2626 0%, #EF4444 100%)',
+                    color: '#FFFFFF',
+                    minWidth: '36px',
+                    width: '36px',
+                    height: '36px',
+                    p: 0,
+                    borderRadius: '6px',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #B91C1C 0%, #DC2626 100%)',
+                    },
+                  }}
+                >
+                  <RemoveRoundedIcon sx={{ fontSize: 20 }} />
+                </Button>
+              </Tooltip>
             </Box>
 
             <TableContainer>

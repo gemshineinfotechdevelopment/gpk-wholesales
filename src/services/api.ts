@@ -113,9 +113,15 @@ export const CompaniesApi = {
 
 // Products API
 export const ProductsApi = {
-  getAll: () => request<any[]>('/products'),
+  getAll: (company?: string) =>
+    request<any[]>(`/products${company && company !== 'ALL' ? `?company=${encodeURIComponent(company)}` : ''}`),
   getById: (id: string) => request<any>(`/products/${id}`),
   create: (data: any) => request<any>('/products', { method: 'POST', body: JSON.stringify(data) }),
+  bulkCreate: (data: { company?: string; products: any[] } | any[]) =>
+    request<{ count: number; data: any[] }>('/products/bulk', {
+      method: 'POST',
+      body: JSON.stringify(Array.isArray(data) ? { products: data } : data),
+    }),
   update: (id: string, data: any) => request<any>(`/products/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => request<any>(`/products/${id}`, { method: 'DELETE' }),
 };

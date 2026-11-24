@@ -540,7 +540,7 @@ export const generateCustomerListPrintHtml = (
           <td class="text-center" style="width: 30px;">${globalIdx + 1}</td>
           <td class="text-center" style="width: 55px; font-weight:700; color:#475569;">${idDisplay}</td>
           <td style="font-weight:800; color:#0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${c.name}</td>
-          <td style="color:#475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 195px;">${c.address || '-'}</td>
+          <td style="color:#475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 195px;">${c.address || '-'}${c.state ? `, ${c.state}` : ''}</td>
           <td class="text-right" style="font-weight:700; color:#1E293B; width: 90px;">₹ ${deb}</td>
           <td class="text-right" style="font-weight:700; color:#16A34A; width: 90px;">₹ ${cred}</td>
           <td class="text-right" style="width: 105px;">${balanceHtml}</td>
@@ -1772,6 +1772,7 @@ export const generateCompaniesListPrintHtml = (companies: any[]): string => {
     <tr style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
       <td class="text-center" style="width:40px; border: 1px solid #CBD5E1; padding: 6px;">${idx + 1}</td>
       <td style="font-weight:700; color:#0F172A; border: 1px solid #CBD5E1; padding: 6px 8px;">${c.name}</td>
+      <td style="color:#334155; border: 1px solid #CBD5E1; padding: 6px 8px;">${c.phone || '-'}</td>
       <td style="color:#334155; border: 1px solid #CBD5E1; padding: 6px 8px;">${c.gstin || '-'}</td>
       <td style="color:#475569; border: 1px solid #CBD5E1; padding: 6px 8px;">${c.address || '-'}</td>
     </tr>
@@ -1811,12 +1812,13 @@ export const generateCompaniesListPrintHtml = (companies: any[]): string => {
       <tr>
         <th class="text-center">#</th>
         <th>Company Name</th>
+        <th>Phone</th>
         <th>GSTIN</th>
         <th>Address</th>
       </tr>
     </thead>
     <tbody>
-      ${rowsHtml || '<tr><td colspan="4" class="text-center" style="padding:16px;">No companies found.</td></tr>'}
+      ${rowsHtml || '<tr><td colspan="5" class="text-center" style="padding:16px;">No companies found.</td></tr>'}
     </tbody>
   </table>
 </body>
@@ -1840,8 +1842,10 @@ export const generateProductsListPrintHtml = (products: any[]): string => {
     <tr style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
       <td class="text-center" style="width:40px; border: 1px solid #CBD5E1; padding: 6px;">${idx + 1}</td>
       <td style="font-weight:700; color:#0F172A; border: 1px solid #CBD5E1; padding: 6px 8px;">${p.name}</td>
-      <td class="text-center" style="color:#64748B; border: 1px solid #CBD5E1; padding: 6px;">${p.hsnCode || '-'}</td>
+      <td style="color:#475569; border: 1px solid #CBD5E1; padding: 6px 8px;">${p.company || '-'}</td>
+      <td class="text-center" style="color:#64748B; border: 1px solid #CBD5E1; padding: 6px;">${p.caseCount || '-'}</td>
       <td style="text-align:right; font-weight:700; color:#1D4ED8; border: 1px solid #CBD5E1; padding: 6px 8px;">₹ ${(parseFloat(p.rate) || 0).toFixed(2)}</td>
+      <td class="text-center" style="color:#64748B; border: 1px solid #CBD5E1; padding: 6px;">${p.pktUnit || '1'}</td>
     </tr>
   `;
   }).join('');
@@ -1879,12 +1883,14 @@ export const generateProductsListPrintHtml = (products: any[]): string => {
       <tr>
         <th class="text-center">#</th>
         <th>Product Name</th>
-        <th class="text-center">HSN Code</th>
-        <th style="text-align:right;">Default Rate</th>
+        <th>Company</th>
+        <th class="text-center">Case</th>
+        <th style="text-align:right;">Rate</th>
+        <th class="text-center">Pkts/Unit</th>
       </tr>
     </thead>
     <tbody>
-      ${rowsHtml || '<tr><td colspan="4" class="text-center" style="padding:16px;">No products found.</td></tr>'}
+      ${rowsHtml || '<tr><td colspan="6" class="text-center" style="padding:16px;">No products found.</td></tr>'}
     </tbody>
   </table>
 </body>

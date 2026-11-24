@@ -24,6 +24,7 @@ export const AddCompanyPage: FC<AddCompanyPageProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     companyName: '',
+    phone: '',
     gstNumber: '',
     registeredAddress: '',
   });
@@ -48,6 +49,7 @@ export const AddCompanyPage: FC<AddCompanyPageProps> = ({
       setLoading(true);
       await CompaniesApi.create({
         name: formData.companyName.trim(),
+        phone: formData.phone.trim(),
         gstin: formData.gstNumber.trim() || 'N/A',
         address: formData.registeredAddress.trim(),
         avatarLetter: formData.companyName.trim().charAt(0).toUpperCase(),
@@ -185,8 +187,56 @@ export const AddCompanyPage: FC<AddCompanyPageProps> = ({
               </Box>
             </Box>
 
-            {/* GST Number Field */}
+            {/* Phone Number Field (Optional) */}
             <Box>
+              <Typography
+                sx={{
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  color: '#1E293B',
+                  mb: 1,
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                Phone Number (Optional)
+              </Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '8px',
+                  px: 1.5,
+                  height: '42px',
+                  transition: 'all 0.15s ease',
+                  '&:focus-within': {
+                    borderColor: '#1D4ED8',
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 0 0 3px rgba(37, 99, 235, 0.1)',
+                  },
+                }}
+              >
+                <InputBase
+                  fullWidth
+                  placeholder="e.g. 9876543210"
+                  value={formData.phone}
+                  onChange={handleChange('phone')}
+                  sx={{
+                    fontSize: '13.5px',
+                    fontWeight: 500,
+                    color: '#0F172A',
+                    '& input::placeholder': {
+                      color: '#94A3B8',
+                      opacity: 1,
+                    },
+                  }}
+                />
+              </Box>
+            </Box>
+
+            {/* GST Number Field */}
+            <Box sx={{ gridColumn: { sm: 'span 2' } }}>
               <Typography
                 sx={{
                   fontSize: '13px',

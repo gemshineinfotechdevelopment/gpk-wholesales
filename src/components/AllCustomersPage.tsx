@@ -20,6 +20,7 @@ import {
   DialogActions,
   TextField,
   Chip,
+  Autocomplete,
   Select,
   MenuItem,
   FormControl,
@@ -43,6 +44,7 @@ import { printCustomerListDirectly } from '../utils/printUtils';
 import { shareLedgerOnWhatsApp } from '../utils/whatsappUtils';
 import { DateRangePrintModal } from './DateRangePrintModal';
 import { DatePickerField } from './DatePickerField';
+import { INDIAN_STATES, TAX_ID_TYPES } from '../utils/indianStates';
 
 export interface CustomerFinancial {
   _id?: string;
@@ -53,8 +55,11 @@ export interface CustomerFinancial {
   avatarBg?: string;
   avatarColor?: string;
   address: string;
+  state?: string;
   mobile: string;
   gst: string;
+  taxIdType?: string;
+  taxIdNumber?: string;
   totalDebit?: number;
   totalCredit?: number;
   pendingDue?: number;
@@ -92,7 +97,9 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
   const [editFormData, setEditFormData] = useState({
     name: '',
     mobile: '',
-    gst: '',
+    taxIdType: 'GSTIN' as 'GSTIN' | 'PAN' | 'Aadhaar',
+    taxIdNumber: '',
+    state: '',
     address: '',
   });
   const [editLoading, setEditLoading] = useState(false);
@@ -172,7 +179,9 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
     setEditFormData({
       name: customer.name || '',
       mobile: customer.mobile || '',
-      gst: customer.gst || '',
+      taxIdType: (customer.taxIdType as 'GSTIN' | 'PAN' | 'Aadhaar') || 'GSTIN',
+      taxIdNumber: customer.taxIdNumber || (customer.gst !== 'N/A' ? customer.gst : '') || '',
+      state: customer.state || '',
       address: customer.address || '',
     });
     setOpenEditModal(true);
@@ -190,10 +199,14 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
 
     try {
       setEditLoading(true);
+      const cleanTaxNumber = editFormData.taxIdNumber.trim();
       await CustomersApi.update(id, {
         name: editFormData.name.trim(),
         mobile: editFormData.mobile.trim() || 'N/A',
-        gst: editFormData.gst.trim() || 'N/A',
+        gst: cleanTaxNumber || 'N/A',
+        taxIdType: editFormData.taxIdType || 'GSTIN',
+        taxIdNumber: cleanTaxNumber,
+        state: editFormData.state.trim(),
         address: editFormData.address.trim(),
         avatarLetter: editFormData.name.trim().charAt(0).toUpperCase(),
       });
@@ -1070,11 +1083,11 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
                         }}
                       >
                         <Typography sx={{ fontSize: '13px', color: '#334155', fontWeight: 500, maxWidth: '240px' }}>
-                          {customer.address}
+                          {customer.address}{customer.state ? `, ${customer.state}` : ''}
                         </Typography>
-                        {customer.gst && customer.gst !== 'N/A' && (
+                        {((customer.taxIdNumber && customer.taxIdNumber !== 'N/A') || (customer.gst && customer.gst !== 'N/A')) && (
                           <Typography sx={{ fontSize: '11.5px', color: '#64748B', fontWeight: 600, mt: 0.2 }}>
-                            GSTIN: {customer.gst}
+                            {customer.taxIdType || 'GSTIN'}: {customer.taxIdNumber || customer.gst}
                           </Typography>
                         )}
                       </TableCell>
@@ -1650,16 +1663,64 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
 
             <Box>
               <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                GSTIN
+                Tax / ID Proof Type
+              </Typography>
+              <Select
+                fullWidth
+                size="small"
+                value={editFormData.taxIdType}
+                onChange={(e) =>
+                  setEditFormData({
+                    ...editFormData,
+                    taxIdType: e.target.value as 'GSTIN' | 'PAN' | 'Aadhaar',
+                  })
+                }
+                sx={{ fontSize: '13.5px', fontWeight: 500, borderRadius: '6px' }}
+              >
+                {TAX_ID_TYPES.map((t) => (
+                  <MenuItem key={t.value} value={t.value}>
+                    {t.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
+                {(TAX_ID_TYPES.find((t) => t.value === editFormData.taxIdType) || TAX_ID_TYPES[0]).label} Number
               </Typography>
               <TextField
                 fullWidth
                 size="small"
-                value={editFormData.gst}
-                onChange={(e) => setEditFormData({ ...editFormData, gst: e.target.value })}
+                placeholder={(TAX_ID_TYPES.find((t) => t.value === editFormData.taxIdType) || TAX_ID_TYPES[0]).placeholder}
+                value={editFormData.taxIdNumber}
+                onChange={(e) => setEditFormData({ ...editFormData, taxIdNumber: e.target.value })}
                 slotProps={{
                   input: { sx: { fontSize: '13.5px', fontWeight: 500, borderRadius: '6px' } },
                 }}
+              />
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
+                State
+              </Typography>
+              <Autocomplete
+                fullWidth
+                size="small"
+                autoHighlight
+                options={INDIAN_STATES}
+                value={editFormData.state || null}
+                onChange={(_e, val) => setEditFormData({ ...editFormData, state: val || '' })}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Select or search state..."
+                    slotProps={{
+                      input: { sx: { fontSize: '13.5px', fontWeight: 500, borderRadius: '6px' } },
+                    }}
+                  />
+                )}
               />
             </Box>
 

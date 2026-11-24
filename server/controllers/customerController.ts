@@ -240,7 +240,7 @@ export const getCustomerById = async (req: Request, res: Response, next: NextFun
 
 export const createCustomer = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { name, mobile, address, gst, idCode, isLoginEnabled, password } = req.body;
+    const { name, mobile, address, state, gst, taxIdType, taxIdNumber, idCode, isLoginEnabled, password } = req.body;
 
     if (!name || !String(name).trim()) {
       res.status(400).json({ success: false, error: 'Customer name is mandatory' });
@@ -261,33 +261,50 @@ export const createCustomer = async (req: Request, res: Response, next: NextFunc
     const finalIdCode = await getNextCustomerIdCode(idCode);
     const initialPassword = password || cleanMobile || '123456';
 
+    const finalTaxNumber = taxIdNumber ? String(taxIdNumber).trim() : (gst ? String(gst).trim() : '');
+    const finalTaxType = taxIdType ? String(taxIdType).trim() : 'GSTIN';
+
     const customer = await Customer.create({
       name: String(name).trim(),
       mobile: String(mobile).trim(),
       address: String(address || '').trim(),
-      gst: gst ? String(gst).trim() : 'N/A',
+      state: state ? String(state).trim() : '',
+      gst: finalTaxNumber || 'N/A',
+      taxIdType: finalTaxType,
+      taxIdNumber: finalTaxNumber,
       idCode: finalIdCode,
       isLoginEnabled: isLoginEnabled !== undefined ? Boolean(isLoginEnabled) : true,
       loginPassword: hashPassword(initialPassword),
     });
 
     // Also sync in Admin collection for instant customer portal login
-    const { Admin } = await import('../models/Admin');
-    await Admin.findOneAndUpdate(
-      { customerId: String(customer._id) },
-      {
-        username: cleanMobile || customer.mobile,
-        password: hashPassword(initialPassword),
-        role: 'user',
-        customerName: customer.name,
-        customerId: String(customer._id),
-        mobile: customer.mobile,
-      },
-      { upsert: true, new: true }
-    );
+    try {
+      const { Admin } = await import('../models/Admin');
+      await Admin.findOneAndUpdate(
+        { username: cleanMobile || customer.mobile },
+        {
+          username: cleanMobile || customer.mobile,
+          password: hashPassword(initialPassword),
+          role: 'user',
+          customerName: customer.name,
+          customerId: String(customer._id),
+          mobile: customer.mobile,
+        },
+        { upsert: true, new: true }
+      );
+    } catch (adminErr) {
+      console.warn('Admin account sync notice (customer record created):', adminErr);
+    }
 
     res.status(201).json({ success: true, data: customer });
-  } catch (error) {
+  } catch (error: any) {
+    if (error && error.code === 11000) {
+      res.status(400).json({
+        success: false,
+        error: 'A customer or login account with this mobile number already exists.',
+      });
+      return;
+    }
     next(error);
   }
 };
