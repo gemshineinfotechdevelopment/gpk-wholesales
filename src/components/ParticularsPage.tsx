@@ -25,6 +25,7 @@ import {
   FormControl,
   Select,
   MenuItem,
+  Menu,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
@@ -39,6 +40,7 @@ import WhatsAppIcon from '@mui/icons-material/WhatsApp';
 import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
+import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
 import {
   CustomersApi,
   CompaniesApi,
@@ -170,6 +172,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   // Customer Active Performa Summary State
   const [performaSummary, setPerformaSummary] = useState<any | null>(null);
   const [_loadingPerforma, setLoadingPerforma] = useState<boolean>(false);
+  const [quotationMenuAnchor, setQuotationMenuAnchor] = useState<null | HTMLElement>(null);
+  const quotationMenuOpen = Boolean(quotationMenuAnchor);
 
   // Warning Dialog State for Additional Product / Exceeded Cases
   const [warningDialog, setWarningDialog] = useState<{
@@ -2054,96 +2058,186 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 justifyContent: 'space-between',
               }}
             >
-              <Typography
-                sx={{
-                  color: '#FFFFFF',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  letterSpacing: '-0.01em',
-                }}
-              >
-                Product Entry
-              </Typography>
-            </Box>
-
-            {/* Quick Pick Performa Products Bar */}
-            {performaSummary?.masterPerforma && performaSummary.masterPerforma.products && (
-              <Box
-                sx={{
-                  backgroundColor: '#F8FAFC',
-                  borderBottom: '1px solid #E2E8F0',
-                  px: 2,
-                  py: 1.2,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  flexWrap: 'wrap',
-                  gap: 1,
-                }}
-              >
-                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap', flex: 1 }}>
-                  <Typography
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                <Typography
+                  sx={{
+                    color: '#FFFFFF',
+                    fontSize: '14px',
+                    fontWeight: 700,
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  Product Entry
+                </Typography>
+                {performaSummary?.masterPerforma && (
+                  <Chip
+                    label={`Performa ${performaSummary.masterPerforma.performaNumber ? `#${performaSummary.masterPerforma.performaNumber}` : ''}`}
+                    size="small"
                     sx={{
-                      fontSize: '11.5px',
-                      fontWeight: 700,
-                      color: '#475569',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 0.5,
+                      backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                      color: '#FFFFFF',
+                      fontSize: '11px',
+                      fontWeight: 600,
+                      height: 22,
                     }}
-                  >
-                    <Inventory2RoundedIcon sx={{ fontSize: 16, color: '#1D4ED8' }} />
-                    Quotation Items:
-                  </Typography>
-                  {performaSummary.masterPerforma.products.map((p: any, idx: number) => {
-                    const isFulfilled = (p.remainingCases || 0) <= 0;
-                    return (
-                      <Chip
-                        key={idx}
-                        size="small"
-                        clickable={!isFulfilled}
-                        onClick={() => !isFulfilled && handleQuickSelectPerformaProduct(p)}
-                        label={
-                          p.performaNumber
-                            ? `${p.productName} (${p.remainingCases || 0} rem @ ₹${p.rate}) • ${p.performaNumber}`
-                            : `${p.productName} (${p.remainingCases || 0} rem @ ₹${p.rate})`
-                        }
-                        sx={{
-                          fontSize: '11px',
-                          fontWeight: 600,
-                          backgroundColor: isFulfilled ? '#F1F5F9' : '#F0F9FF',
-                          color: isFulfilled ? '#94A3B8' : '#1D4ED8',
-                          border: isFulfilled ? '1px dashed #CBD5E1' : '1px solid #BFDBFE',
-                          cursor: isFulfilled ? 'default' : 'pointer',
-                          '&:hover': isFulfilled ? {} : { backgroundColor: '#BAE6FD' },
-                        }}
-                      />
-                    );
-                  })}
-                </Box>
+                  />
+                )}
+              </Box>
+
+              {/* Quotation Items Dropdown Button */}
+              {performaSummary?.masterPerforma?.products && performaSummary.masterPerforma.products.length > 0 && (
                 <Button
                   size="small"
-                  variant="outlined"
-                  onClick={handleImportAllPerformaProducts}
-                  startIcon={<AddRoundedIcon sx={{ fontSize: 16 }} />}
+                  onClick={(e) => setQuotationMenuAnchor(e.currentTarget)}
+                  startIcon={<Inventory2RoundedIcon sx={{ fontSize: 16 }} />}
+                  endIcon={<KeyboardArrowDownRoundedIcon sx={{ fontSize: 18 }} />}
                   sx={{
-                    fontSize: '11.5px',
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    borderColor: '#1D4ED8',
+                    backgroundColor: '#FFFFFF',
                     color: '#1D4ED8',
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    textTransform: 'none',
                     borderRadius: '6px',
+                    px: 1.5,
                     py: 0.4,
-                    px: 1.2,
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
                     '&:hover': {
-                      backgroundColor: '#F0F9FF',
-                      borderColor: '#172554',
+                      backgroundColor: '#F8FAFC',
                     },
                   }}
                 >
-                  Import All Remaining
+                  Quotation Items ({performaSummary.masterPerforma.products.filter((p: any) => (p.remainingCases || 0) > 0).length} Rem)
                 </Button>
-              </Box>
+              )}
+            </Box>
+
+            {/* Quotation Items Dropdown Menu */}
+            {performaSummary?.masterPerforma?.products && (
+              <Menu
+                anchorEl={quotationMenuAnchor}
+                open={quotationMenuOpen}
+                onClose={() => setQuotationMenuAnchor(null)}
+                slotProps={{
+                  paper: {
+                    sx: {
+                      width: { xs: 320, sm: 420 },
+                      maxHeight: 460,
+                      borderRadius: '10px',
+                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                      border: '1px solid #E2E8F0',
+                      p: 0,
+                    },
+                  },
+                }}
+                transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+                anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+              >
+                <Box
+                  sx={{
+                    p: 1.5,
+                    pb: 1,
+                    backgroundColor: '#F8FAFC',
+                    borderBottom: '1px solid #E2E8F0',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                  }}
+                >
+                  <Box>
+                    <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+                      Quotation Items
+                    </Typography>
+                    <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
+                      Click any item to load into entry form
+                    </Typography>
+                  </Box>
+                  <Button
+                    size="small"
+                    variant="outlined"
+                    onClick={() => {
+                      handleImportAllPerformaProducts();
+                      setQuotationMenuAnchor(null);
+                    }}
+                    startIcon={<AddRoundedIcon sx={{ fontSize: 14 }} />}
+                    sx={{
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      py: 0.3,
+                      px: 1,
+                      borderRadius: '5px',
+                    }}
+                  >
+                    Import All
+                  </Button>
+                </Box>
+
+                <Box sx={{ py: 0.5, maxHeight: 360, overflowY: 'auto' }}>
+                  {performaSummary.masterPerforma.products.map((p: any, idx: number) => {
+                    const remaining = p.remainingCases || 0;
+                    const isFulfilled = remaining <= 0;
+                    return (
+                      <MenuItem
+                        key={idx}
+                        disabled={isFulfilled}
+                        onClick={() => {
+                          handleQuickSelectPerformaProduct(p);
+                          setQuotationMenuAnchor(null);
+                        }}
+                        sx={{
+                          py: 1,
+                          px: 1.8,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          borderBottom: '1px solid #F1F5F9',
+                          '&:hover': {
+                            backgroundColor: '#EFF6FF',
+                          },
+                        }}
+                      >
+                        <Box sx={{ flex: 1, mr: 1 }}>
+                          <Typography sx={{ fontSize: '13px', fontWeight: 600, color: isFulfilled ? '#94A3B8' : '#0F172A' }}>
+                            {p.productName}
+                          </Typography>
+                          <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
+                            ₹{p.rate} / pkt • {p.pktPerUnit || 1} pkts/case {p.performaNumber ? `• ${p.performaNumber}` : ''}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ textAlign: 'right' }}>
+                          {isFulfilled ? (
+                            <Chip
+                              label="Fulfilled"
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: '10px',
+                                fontWeight: 700,
+                                backgroundColor: '#F1F5F9',
+                                color: '#64748B',
+                                borderRadius: '4px',
+                              }}
+                            />
+                          ) : (
+                            <Chip
+                              label={`${remaining} Rem`}
+                              size="small"
+                              sx={{
+                                height: 20,
+                                fontSize: '10.5px',
+                                fontWeight: 700,
+                                backgroundColor: '#EFF6FF',
+                                color: '#1D4ED8',
+                                borderRadius: '4px',
+                              }}
+                            />
+                          )}
+                        </Box>
+                      </MenuItem>
+                    );
+                  })}
+                </Box>
+              </Menu>
             )}
 
             <Box
