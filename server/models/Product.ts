@@ -7,6 +7,8 @@ export interface IProduct extends Document {
   category?: string;
   rate?: number;
   pktUnit?: string;
+  company?: string;
+  caseCount?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,6 +21,8 @@ const ProductSchema: Schema = new Schema(
     category: { type: String, trim: true, default: '' },
     rate: { type: Number, default: 0 },
     pktUnit: { type: String, trim: true, default: '1' },
+    company: { type: String, trim: true, default: '' },
+    caseCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

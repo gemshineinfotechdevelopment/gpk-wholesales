@@ -6,9 +6,14 @@ import {
   InputBase,
   Paper,
   CircularProgress,
+  Select,
+  MenuItem,
+  Autocomplete,
+  TextField,
 } from '@mui/material';
 import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRounded';
 import { CustomersApi } from '../services/api';
+import { INDIAN_STATES, TAX_ID_TYPES } from '../utils/indianStates';
 
 interface AddCustomerPageProps {
   onCancel?: () => void;
@@ -22,10 +27,14 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
   const [formData, setFormData] = useState({
     fullName: '',
     mobileNumber: '',
-    gstin: '',
+    taxIdType: 'GSTIN' as 'GSTIN' | 'PAN' | 'Aadhaar',
+    taxIdNumber: '',
+    state: '',
     billingAddress: '',
   });
   const [loading, setLoading] = useState(false);
+
+  const currentTaxType = TAX_ID_TYPES.find((t) => t.value === formData.taxIdType) || TAX_ID_TYPES[0];
 
   const handleChange = (field: string) => (
     e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -51,10 +60,16 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
     try {
       setLoading(true);
 
+      const cleanTaxNumber = formData.taxIdNumber.trim();
+      const taxType = formData.taxIdType || 'GSTIN';
+
       await CustomersApi.create({
         name: formData.fullName.trim(),
         mobile: formData.mobileNumber.trim(),
-        gst: formData.gstin.trim() || 'N/A',
+        gst: cleanTaxNumber || 'N/A',
+        taxIdType: taxType,
+        taxIdNumber: cleanTaxNumber,
+        state: formData.state.trim(),
         address: formData.billingAddress.trim(),
         avatarLetter: formData.fullName.trim().charAt(0).toUpperCase(),
         avatarBg: '#BAE6FD',
@@ -65,9 +80,13 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
       if (onSubmitSuccess) {
         onSubmitSuccess();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create customer:', err);
-      alert('Error creating customer. Please check your backend connection.');
+      const errorMsg =
+        err?.message && !err.message.includes('HTTP error')
+          ? err.message
+          : 'Error creating customer. Please check your backend connection or mobile number.';
+      alert(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -226,7 +245,7 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
               </Box>
             </Box>
 
-            {/* GSTIN Field */}
+            {/* Tax ID / Document Type Field */}
             <Box>
               <Typography
                 sx={{
@@ -237,7 +256,67 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
                   letterSpacing: '-0.01em',
                 }}
               >
-                GSTIN / Tax ID
+                Tax / ID Proof Type
+              </Typography>
+              <Box
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  backgroundColor: '#F8FAFC',
+                  border: '1px solid #E2E8F0',
+                  borderRadius: '8px',
+                  px: 1.5,
+                  height: '42px',
+                  transition: 'all 0.15s ease',
+                  '&:focus-within': {
+                    borderColor: '#1D4ED8',
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 0 0 3px rgba(37, 99, 235, 0.1)',
+                  },
+                }}
+              >
+                <Select
+                  fullWidth
+                  variant="standard"
+                  disableUnderline
+                  value={formData.taxIdType}
+                  onChange={(e) =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      taxIdType: e.target.value as 'GSTIN' | 'PAN' | 'Aadhaar',
+                    }))
+                  }
+                  sx={{
+                    fontSize: '13.5px',
+                    fontWeight: 600,
+                    color: '#0F172A',
+                  }}
+                >
+                  <MenuItem value="GSTIN" sx={{ fontSize: '13.5px', fontWeight: 600 }}>
+                    GSTIN (Tax ID)
+                  </MenuItem>
+                  <MenuItem value="PAN" sx={{ fontSize: '13.5px', fontWeight: 600 }}>
+                    PAN Number
+                  </MenuItem>
+                  <MenuItem value="Aadhaar" sx={{ fontSize: '13.5px', fontWeight: 600 }}>
+                    Aadhaar Card
+                  </MenuItem>
+                </Select>
+              </Box>
+            </Box>
+
+            {/* Tax ID / Document Number Field */}
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  color: '#1E293B',
+                  mb: 1,
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                {currentTaxType.label} Number
               </Typography>
               <Box
                 sx={{
@@ -258,9 +337,9 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
               >
                 <InputBase
                   fullWidth
-                  placeholder="e.g. 29ABCDE1234F1Z5"
-                  value={formData.gstin}
-                  onChange={handleChange('gstin')}
+                  placeholder={currentTaxType.placeholder}
+                  value={formData.taxIdNumber}
+                  onChange={handleChange('taxIdNumber')}
                   sx={{
                     fontSize: '13.5px',
                     fontWeight: 500,
@@ -272,6 +351,49 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
                   }}
                 />
               </Box>
+            </Box>
+
+            {/* State Field */}
+            <Box>
+              <Typography
+                sx={{
+                  fontSize: '13px',
+                  fontWeight: 700,
+                  color: '#1E293B',
+                  mb: 1,
+                  letterSpacing: '-0.01em',
+                }}
+              >
+                State
+              </Typography>
+              <Autocomplete
+                fullWidth
+                size="small"
+                autoHighlight
+                options={INDIAN_STATES}
+                value={formData.state || null}
+                onChange={(_e, val) => setFormData((prev) => ({ ...prev, state: val || '' }))}
+                renderInput={(params) => (
+                  <TextField
+                    {...params}
+                    placeholder="Select or search state..."
+                    sx={{
+                      backgroundColor: '#F8FAFC',
+                      borderRadius: '8px',
+                      '& .MuiOutlinedInput-root': {
+                        height: '42px',
+                        borderRadius: '8px',
+                        fontSize: '13.5px',
+                        fontWeight: 500,
+                        color: '#0F172A',
+                        '& fieldset': { borderColor: '#E2E8F0' },
+                        '&:hover fieldset': { borderColor: '#CBD5E1' },
+                        '&.Mui-focused fieldset': { borderColor: '#1D4ED8', borderWidth: '1.5px' },
+                      },
+                    }}
+                  />
+                )}
+              />
             </Box>
 
             {/* Billing Address Field */}

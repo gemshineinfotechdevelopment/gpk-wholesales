@@ -33,6 +33,7 @@ export interface Company {
   id?: string;
   slNo?: string;
   name: string;
+  phone?: string;
   avatarLetter?: string;
   avatarBg?: string;
   avatarColor?: string;
@@ -54,6 +55,7 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
   const [editingCompany, setEditingCompany] = useState<Company | null>(null);
   const [editFormData, setEditFormData] = useState({
     name: '',
+    phone: '',
     gstin: '',
     address: '',
   });
@@ -79,6 +81,7 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
     setEditingCompany(company);
     setEditFormData({
       name: company.name || '',
+      phone: company.phone || '',
       gstin: company.gstin || '',
       address: company.address || '',
     });
@@ -99,6 +102,7 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
       setEditLoading(true);
       await CompaniesApi.update(id, {
         name: editFormData.name.trim(),
+        phone: editFormData.phone.trim(),
         gstin: editFormData.gstin.trim() || 'N/A',
         address: editFormData.address.trim(),
         avatarLetter: editFormData.name.trim().charAt(0).toUpperCase(),
@@ -330,6 +334,19 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
                     borderBottom: '1px solid #EEF2F6',
                   }}
                 >
+                  PHONE
+                </TableCell>
+                <TableCell
+                  sx={{
+                    py: 1.6,
+                    px: 3,
+                    fontSize: '11.5px',
+                    fontWeight: 700,
+                    color: '#475569',
+                    letterSpacing: '0.04em',
+                    borderBottom: '1px solid #EEF2F6',
+                  }}
+                >
                   ADDRESS
                 </TableCell>
                 <TableCell
@@ -366,13 +383,13 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 6 }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 6 }}>
                     <CircularProgress size={32} sx={{ color: '#1D4ED8' }} />
                   </TableCell>
                 </TableRow>
               ) : filteredCompanies.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 6, color: '#64748B' }}>
+                  <TableCell colSpan={6} align="center" sx={{ py: 6, color: '#64748B' }}>
                     No companies found. Click "Add Company" to create one.
                   </TableCell>
                 </TableRow>
@@ -444,6 +461,20 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
                             {company.name}
                           </Typography>
                         </Box>
+                      </TableCell>
+
+                      {/* Phone */}
+                      <TableCell
+                        sx={{
+                          py: 1.6,
+                          px: 3,
+                          fontSize: '13.5px',
+                          color: '#334155',
+                          fontWeight: 500,
+                          borderBottom: isLast ? 'none' : '1px solid #F8FAFC',
+                        }}
+                      >
+                        {company.phone || '-'}
                       </TableCell>
 
                       {/* Address */}
@@ -569,6 +600,22 @@ export const CompaniesPage: FC<CompaniesPageProps> = ({ onAddCompany }) => {
                 size="small"
                 value={editFormData.name}
                 onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
+                slotProps={{
+                  input: { sx: { fontSize: '13.5px', fontWeight: 500, borderRadius: '6px' } },
+                }}
+              />
+            </Box>
+
+            <Box>
+              <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
+                Phone Number (Optional)
+              </Typography>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="e.g. 9876543210"
+                value={editFormData.phone}
+                onChange={(e) => setEditFormData({ ...editFormData, phone: e.target.value })}
                 slotProps={{
                   input: { sx: { fontSize: '13.5px', fontWeight: 500, borderRadius: '6px' } },
                 }}

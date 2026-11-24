@@ -7,8 +7,11 @@ export interface ICustomer extends Document {
   avatarBg?: string;
   avatarColor?: string;
   address: string;
+  state?: string;
   mobile: string;
   gst: string;
+  taxIdType?: string;
+  taxIdNumber?: string;
   isLoginEnabled?: boolean;
   loginPassword?: string;
   hasCustomPassword?: boolean;
@@ -24,8 +27,11 @@ const CustomerSchema: Schema = new Schema(
     avatarBg: { type: String, default: '#BAE6FD' },
     avatarColor: { type: String, default: '#1D4ED8' },
     address: { type: String, required: true, trim: true },
+    state: { type: String, trim: true, default: '' },
     mobile: { type: String, required: true, trim: true },
-    gst: { type: String, required: true, trim: true },
+    gst: { type: String, default: 'N/A', trim: true },
+    taxIdType: { type: String, trim: true, default: 'GSTIN' },
+    taxIdNumber: { type: String, trim: true, default: '' },
     isLoginEnabled: { type: Boolean, default: true },
     loginPassword: { type: String, trim: true },
     hasCustomPassword: { type: Boolean, default: false },
