@@ -20,7 +20,6 @@ import {
   DialogActions,
   TextField,
   Chip,
-  Autocomplete,
   Select,
   MenuItem,
   FormControl,
@@ -105,7 +104,7 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
   const [paymentForm, setPaymentForm] = useState({
     creditAmount: '',
     paymentMode: 'Bank Transfer',
-    depositAccount: 'GPK Main Current A/C',
+    depositAccount: '',
     date: new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
   });
   const [paymentLoading, setPaymentLoading] = useState(false);
@@ -236,7 +235,7 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
     setPaymentForm({
       creditAmount: due > 0 ? String(due) : '',
       paymentMode: 'Bank Transfer',
-      depositAccount: 'GPK Main Current A/C',
+      depositAccount: '',
       date: new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
     });
     setOpenPaymentModal(true);
@@ -257,7 +256,7 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
         customerId: paymentCustomer._id || paymentCustomer.id,
         customerName: paymentCustomer.name,
         paymentMode: paymentForm.paymentMode || 'Bank Transfer',
-        depositAccount: paymentForm.depositAccount || 'GPK Main Current A/C',
+        depositAccount: paymentForm.depositAccount ? paymentForm.depositAccount.trim() : '-',
         creditAmount: amountNum.toFixed(2),
         date: paymentForm.date || new Date().toLocaleDateString('en-GB').replace(/\//g, '-'),
       });
@@ -1539,52 +1538,24 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
 
             <Box>
               <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                Deposit Account
+                Deposit Account Number
               </Typography>
-              <Autocomplete
-                freeSolo
+              <TextField
                 fullWidth
                 size="small"
-                options={[
-                  'GPK Main Current A/C',
-                  'Cash Counter / In Hand',
-                  'SBI Current A/C',
-                  'HDFC Bank A/C',
-                  'ICICI Bank A/C',
-                  'GPay / UPI A/C',
-                ]}
+                placeholder="Enter Account Number (e.g. 1234567890 / Bank A/C)"
                 value={paymentForm.depositAccount}
-                onInputChange={(_, newInputValue) => {
-                  setPaymentForm({ ...paymentForm, depositAccount: newInputValue });
-                }}
-                onChange={(_, val) => {
-                  setPaymentForm({ ...paymentForm, depositAccount: val || '' });
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    placeholder="Select or enter deposit bank account..."
-                    sx={{
+                onChange={(e) => setPaymentForm({ ...paymentForm, depositAccount: e.target.value })}
+                slotProps={{
+                  input: {
+                    sx: {
+                      fontSize: '13.5px',
+                      fontWeight: 600,
                       backgroundColor: '#FFFFFF',
                       borderRadius: '6px',
-                      '& .MuiOutlinedInput-root': {
-                        fontSize: '13.5px',
-                        fontWeight: 500,
-                        borderRadius: '6px',
-                        '& fieldset': {
-                          borderColor: '#CBD5E1',
-                        },
-                        '&:hover fieldset': {
-                          borderColor: '#94A3B8',
-                        },
-                        '&.Mui-focused fieldset': {
-                          borderColor: '#1D4ED8',
-                          borderWidth: '1.5px',
-                        },
-                      },
-                    }}
-                  />
-                )}
+                    },
+                  },
+                }}
               />
             </Box>
 

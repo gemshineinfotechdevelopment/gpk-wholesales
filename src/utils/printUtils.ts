@@ -977,11 +977,11 @@ export const generateLedgerStatementHtml = (
 
       return `
         <tr class="data-row" style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
-          <td class="text-center" style="width:30px;">${globalIdx + 1}</td>
           <td class="text-center" style="width:75px; color:#334155;">${entry.date || '-'}</td>
+          <td class="text-center" style="width:30px;">${globalIdx + 1}</td>
           <td style="font-weight:700; color:#0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;">${desc}</td>
           <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;">${entry.type === 'BILL' ? 'Bill Debit' : (entry.paymentMode || 'Credit')}</td>
-          <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 135px;">${entry.type === 'BILL' ? '-' : (entry.depositAccount || 'GPK Main Current A/C')}</td>
+          <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 135px;">${entry.type === 'BILL' ? '-' : (entry.depositAccount || '-')}</td>
           <td class="text-right" style="width:100px; color:#1E293B; font-weight:700;">${deb > 0 ? `₹ ${deb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
           <td class="text-right" style="width:100px; color:#16A34A; font-weight:700;">${cred > 0 ? `₹ ${cred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
           <td class="text-right" style="width:105px; font-weight:800; color:#1D4ED8;">₹ ${entry.balance || '0.00'}</td>
@@ -1046,8 +1046,8 @@ export const generateLedgerStatementHtml = (
         <table class="data-table">
           <thead>
             <tr>
-              <th class="text-center" style="width:30px;">#</th>
               <th class="text-center" style="width:75px;">Date</th>
+              <th class="text-center" style="width:30px;">#</th>
               <th style="width:130px;">Particulars</th>
               <th style="width:110px;">Payment Type</th>
               <th style="width:135px;">Deposit Account</th>

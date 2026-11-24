@@ -261,7 +261,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   // Subtab 5: Add Credit Form State
   const [addCreditCustomerName, setAddCreditCustomerName] = useState<string>('');
   const [creditPaymentMode, setCreditPaymentMode] = useState<string>('Bank Transfer');
-  const [creditDepositAccount, setCreditDepositAccount] = useState<string>('GPK Main Current A/C');
+  const [creditDepositAccount, setCreditDepositAccount] = useState<string>('');
   const [creditAmount, setCreditAmount] = useState<string>('');
   const [creditDate, setCreditDate] = useState<string>(() => {
     const today = new Date();
@@ -1012,13 +1012,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         creditAmount: creditAmount.trim(),
         date: creditDate,
         paymentMode: creditPaymentMode || 'Bank Transfer',
-        depositAccount: creditDepositAccount ? creditDepositAccount.trim() : 'GPK Main Current A/C',
+        depositAccount: creditDepositAccount ? creditDepositAccount.trim() : '-',
         reference: '',
-        notes: `Payment via ${creditPaymentMode || 'Bank Transfer'} deposited to ${creditDepositAccount || 'GPK Main Current A/C'}`,
+        notes: `Payment via ${creditPaymentMode || 'Bank Transfer'}${creditDepositAccount ? ` deposited to A/C: ${creditDepositAccount.trim()}` : ''}`,
       });
 
       alert(res?.message || 'Credit added successfully!');
       setCreditAmount('');
+      setCreditDepositAccount('');
       
       // Refresh all financial states
       fetchAccounts(filterCustomer);
@@ -3041,11 +3042,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
               <Table sx={{ width: '100%' }} aria-label="account details table">
                 <TableHead>
                   <TableRow sx={{ backgroundColor: '#F8FAFC' }}>
-                    <TableCell sx={{ py: 1.5, px: { xs: 2, sm: 3 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '60px' }}>
-                      SL.NO
-                    </TableCell>
                     <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '110px' }}>
                       DATE
+                    </TableCell>
+                    <TableCell sx={{ py: 1.5, px: { xs: 2, sm: 3 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '60px' }}>
+                      SL.NO
                     </TableCell>
                     {!isSingleCustomer && (
                       <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '140px' }}>
@@ -3100,11 +3101,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                             },
                           }}
                         >
-                          <TableCell sx={{ py: 1.6, px: { xs: 2, sm: 3 }, fontSize: '13.5px', fontWeight: 600, color: '#1E293B', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
-                            {index + 1}
-                          </TableCell>
                           <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 500, color: '#475569', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.date}
+                          </TableCell>
+                          <TableCell sx={{ py: 1.6, px: { xs: 2, sm: 3 }, fontSize: '13.5px', fontWeight: 600, color: '#1E293B', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            {index + 1}
                           </TableCell>
                           {!isSingleCustomer && (
                             <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 700, color: '#1D4ED8', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
@@ -3141,7 +3142,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                             )}
                           </TableCell>
                           <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 600, color: '#334155', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
-                            {row.type === 'BILL' ? '-' : (row.depositAccount || 'GPK Main Current A/C')}
+                            {row.type === 'BILL' ? '-' : (row.depositAccount || '-')}
                           </TableCell>
                           <TableCell align="right" sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 500, color: '#DC2626', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.debit}
@@ -3979,52 +3980,33 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 >
                   Deposit Account
                 </Typography>
-                <Autocomplete
-                  freeSolo
+                <TextField
                   fullWidth
                   size="small"
-                  options={[
-                    'GPK Main Current A/C',
-                    'Cash Counter / In Hand',
-                    'SBI Current A/C',
-                    'HDFC Bank A/C',
-                    'ICICI Bank A/C',
-                    'GPay / UPI A/C',
-                  ]}
+                  placeholder="Enter Account Number (e.g. 1234567890 / Bank A/C)"
                   value={creditDepositAccount}
-                  onInputChange={(_, newInputValue) => {
-                    setCreditDepositAccount(newInputValue);
-                  }}
-                  onChange={(_, val) => {
-                    setCreditDepositAccount(val || '');
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder="Select or enter deposit bank account..."
-                      sx={{
+                  onChange={(e) => setCreditDepositAccount(e.target.value)}
+                  slotProps={{
+                    input: {
+                      sx: {
+                        fontSize: '13.5px',
+                        fontWeight: 600,
+                        height: '42px',
                         backgroundColor: '#FFFFFF',
                         borderRadius: '6px',
-                        '& .MuiOutlinedInput-root': {
-                          height: '42px',
-                          borderRadius: '6px',
-                          fontSize: '13.5px',
-                          fontWeight: 500,
-                          color: '#0F172A',
-                          '& fieldset': {
-                            borderColor: '#CBD5E1',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: '#94A3B8',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#1D4ED8',
-                            borderWidth: '1.5px',
-                          },
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#CBD5E1',
                         },
-                      }}
-                    />
-                  )}
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#94A3B8',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#1D4ED8',
+                          borderWidth: '1.5px',
+                        },
+                      },
+                    },
+                  }}
                 />
               </Box>
 
