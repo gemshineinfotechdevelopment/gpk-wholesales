@@ -1,15 +1,17 @@
 import type { Request, Response, NextFunction } from 'express';
 import { AccountLedger } from '../models/AccountLedger';
-import { escapeRegex, recalculateCustomerBalance } from '../utils/ledgerUtils';
+import { escapeRegex, recalculateCustomerBalance, syncMissingBillLedgers } from '../utils/ledgerUtils';
 
 export const getAccountDetails = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { customerName } = req.query;
     const filter: any = {};
+    let targetName: string | undefined;
+
     if (customerName && typeof customerName === 'string' && customerName.trim() !== '' && customerName.toLowerCase() !== 'all') {
       const trimmed = customerName.trim();
       const cleanDigits = trimmed.replace(/[^0-9]/g, '');
-      let targetName = trimmed;
+      targetName = trimmed;
       if (cleanDigits.length >= 7) {
         const { Customer } = await import('../models/Customer');
         const matchedCust = await Customer.findOne({ mobile: { $regex: cleanDigits, $options: 'i' } });
@@ -19,6 +21,9 @@ export const getAccountDetails = async (req: Request, res: Response, next: NextF
       }
       filter.customerName = { $regex: new RegExp(`^${escapeRegex(targetName)}$`, 'i') };
     }
+
+    // Auto-heal / synchronize any particular bills that might be missing from AccountLedger
+    await syncMissingBillLedgers(targetName);
 
     const accounts = await AccountLedger.find(filter).sort({ createdAt: -1, _id: -1 });
     res.status(200).json({ success: true, count: accounts.length, data: accounts });
@@ -91,8 +96,11 @@ export const deleteAccountEntry = async (req: Request, res: Response, next: Next
     const { Particular } = await import('../models/Particular');
     if (entry.particularId) {
       await Particular.findByIdAndDelete(entry.particularId);
-    } else if (entry.billNo && entry.billNo.trim() !== '' && entry.type === 'BILL') {
-      await Particular.findOneAndDelete({ billNo: entry.billNo.trim() });
+    } else if (entry.billNo && entry.billNo.trim() !== '' && entry.type === 'BILL' && entry.customerName) {
+      await Particular.findOneAndDelete({
+        billNo: entry.billNo.trim(),
+        customerName: { $regex: new RegExp(`^${escapeRegex(entry.customerName.trim())}$`, 'i') },
+      });
     } else if (entry.type === 'BILL') {
       const matchCond: any = {
         customerName: { $regex: new RegExp(`^${escapeRegex(entry.customerName.trim())}$`, 'i') },
