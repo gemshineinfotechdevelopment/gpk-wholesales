@@ -237,7 +237,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     for (const r of filteredParticularRows) {
       const cKey = (r.customerName || '').toLowerCase().trim();
       const bCases = Number(r.totalCustomerCases) || 0;
-      const oCases = Number(r.deliveredCaseCount) || 0;
+      const oCases = Number(r.deliveredCaseCount) || (Number(r.caseCount) || 0);
       const pCases = Number(r.pendingCaseCount) || 0;
 
       if (!uniqueCusts.has(cKey)) {
@@ -245,8 +245,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       } else {
         const existing = uniqueCusts.get(cKey)!;
         if (bCases > existing.booked) existing.booked = bCases;
-        if (oCases > existing.out) existing.out = oCases;
-        if (pCases > existing.pending) existing.pending = pCases;
+        if (oCases > existing.out) {
+          existing.out = oCases;
+          existing.pending = pCases;
+        }
       }
     }
 
@@ -3680,9 +3682,9 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     const totalCustCasesVal = Number(row.totalCustomerCases) || 0;
                     const outCasesVal = Number(row.caseCount) || (row.products ? row.products.reduce((acc: number, p: any) => acc + (parseFloat(p.quantity) || 0), 0) : 0);
                     const totalOutVal = Number(row.deliveredCaseCount) || outCasesVal;
-                    const pendingCasesVal = totalCustCasesVal > 0
-                      ? Math.max(0, totalCustCasesVal - totalOutVal)
-                      : (Number(row.pendingCaseCount) || 0);
+                    const pendingCasesVal = row.pendingCaseCount !== undefined && row.pendingCaseCount !== null && !isNaN(Number(row.pendingCaseCount))
+                      ? Number(row.pendingCaseCount)
+                      : (totalCustCasesVal > 0 ? Math.max(0, totalCustCasesVal - totalOutVal) : 0);
 
                     return (
                       <TableRow
@@ -3732,7 +3734,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                         </TableCell>
                         <TableCell align="center" sx={{ py: 1.4, px: 1, borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           {outCasesVal > 0 ? (
-                            <Tooltip title={totalOutVal > outCasesVal ? `Bill Out: ${outCasesVal} Cases • Total Customer Out: ${totalOutVal} Cases` : `${outCasesVal} Cases dispatched in this bill`} arrow>
+                            <Tooltip title={totalOutVal > outCasesVal ? `Bill Out: ${outCasesVal} Cases • Total Delivered So Far: ${totalOutVal} Cases` : `${outCasesVal} Cases dispatched in this bill`} arrow>
                               <Chip
                                 size="small"
                                 label={`${outCasesVal} Cases`}
@@ -3755,7 +3757,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                         </TableCell>
                         <TableCell align="center" sx={{ py: 1.4, px: 1, borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           {pendingCasesVal > 0 ? (
-                            <Tooltip title={totalCustCasesVal > 0 ? `Formula: ${totalCustCasesVal} Total - ${totalOutVal} Out = ${pendingCasesVal} Pending` : `${pendingCasesVal} Pending Cases`} arrow>
+                            <Tooltip title={totalCustCasesVal > 0 ? `Pending After This Bill: ${pendingCasesVal} Cases (${totalCustCasesVal} Total - ${totalOutVal} Delivered So Far)` : `${pendingCasesVal} Pending Cases`} arrow>
                               <Chip
                                 size="small"
                                 label={`${pendingCasesVal} Cases`}
@@ -3771,7 +3773,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                               />
                             </Tooltip>
                           ) : (
-                            <Tooltip title={totalCustCasesVal > 0 ? `All ${totalCustCasesVal} cases fulfilled (${totalCustCasesVal} - ${totalOutVal} = 0)` : 'Nil pending cases'} arrow>
+                            <Tooltip title={totalCustCasesVal > 0 ? `All ${totalCustCasesVal} cases fulfilled (${totalCustCasesVal} Total - ${totalOutVal} Delivered So Far = 0)` : 'Nil pending cases'} arrow>
                               <Typography sx={{ fontSize: '12px', color: '#16A34A', fontWeight: 700 }}>
                                 0 (Nil)
                               </Typography>

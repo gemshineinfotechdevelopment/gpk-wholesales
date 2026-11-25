@@ -5,6 +5,33 @@ import { escapeRegex, recalculateCustomerBalance, getParticularNetTotal } from '
 import { isCloudinaryConfigured, uploadToCloudinary, deleteFromCloudinary } from '../config/cloudinary';
 import { consumeBillAgainstPerforma, reverseBillConsumption } from '../services/performaConsumptionService';
 
+function parseBillTimestamp(b: any): number {
+  if (b.date) {
+    const raw = String(b.date).trim();
+    const dmyMatch = raw.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})/);
+    if (dmyMatch) {
+      const day = parseInt(dmyMatch[1], 10);
+      const month = parseInt(dmyMatch[2], 10) - 1;
+      const year = parseInt(dmyMatch[3], 10);
+      const ts = new Date(year, month, day).getTime();
+      if (!isNaN(ts)) return ts;
+    }
+    const parsed = new Date(raw).getTime();
+    if (!isNaN(parsed)) return parsed;
+  }
+  if (b.createdAt) {
+    const created = new Date(b.createdAt).getTime();
+    if (!isNaN(created)) return created;
+  }
+  return 0;
+}
+
+function parseBillNumber(billNo: any): number {
+  if (!billNo) return 0;
+  const match = String(billNo).match(/\d+/);
+  return match ? parseInt(match[0], 10) : 0;
+}
+
 export const getParticulars = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const { customerName } = req.query;
@@ -29,14 +56,77 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
     const { calculatePendingCasesData } = await import('../services/performaConsumptionService');
     const { customerTotalCasesMap, customerPendingMap, customerDeliveredMap, performaPendingMap } = await calculatePendingCasesData();
 
-    // Calculate customer total dispatched cases across all bills in DB
-    const customerBillsTotalCases = new Map<string, number>();
+    // Group bills by customer to track chronological running delivered and running pending cases per bill
+    const billsByCustomer = new Map<string, any[]>();
     for (const b of particulars) {
       const cKey = (b.customerName || '').trim().toLowerCase();
-      const bCases = (b.caseCount && b.caseCount !== '0')
-        ? (parseFloat(b.caseCount) || 0)
-        : (b.products || []).reduce((sum: number, pr: any) => sum + (parseFloat(pr.quantity) || 0), 0);
-      customerBillsTotalCases.set(cKey, (customerBillsTotalCases.get(cKey) || 0) + bCases);
+      if (!billsByCustomer.has(cKey)) {
+        billsByCustomer.set(cKey, []);
+      }
+      billsByCustomer.get(cKey)!.push(b);
+    }
+
+    // Map each bill to its historical chronological snapshot (so previous bills never change when new bills are added)
+    const billMetricsMap = new Map<string, { totalCustCases: number; deliveredSoFar: number; pendingAfterThisBill: number }>();
+
+    for (const [cKey, custBills] of billsByCustomer.entries()) {
+      let totalCustCases = 0;
+      if (customerTotalCasesMap?.has(cKey)) {
+        totalCustCases = customerTotalCasesMap.get(cKey) || 0;
+      } else {
+        for (const [key, val] of customerTotalCasesMap.entries()) {
+          if (key.length > 2 && (cKey.includes(key) || key.includes(cKey))) {
+            totalCustCases = val;
+            break;
+          }
+        }
+      }
+
+      // Sort customer bills chronologically (oldest first)
+      custBills.sort((a, b) => {
+        const timeA = parseBillTimestamp(a);
+        const timeB = parseBillTimestamp(b);
+        if (timeA !== timeB && timeA > 0 && timeB > 0) {
+          return timeA - timeB;
+        }
+        const createdA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const createdB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        if (createdA !== createdB) {
+          return createdA - createdB;
+        }
+        const numA = parseBillNumber(a.billNo);
+        const numB = parseBillNumber(b.billNo);
+        if (numA !== numB) {
+          return numA - numB;
+        }
+        return String(a._id).localeCompare(String(b._id));
+      });
+
+      let runningDelivered = 0;
+      for (const bill of custBills) {
+        const thisBillCases = (bill.caseCount && bill.caseCount !== '0')
+          ? (parseFloat(bill.caseCount) || 0)
+          : (bill.products || []).reduce((sum: number, pr: any) => sum + (parseFloat(pr.quantity) || 0), 0);
+
+        runningDelivered += thisBillCases;
+
+        const billTotalCust = (bill.totalCustomerCases && bill.totalCustomerCases > 0)
+          ? bill.totalCustomerCases
+          : totalCustCases;
+
+        let pendingAfterThis = 0;
+        if (billTotalCust > 0) {
+          pendingAfterThis = Math.max(0, billTotalCust - runningDelivered);
+        } else if (bill.pendingCaseCount !== undefined && bill.pendingCaseCount !== null) {
+          pendingAfterThis = Number(bill.pendingCaseCount) || 0;
+        }
+
+        billMetricsMap.set(String(bill._id), {
+          totalCustCases: billTotalCust,
+          deliveredSoFar: runningDelivered,
+          pendingAfterThisBill: pendingAfterThis,
+        });
+      }
     }
 
     const { Customer } = await import('../models/Customer');
@@ -85,7 +175,6 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
       } else if (p.customerId && customerPendingMap.has(String(p.customerId))) {
         pending = customerPendingMap.get(String(p.customerId)) || 0;
       } else {
-        // Fuzzy / partial substring match across customer map
         for (const [key, val] of customerPendingMap.entries()) {
           if (key.length > 2 && (pCustKey.includes(key) || key.includes(pCustKey))) {
             pending = val;
@@ -94,12 +183,6 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
             break;
           }
         }
-      }
-
-      // Fallback: If customer has bills recorded, ensure delivered is at least the sum of bills
-      const billsSum = customerBillsTotalCases.get(pCustKey) || 0;
-      if (delivered === 0 && billsSum > 0) {
-        delivered = billsSum;
       }
 
       // Fallback to performa pending map if linked performa still has remaining cases
@@ -115,11 +198,11 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
         ? p.caseCount
         : (p.products || []).reduce((sum: number, pr: any) => sum + (parseFloat(pr.quantity) || 0), 0).toString();
 
-      // Calculation formula:
-      // If customer has booked cases in Performa, Balance Pending Cases = Math.max(0, Total Cases - Out Cases)
-      if (totalCustCases > 0) {
-        pending = Math.max(0, totalCustCases - delivered);
-      }
+      // Retrieve this bill's chronological snapshot from billMetricsMap
+      const metrics = billMetricsMap.get(String(p._id));
+      const finalTotalCases = metrics?.totalCustCases ?? totalCustCases;
+      const finalDeliveredSoFar = metrics?.deliveredSoFar ?? delivered;
+      const finalPendingAfterThis = metrics?.pendingAfterThisBill ?? (finalTotalCases > 0 ? Math.max(0, finalTotalCases - finalDeliveredSoFar) : pending);
 
       const rawPhone = p.phone && p.phone !== '+91 98765 43210' ? p.phone : '';
       const finalPhone = rawPhone || customerPhoneMap.get(pCustKey) || '';
@@ -130,9 +213,9 @@ export const getParticulars = async (req: Request, res: Response, next: NextFunc
         phone: finalPhone,
         preparedBy: rawPreparedBy,
         caseCount: computedBillCases,
-        totalCustomerCases: totalCustCases,
-        deliveredCaseCount: delivered,
-        pendingCaseCount: pending,
+        totalCustomerCases: finalTotalCases,
+        deliveredCaseCount: finalDeliveredSoFar,
+        pendingCaseCount: finalPendingAfterThis,
       };
     });
 
@@ -227,6 +310,44 @@ export const createParticular = async (req: Request, res: Response, next: NextFu
       finalBillNo = (maxNum + 1).toString().padStart(4, '0');
     }
 
+    // Chronological cases snapshot for this specific bill
+    let totalCustCases = 0;
+    try {
+      const { calculatePendingCasesData } = await import('../services/performaConsumptionService');
+      const { customerTotalCasesMap } = await calculatePendingCasesData();
+      const cKey = String(customerName || '').trim().toLowerCase();
+      if (customerTotalCasesMap?.has(cKey)) {
+        totalCustCases = customerTotalCasesMap.get(cKey) || 0;
+      } else {
+        for (const [k, v] of customerTotalCasesMap.entries()) {
+          if (k.length > 2 && (cKey.includes(k) || k.includes(cKey))) {
+            totalCustCases = v;
+            break;
+          }
+        }
+      }
+    } catch (e) {
+      console.error('[createParticular total cases lookup error]:', e);
+    }
+
+    const prevCustBills = await Particular.find({
+      customerName: { $regex: new RegExp(`^${escapeRegex(String(customerName || '').trim())}$`, 'i') },
+    }).lean();
+
+    const prevDelivered = prevCustBills.reduce((sum, b) => {
+      const bCases = (b.caseCount && b.caseCount !== '0')
+        ? (parseFloat(b.caseCount) || 0)
+        : (b.products || []).reduce((s: number, pr: any) => s + (parseFloat(pr.quantity) || 0), 0);
+      return sum + bCases;
+    }, 0);
+
+    const thisBillCases = (caseCount && caseCount !== '0')
+      ? (parseFloat(caseCount) || 0)
+      : (products || []).reduce((s: number, pr: any) => s + (parseFloat(pr.quantity) || 0), 0);
+
+    const cumulativeDelivered = prevDelivered + thisBillCases;
+    const pendingCases = totalCustCases > 0 ? Math.max(0, totalCustCases - cumulativeDelivered) : 0;
+
     const particular = await Particular.create({
       customerName: customerName || 'General',
       phone: finalPhone,
@@ -244,6 +365,9 @@ export const createParticular = async (req: Request, res: Response, next: NextFu
       products: products || [],
       performaId: performaId || null,
       performaNumber: performaNumber || '',
+      totalCustomerCases: totalCustCases,
+      deliveredCaseCount: cumulativeDelivered,
+      pendingCaseCount: pendingCases,
     });
 
     // Automatically log to Account Ledger using Net Total
@@ -332,6 +456,9 @@ export const updateParticular = async (req: Request, res: Response, next: NextFu
       products,
       performaId,
       performaNumber,
+      totalCustomerCases,
+      deliveredCaseCount,
+      pendingCaseCount,
     } = req.body;
 
     const updatedParticular = await Particular.findByIdAndUpdate(
@@ -351,6 +478,9 @@ export const updateParticular = async (req: Request, res: Response, next: NextFu
         ...(products !== undefined && { products }),
         ...(performaId !== undefined && { performaId }),
         ...(performaNumber !== undefined && { performaNumber }),
+        ...(totalCustomerCases !== undefined && { totalCustomerCases }),
+        ...(deliveredCaseCount !== undefined && { deliveredCaseCount }),
+        ...(pendingCaseCount !== undefined && { pendingCaseCount }),
       },
       { new: true, runValidators: true }
     );
