@@ -252,9 +252,26 @@ export const createCustomer = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    const cleanMobile = String(mobile).replace(/\D/g, '');
+    const rawMobile = String(mobile).replace(/\D/g, '');
+    const cleanMobile = rawMobile.length > 10 ? rawMobile.slice(-10) : rawMobile;
     if (cleanMobile.length < 10) {
       res.status(400).json({ success: false, error: 'Please enter a valid 10-digit mobile number' });
+      return;
+    }
+
+    // Check if customer with this mobile number already exists
+    const existingCustomer = await Customer.findOne({
+      $or: [
+        { mobile: cleanMobile },
+        { mobile: String(mobile).trim() },
+        { mobile: { $regex: new RegExp(`${cleanMobile}$`) } },
+      ],
+    });
+    if (existingCustomer) {
+      res.status(400).json({
+        success: false,
+        error: `A customer with mobile number "${cleanMobile}" already exists (${existingCustomer.name}).`,
+      });
       return;
     }
 
@@ -266,7 +283,7 @@ export const createCustomer = async (req: Request, res: Response, next: NextFunc
 
     const customer = await Customer.create({
       name: String(name).trim(),
-      mobile: String(mobile).trim(),
+      mobile: cleanMobile,
       address: String(address || '').trim(),
       state: state ? String(state).trim() : '',
       gst: finalTaxNumber || 'N/A',
@@ -277,21 +294,24 @@ export const createCustomer = async (req: Request, res: Response, next: NextFunc
       loginPassword: hashPassword(initialPassword),
     });
 
-    // Also sync in Admin collection for instant customer portal login
+    // Also sync in Admin collection for instant customer portal login (without overwriting admin/superadmin accounts)
     try {
       const { Admin } = await import('../models/Admin');
-      await Admin.findOneAndUpdate(
-        { username: cleanMobile || customer.mobile },
-        {
-          username: cleanMobile || customer.mobile,
-          password: hashPassword(initialPassword),
-          role: 'user',
-          customerName: customer.name,
-          customerId: String(customer._id),
-          mobile: customer.mobile,
-        },
-        { upsert: true, new: true }
-      );
+      const existingAdmin = await Admin.findOne({ username: cleanMobile });
+      if (!existingAdmin || existingAdmin.role === 'user') {
+        await Admin.findOneAndUpdate(
+          { username: cleanMobile },
+          {
+            username: cleanMobile,
+            password: hashPassword(initialPassword),
+            role: 'user',
+            customerName: customer.name,
+            customerId: String(customer._id),
+            mobile: cleanMobile,
+          },
+          { upsert: true, new: true }
+        );
+      }
     } catch (adminErr) {
       console.warn('Admin account sync notice (customer record created):', adminErr);
     }

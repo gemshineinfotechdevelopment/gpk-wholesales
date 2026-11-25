@@ -48,7 +48,16 @@ export const getParticularNetTotal = (p: any): number => {
     packingAmt = packNum;
   }
 
-  const taxAmt = cleanNumber(p.tax);
+  let taxAmt = 0;
+  const taxStr = String(p.tax || '0').trim();
+  const taxNum = cleanNumber(taxStr);
+  const isTaxFlat = taxStr.startsWith('₹') || taxStr.toLowerCase().includes('rs');
+  if (taxStr.includes('%') || (!isTaxFlat && taxNum > 0 && taxNum <= 100)) {
+    const totalCases = cleanNumber(p.caseCount) || (Array.isArray(p.products) ? p.products.reduce((acc: number, item: any) => acc + cleanNumber(item.quantity), 0) : 0);
+    taxAmt = (2500 * totalCases * taxNum) / 100;
+  } else {
+    taxAmt = taxNum;
+  }
   const calculatedNet = Math.max(0, subtotal - discountAmt + packingAmt + taxAmt);
 
   if (storedTotal > 0) {

@@ -26,7 +26,7 @@ const CustomerSchema: Schema = new Schema(
     avatarLetter: { type: String, trim: true },
     avatarBg: { type: String, default: '#BAE6FD' },
     avatarColor: { type: String, default: '#1D4ED8' },
-    address: { type: String, required: true, trim: true },
+    address: { type: String, trim: true, default: '' },
     state: { type: String, trim: true, default: '' },
     mobile: { type: String, required: true, trim: true },
     gst: { type: String, default: 'N/A', trim: true },

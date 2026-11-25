@@ -306,14 +306,21 @@ export const PerformaPage: FC<PerformaPageProps> = ({
     }
   }, [selectedCustomer]);
 
-  // Filter available products by selected productCompany for smart autofill/selection
+  // Filter available products strictly by selected productCompany
   const filteredProductsForEntry = useMemo(() => {
-    if (!productCompany || !productCompany.trim() || productCompany.trim().toLowerCase() === 'general') return products;
+    if (!productCompany || !productCompany.trim() || productCompany.trim().toLowerCase() === 'general') {
+      return products;
+    }
     const comp = productCompany.trim().toLowerCase();
-    const matched = products.filter(
-      (p: any) => p.companyName && p.companyName.trim().toLowerCase() === comp
-    );
-    return matched.length > 0 ? matched : products;
+    const exactMatches = products.filter((p: any) => {
+      const pComp = (p.company || p.companyName || '').trim().toLowerCase();
+      return pComp === comp;
+    });
+    if (exactMatches.length > 0) return exactMatches;
+    return products.filter((p: any) => {
+      const pComp = (p.company || p.companyName || '').trim().toLowerCase();
+      return pComp && (pComp.includes(comp) || comp.includes(pComp));
+    });
   }, [products, productCompany]);
 
   // When product dropdown selected, autofill code, company, rate without overwriting user entered company
@@ -325,9 +332,10 @@ export const PerformaPage: FC<PerformaPageProps> = ({
       setRate(prod.rate ? String(prod.rate) : '');
       setPktUnit(prod.pktUnit || '1');
       // If product has a brand name and user hasn't typed one yet, autofill it
-      if (prod.companyName && prod.companyName.toLowerCase() !== 'general') {
+      const prodComp = (prod.company || prod.companyName || '').trim();
+      if (prodComp && prodComp.toLowerCase() !== 'general') {
         if (!productCompany.trim() || productCompany.trim().toLowerCase() === 'general') {
-          setProductCompany(prod.companyName);
+          setProductCompany(prodComp);
         }
       }
     } else {
@@ -458,7 +466,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
 
     const rowCompany =
       productCompany.trim() ||
-      (selectedProductObj?.companyName && selectedProductObj.companyName.toLowerCase() !== 'general' ? selectedProductObj.companyName : '') ||
+      ((selectedProductObj?.company || selectedProductObj?.companyName) && (selectedProductObj.company || selectedProductObj.companyName).toLowerCase() !== 'general' ? (selectedProductObj.company || selectedProductObj.companyName) : '') ||
       (selectedCustomer?.companyName && selectedCustomer.companyName.toLowerCase() !== 'general' ? selectedCustomer.companyName : '') ||
       '';
 
@@ -578,14 +586,19 @@ export const PerformaPage: FC<PerformaPageProps> = ({
     return num;
   }, [packing, baseAfterDiscount]);
 
-  // Tax Calculation (Manual fixed amount directly added)
+  // Tax Calculation (Formula: 2500 * no. of cases * 18% or specified %)
   const taxVal = useMemo(() => {
     if (!tax) return 0;
-    const cleanTax = String(tax).trim().replace(/[^0-9.]/g, '');
-    const num = parseFloat(cleanTax) || 0;
+    const cleanTax = String(tax).trim();
+    if (cleanTax === '0') return 0;
+    const num = parseFloat(cleanTax.replace(/[^0-9.]/g, '')) || 0;
     if (num <= 0) return 0;
+    if (cleanTax.endsWith('%') || num <= 100) {
+      const cases = totalRequiredCasesCount || 0;
+      return Number(((2500 * cases * num) / 100).toFixed(2));
+    }
     return num;
-  }, [tax]);
+  }, [tax, totalRequiredCasesCount]);
 
   // Final Net Total Allocated Amount
   const finalTotalAllocatedValue = useMemo(() => {
@@ -880,10 +893,14 @@ export const PerformaPage: FC<PerformaPageProps> = ({
   const filteredEditModalProducts = useMemo(() => {
     const comp = (editNewProductCompany || editCompanyName || '').trim().toLowerCase();
     if (!comp || comp === 'general') return products;
-    const matched = products.filter(
-      (p: any) => p.companyName && p.companyName.trim().toLowerCase() === comp
+    const exactMatches = products.filter(
+      (p: any) => (p.company || p.companyName || '').trim().toLowerCase() === comp
     );
-    return matched.length > 0 ? matched : products;
+    if (exactMatches.length > 0) return exactMatches;
+    return products.filter((p: any) => {
+      const pComp = (p.company || p.companyName || '').trim().toLowerCase();
+      return pComp && (pComp.includes(comp) || comp.includes(pComp));
+    });
   }, [products, editNewProductCompany, editCompanyName]);
 
   // Add Product or Extra Quantity in Edit Modal
@@ -1535,8 +1552,25 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   freeSolo
                   options={companies.map((c: any) => c.name).filter(Boolean)}
                   value={productCompany}
-                  onChange={(_e, val) => setProductCompany(val || '')}
-                  onInputChange={(_e, val) => setProductCompany(val || '')}
+                  onChange={(_e, val) => {
+                    const nextComp = val || '';
+                    setProductCompany(nextComp);
+                    if (selectedProductObj) {
+                      const prodComp = (selectedProductObj.company || selectedProductObj.companyName || '').trim().toLowerCase();
+                      if (nextComp && prodComp && prodComp !== nextComp.trim().toLowerCase()) {
+                        setSelectedProductObj(null);
+                        setProductName('');
+                        setProductCode('');
+                        setRate('');
+                        setPktUnit('1');
+                      }
+                    }
+                  }}
+                  onInputChange={(_e, val, reason) => {
+                    if (reason === 'input' || reason === 'clear') {
+                      setProductCompany(val || '');
+                    }
+                  }}
                   sx={{ flex: 1, minWidth: '280px', backgroundColor: '#FFFFFF', borderRadius: '8px' }}
                   renderInput={(params) => (
                     <TextField
@@ -1606,16 +1640,22 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   options={filteredProductsForEntry}
                   getOptionLabel={(option) => {
                     if (typeof option === 'string') return option;
-                    return `${option.name || ''} ${option.code ? `(${option.code})` : ''} ${option.companyName ? `• ${option.companyName}` : ''}`.trim();
+                    const cName = option.company || option.companyName || '';
+                    return `${option.name || ''} ${option.code ? `(${option.code})` : ''} ${cName ? `• ${cName}` : ''}`.trim();
                   }}
                   value={selectedProductObj}
                   onChange={(_e, val) => handleProductSelect(val)}
                   freeSolo
                   onInputChange={(_e, newInputValue) => setProductName(newInputValue)}
+                  noOptionsText={
+                    productCompany
+                      ? `No products found for "${productCompany}".`
+                      : 'No products available.'
+                  }
                   renderOption={(props, option) => {
                     const { key, ...otherProps } = props;
                     const optName = typeof option === 'string' ? option : option.name;
-                    const optCompany = typeof option === 'string' ? '' : option.companyName;
+                    const optCompany = typeof option === 'string' ? '' : (option.company || option.companyName);
                     const optCode = typeof option === 'string' ? '' : option.code;
 
                     return (
@@ -1665,8 +1705,8 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                       size="small"
                       placeholder={
                         productCompany
-                          ? `Type product for ${productCompany} (e.g. 1000 WALA)...`
-                          : 'Type product name (e.g. 1000 WALA)...'
+                          ? `Select product from ${productCompany}...`
+                          : 'Select company first, or type product...'
                       }
                     />
                   )}
@@ -2021,19 +2061,46 @@ export const PerformaPage: FC<PerformaPageProps> = ({
 
                 {/* 3. Tax in Amount */}
                 <Box>
-                  <Typography sx={{ fontSize: '12px', fontWeight: 700, color: '#475569', mb: 0.5 }}>
-                    Tax (₹ Amount)
-                  </Typography>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                    <Typography sx={{ fontSize: '12px', fontWeight: 700, color: '#475569' }}>
+                      Tax (18% on ₹2500/case)
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => setTax(tax ? '' : '18%')}
+                      sx={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        py: 0,
+                        px: 0.8,
+                        minWidth: 0,
+                        height: '20px',
+                        color: tax ? '#DC2626' : '#166534',
+                        backgroundColor: tax ? '#FEF2F2' : '#F0FDF4',
+                        borderRadius: '4px',
+                        textTransform: 'none',
+                        '&:hover': {
+                          backgroundColor: tax ? '#FEE2E2' : '#DCFCE7',
+                        },
+                      }}
+                    >
+                      {tax ? 'Clear' : '+ 18% GST'}
+                    </Button>
+                  </Box>
                   <TextField
                     fullWidth
                     size="small"
-                    placeholder="e.g. 1000"
+                    placeholder="e.g. 18% (Formula: 2500 × Cases × 18%)"
                     value={tax}
                     onChange={(e) => setTax(e.target.value)}
-                    type="number"
-                    helperText={taxVal > 0 ? `+ ₹${taxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : 'Fixed tax amount'}
+                    helperText={
+                      taxVal > 0
+                        ? `+ ₹${taxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (2,500 × ${totalRequiredCasesCount} cases × ${tax.includes('%') ? tax : `${tax}%`})`
+                        : 'Formula: 2500 × Cases × 18%'
+                    }
                     slotProps={{
-                      formHelperText: { sx: { color: taxVal > 0 ? '#166534' : undefined, fontWeight: 600 } },
+                      formHelperText: { sx: { color: taxVal > 0 ? '#166534' : '#64748B', fontWeight: 600 } },
                     }}
                   />
                 </Box>
@@ -2111,8 +2178,8 @@ export const PerformaPage: FC<PerformaPageProps> = ({
 
                   {taxVal > 0 && (
                     <Box>
-                      <Typography sx={{ fontSize: '10.5px', color: '#475569', fontWeight: 700, textTransform: 'uppercase' }}>
-                        Tax (Amount)
+                      <Typography sx={{ fontSize: '10.5px', color: '#166534', fontWeight: 700, textTransform: 'uppercase' }}>
+                        Tax ({tax.includes('%') ? tax : `${tax}%`} on ₹2500/case)
                       </Typography>
                       <Typography sx={{ fontSize: '16px', fontWeight: 800, color: '#166534' }}>
                         + ₹{taxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -2153,18 +2220,33 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                     disableElevation
                     onClick={handleCreatePerforma}
                     disabled={submitLoading || productRows.length === 0 || !selectedCustomer}
-                    startIcon={<CheckCircleOutlineRoundedIcon />}
+                    startIcon={<CheckCircleOutlineRoundedIcon sx={{ fontSize: 20 }} />}
                     sx={{
-                      background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
-                      color: '#FFFFFF',
-                      fontWeight: 700,
-                      fontSize: '14px',
+                      backgroundColor: '#1D4ED8',
+                      background: 'linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 100%)',
+                      color: '#FFFFFF !important',
+                      fontWeight: 800,
+                      fontSize: '14.5px',
+                      letterSpacing: '0.015em',
                       textTransform: 'none',
                       borderRadius: '8px',
-                      px: 3,
-                      py: 1,
+                      px: 3.5,
+                      py: 1.1,
+                      boxShadow: '0 2px 4px rgba(29, 78, 216, 0.25)',
+                      textShadow: '0 1px 2px rgba(0, 0, 0, 0.25)',
+                      transition: 'all 0.15s ease-in-out',
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                        backgroundColor: '#1E40AF',
+                        background: 'linear-gradient(135deg, #172554 0%, #1E40AF 100%)',
+                        boxShadow: '0 4px 8px rgba(29, 78, 216, 0.35)',
+                      },
+                      '&.Mui-disabled': {
+                        backgroundColor: '#E2E8F0 !important',
+                        background: '#E2E8F0 !important',
+                        color: '#94A3B8 !important',
+                        textShadow: 'none',
+                        boxShadow: 'none',
+                        cursor: 'not-allowed',
                       },
                     }}
                   >

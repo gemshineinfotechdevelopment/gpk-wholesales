@@ -577,11 +577,15 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
 
   const editTaxVal = useMemo(() => {
     if (!editTax) return 0;
-    const cleanTax = String(editTax).trim().replace(/[^0-9.]/g, '');
-    const num = parseFloat(cleanTax) || 0;
+    const cleanTax = String(editTax).trim();
+    if (cleanTax === '0') return 0;
+    const num = parseFloat(cleanTax.replace(/[^0-9.]/g, '')) || 0;
     if (num <= 0) return 0;
+    if (cleanTax.endsWith('%') || num <= 100) {
+      return Number(((2500 * editTotalCases * num) / 100).toFixed(2));
+    }
     return num;
-  }, [editTax]);
+  }, [editTax, editTotalCases]);
 
   const editFinalTotalAllocated = useMemo(() => {
     const net = Math.max(0, editSubtotalAllocated - editDiscountVal + editPackingVal + editTaxVal);
@@ -590,12 +594,18 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
 
   // Filter available products in Edit Modal by chosen brand
   const filteredEditModalProducts = useMemo(() => {
-    if (!newRowProductCompany || !newRowProductCompany.trim() || newRowProductCompany.trim().toLowerCase() === 'general') return availableProducts;
+    if (!newRowProductCompany || !newRowProductCompany.trim() || newRowProductCompany.trim().toLowerCase() === 'general') {
+      return availableProducts;
+    }
     const comp = newRowProductCompany.trim().toLowerCase();
-    const matched = availableProducts.filter(
-      (p: any) => p.companyName && p.companyName.trim().toLowerCase() === comp
+    const exactMatches = availableProducts.filter(
+      (p: any) => (p.company || p.companyName || '').trim().toLowerCase() === comp
     );
-    return matched.length > 0 ? matched : availableProducts;
+    if (exactMatches.length > 0) return exactMatches;
+    return availableProducts.filter((p: any) => {
+      const pComp = (p.company || p.companyName || '').trim().toLowerCase();
+      return pComp && (pComp.includes(comp) || comp.includes(pComp));
+    });
   }, [availableProducts, newRowProductCompany]);
 
   // Save Performa Changes
@@ -1641,15 +1651,14 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     }}
                   />
                   <TextField
-                    label="Tax (₹ Amount)"
+                    label="Tax (18% on ₹2500/case)"
                     size="small"
-                    type="number"
                     value={editTax}
                     onChange={(e) => setEditTax(e.target.value)}
-                    placeholder="e.g. 1000"
-                    helperText={editTaxVal > 0 ? `+ ₹${editTaxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : undefined}
+                    placeholder="e.g. 18%"
+                    helperText={editTaxVal > 0 ? `+ ₹${editTaxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (2,500 × ${editTotalCases} cases × ${editTax.includes('%') ? editTax : `${editTax}%`})` : 'Formula: 2500 × Cases × 18%'}
                     slotProps={{
-                      formHelperText: { sx: { color: '#166534', fontWeight: 600 } },
+                      formHelperText: { sx: { color: editTaxVal > 0 ? '#166534' : '#64748B', fontWeight: 600 } },
                     }}
                   />
                 </Box>
@@ -1695,7 +1704,8 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     options={filteredEditModalProducts}
                     getOptionLabel={(o) => {
                       if (typeof o === 'string') return o;
-                      return `${o.name || ''} ${o.code ? `(${o.code})` : ''} ${o.companyName ? `• ${o.companyName}` : ''}`.trim();
+                      const cName = o.company || o.companyName || '';
+                      return `${o.name || ''} ${o.code ? `(${o.code})` : ''} ${cName ? `• ${cName}` : ''}`.trim();
                     }}
                     value={newRowProductObj}
                     onChange={(_e, val) => {
@@ -1703,7 +1713,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                       if (val) {
                         setNewRowProductName(val.name || '');
                         setNewRowProductCode(val.code || val.idCode || '');
-                        setNewRowProductCompany(val.companyName || editCompanyName || '');
+                        setNewRowProductCompany(val.company || val.companyName || editCompanyName || '');
                         setNewRowRate(val.rate ? String(val.rate) : '');
                         setNewRowPktUnit(val.pktUnit ? String(val.pktUnit) : '1');
                       }

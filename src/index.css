@@ -66,15 +66,22 @@ input[type='number'] {
   }
 }
 
-/* Global Print Styles: Removes browser default headers and footers (date, title, URL, page # in 4 corners) */
+/* Global Print Styles: Removes browser default headers and footers, ensures symmetric margins and single-page fit */
 @media print {
   @page {
-    size: auto;
-    margin: 0;
+    size: A4 portrait;
+    margin: 6mm 8mm;
   }
-  body {
+  *, *:before, *:after {
+    box-sizing: border-box !important;
+  }
+  html, body {
     margin: 0 !important;
     padding: 0 !important;
+    width: 100% !important;
+    background: #FFFFFF !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 }
 

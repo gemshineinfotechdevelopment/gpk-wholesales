@@ -46,14 +46,15 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
   };
 
   const handleSubmit = async () => {
-    if (!formData.fullName.trim() || !formData.billingAddress.trim()) {
-      alert('Please fill in required fields (Full Name and Address)');
+    if (!formData.fullName.trim()) {
+      alert('Customer / Business Name is mandatory.');
       return;
     }
 
-    const cleanMobile = formData.mobileNumber.replace(/\D/g, '');
-    if (!formData.mobileNumber.trim() || cleanMobile.length < 10) {
-      alert('Mobile Number is mandatory (minimum 10 digits) for customer login registration.');
+    const rawMobile = formData.mobileNumber.replace(/\D/g, '');
+    const cleanMobile = rawMobile.length > 10 ? rawMobile.slice(-10) : rawMobile;
+    if (!cleanMobile || cleanMobile.length < 10) {
+      alert('Please enter a valid 10-digit mobile number for customer registration.');
       return;
     }
 
@@ -65,7 +66,7 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
 
       await CustomersApi.create({
         name: formData.fullName.trim(),
-        mobile: formData.mobileNumber.trim(),
+        mobile: cleanMobile,
         gst: cleanTaxNumber || 'N/A',
         taxIdType: taxType,
         taxIdNumber: cleanTaxNumber,
@@ -83,9 +84,8 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
     } catch (err: any) {
       console.error('Failed to create customer:', err);
       const errorMsg =
-        err?.message && !err.message.includes('HTTP error')
-          ? err.message
-          : 'Error creating customer. Please check your backend connection or mobile number.';
+        err?.message ||
+        'Error creating customer. Please check your backend connection or mobile number.';
       alert(errorMsg);
     } finally {
       setLoading(false);
@@ -407,7 +407,7 @@ export const AddCustomerPage: FC<AddCustomerPageProps> = ({
                   letterSpacing: '-0.01em',
                 }}
               >
-                Billing / Delivery Address *
+                Billing / Delivery Address
               </Typography>
               <Box
                 sx={{

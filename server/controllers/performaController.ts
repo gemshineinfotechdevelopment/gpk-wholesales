@@ -360,8 +360,18 @@ export const createPerforma = async (req: Request, res: Response, next: NextFunc
     }
     packingAmt = Number(packingAmt.toFixed(2));
 
-    const cleanTax = String(tax || '0').trim().replace(/[^0-9.]/g, '');
-    const taxAmt = Number((parseFloat(cleanTax) || 0).toFixed(2));
+    const cleanTax = String(tax || '0').trim();
+    const taxNum = parseFloat(cleanTax.replace(/[^0-9.]/g, '')) || 0;
+    let taxAmt = 0;
+    if (taxNum > 0) {
+      if (cleanTax.includes('%') || taxNum <= 100) {
+        const totalCases = sanitizedProducts.reduce((sum, p) => sum + (parseFloat(String(p.requiredCases)) || 0), 0);
+        taxAmt = (2500 * totalCases * taxNum) / 100;
+      } else {
+        taxAmt = taxNum;
+      }
+    }
+    taxAmt = Number(taxAmt.toFixed(2));
 
     const finalAllocatedTotal = Math.max(0, Number((subtotalAmount - discountAmt + packingAmt + taxAmt).toFixed(2)));
 
@@ -545,8 +555,18 @@ export const updatePerforma = async (req: Request, res: Response, next: NextFunc
     }
     packingAmt = Number(packingAmt.toFixed(2));
 
-    const cleanTax = String(existing.tax || '0').trim().replace(/[^0-9.]/g, '');
-    const taxAmt = Number((parseFloat(cleanTax) || 0).toFixed(2));
+    const cleanTax = String(existing.tax || '0').trim();
+    const taxNum = parseFloat(cleanTax.replace(/[^0-9.]/g, '')) || 0;
+    let taxAmt = 0;
+    if (taxNum > 0) {
+      if (cleanTax.includes('%') || taxNum <= 100) {
+        const totalCases = existing.products.reduce((sum, p) => sum + (parseFloat(String(p.requiredCases)) || 0), 0);
+        taxAmt = (2500 * totalCases * taxNum) / 100;
+      } else {
+        taxAmt = taxNum;
+      }
+    }
+    taxAmt = Number(taxAmt.toFixed(2));
 
     const finalAlloc = Math.max(0, Number((subtotalAmt - discountAmt + packingAmt + taxAmt).toFixed(2)));
 

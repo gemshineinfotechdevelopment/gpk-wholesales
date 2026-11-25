@@ -99,14 +99,20 @@ export const generateBillHtml = (bill: BillPrintData): string => {
     packingLabel = 'Packing Charges';
   }
 
-  // Tax calculation (Manual flat amount)
-  const rawTaxStr = String(bill.tax ?? '').trim().replace(/[^0-9.]/g, '');
-  const taxNum = parseFloat(rawTaxStr) || 0;
+  // Tax calculation (Formula: 2500 * cases * 18% or specified %)
+  const rawTaxStr = String(bill.tax ?? '').trim();
+  const taxNum = parseFloat(rawTaxStr.replace(/[^0-9.]/g, '')) || 0;
   let taxAmt = 0;
   let taxLabel = 'Tax Amount';
   if (taxNum > 0) {
-    taxAmt = taxNum;
-    taxLabel = `Tax Amount (₹${taxNum.toLocaleString('en-IN')})`;
+    if (rawTaxStr.includes('%') || taxNum <= 100) {
+      const casesVal = parseFloat(String(bill.caseCount || '0')) || (Array.isArray(bill.products) ? bill.products.reduce((acc: number, p: any) => acc + (parseFloat(p.quantity) || 0), 0) : 0);
+      taxAmt = (2500 * casesVal * taxNum) / 100;
+      taxLabel = `Tax Amount (${taxNum}% on ₹2500/case)`;
+    } else {
+      taxAmt = taxNum;
+      taxLabel = `Tax Amount (₹${taxNum.toLocaleString('en-IN')})`;
+    }
   } else {
     taxLabel = 'Tax Amount';
   }
@@ -148,8 +154,8 @@ export const generateBillHtml = (bill: BillPrintData): string => {
   <title>Bill #${bill.billNo || 'Invoice'} - GPK Crackers</title>
   <style>
     @page {
-      size: auto;
-      margin: 0;
+      size: A4 portrait;
+      margin: 8mm 10mm;
     }
     *, *:before, *:after {
       box-sizing: border-box;
@@ -162,13 +168,25 @@ export const generateBillHtml = (bill: BillPrintData): string => {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
-      padding: 8mm 10mm;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
     }
     .bill-wrapper {
-      width: 100%;
-      max-width: 794px;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: 272mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-sizing: border-box;
       margin: 0 auto;
-      padding: 6px;
+      page-break-inside: avoid;
+      break-inside: avoid;
+    }
+    .bill-content {
+      flex: 1 0 auto;
+      width: 100%;
     }
     .top-header {
       position: relative;
@@ -325,122 +343,220 @@ export const generateBillHtml = (bill: BillPrintData): string => {
     .summary-total-row .summary-val-cell {
       color: #FFFFFF !important;
     }
+    .prod-table th {
+      background: #0F172A;
+      color: #FFFFFF;
+      border: 1px solid #0F172A;
+      padding: 6px 8px;
+      font-weight: 800;
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    .prod-table td {
+      border: 1px solid #CBD5E1;
+      padding: 5px 8px;
+      vertical-align: middle;
+    }
+    .split-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 14px;
+      page-break-inside: avoid;
+    }
+    .receipt-box {
+      flex: 1 1 50%;
+      max-width: 48%;
+      border: 1px solid #CBD5E1;
+      border-radius: 6px;
+      min-height: ${receiptSrc ? '90px' : '50px'};
+      max-height: 120px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background-color: #F8FAFC;
+      padding: 4px;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+    .receipt-img {
+      max-width: 100%;
+      max-height: 110px;
+      object-fit: contain;
+      border-radius: 4px;
+    }
+    .summary-box {
+      flex: 1 1 50%;
+      max-width: 48%;
+    }
+    .summary-table {
+      width: 100%;
+      border-collapse: collapse;
+      border: 1.5px solid #0F172A;
+      font-size: 11px;
+    }
+    .summary-table td {
+      border: 1px solid #CBD5E1;
+      padding: 5px 8px;
+    }
+    .summary-label-cell {
+      font-weight: 600;
+      color: #334155;
+      background-color: #F8FAFC;
+    }
+    .summary-val-cell {
+      text-align: right;
+      font-weight: 700;
+      color: #0F172A;
+    }
+    .summary-total-row td {
+      background-color: #0F172A !important;
+      color: #FFFFFF !important;
+      font-weight: 900;
+      font-size: 13px;
+      padding: 6px 8px;
+      border: 1px solid #0F172A !important;
+    }
+    .summary-total-row .summary-val-cell {
+      color: #FFFFFF !important;
+    }
     .sig-section {
+      margin-top: auto;
+      padding-top: 18px;
+      padding-bottom: 4px;
       display: flex;
       justify-content: space-between;
       align-items: flex-end;
-      margin-top: 24px;
-      padding-top: 14px;
       border-top: 1px dashed #CBD5E1;
-      font-size: 11.5px;
+      font-size: 11px;
       page-break-inside: avoid;
     }
     .sig-block {
       text-align: center;
-      width: 160px;
+      width: 180px;
+    }
+    .sig-space {
+      height: 38px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: #0F172A;
+      padding-bottom: 4px;
     }
     .sig-line {
-      border-top: 1px solid #0F172A;
+      border-top: 1.5px solid #0F172A;
       margin-bottom: 4px;
+    }
+    .sig-label {
+      font-size: 9.5px;
+      font-weight: 800;
+      color: #334155;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
   </style>
 </head>
 <body>
   <div class="bill-wrapper">
-    <!-- Header -->
-    <div class="top-header">
-      ${preparedBy ? `<div class="signatory">Prepared By: <b>${preparedBy}</b></div>` : ''}
-      <div class="comp-name">GPK Crackers</div>
-      <div class="comp-sub">Wholesale & Retail Trading • Sivakasi</div>
-      <div><span class="doc-type-badge">ESTIMATE / PARTICULAR BILL</span></div>
+    <div class="bill-content">
+      <!-- Header -->
+      <div class="top-header">
+        ${preparedBy ? `<div class="signatory">Prepared By: <b>${preparedBy}</b></div>` : ''}
+        <div class="comp-name">GPK Crackers</div>
+        <div class="comp-sub">Wholesale & Retail Trading • Sivakasi</div>
+        <div><span class="doc-type-badge">ESTIMATE / PARTICULAR BILL</span></div>
+      </div>
+
+      <!-- Metadata Block -->
+      <div class="meta-box">
+        <div>
+          <div class="meta-row"><span class="meta-label">Bill No:</span><span class="meta-val" style="color:#1D4ED8; font-size:13.5px;">#${bill.billNo || '-'}</span></div>
+          <div class="meta-row"><span class="meta-label">Customer Name:</span><span class="meta-val">${bill.customerName || '-'}</span></div>
+          ${bill.companyName && bill.companyName.trim() ? `<div class="meta-row"><span class="meta-label">Company Name:</span><span class="meta-val">${bill.companyName.trim()}</span></div>` : ''}
+          <div class="meta-row"><span class="meta-label">Transport Name:</span><span class="meta-val">${transportName}</span></div>
+        </div>
+        <div>
+          <div class="meta-row"><span class="meta-label">Date:</span><span class="meta-val">${bill.date || '-'}</span></div>
+          <div class="meta-row"><span class="meta-label">Total Cases:</span><span class="meta-val" style="font-size:13px; color:#1D4ED8;">${computedCases}</span></div>
+          ${bill.phone && bill.phone.trim() && bill.phone !== '+91 98765 43210' ? `<div class="meta-row"><span class="meta-label">Phone:</span><span class="meta-val">${bill.phone.trim()}</span></div>` : ''}
+        </div>
+      </div>
+
+      <!-- Products Table -->
+      <table class="prod-table">
+        <thead>
+          <tr>
+            <th style="width: 5%; text-align: center;">#</th>
+            <th style="width: 45%; text-align: left;">Particular / Product Description</th>
+            <th style="width: 10%; text-align: center;">Cases</th>
+            <th style="width: 12%; text-align: right;">Rate (₹)</th>
+            <th style="width: 12%; text-align: center;">Pkt / Unit</th>
+            <th style="width: 16%; text-align: right;">Amount (₹)</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${productRowsHtml || '<tr><td colspan="6" style="text-align:center; padding:14px; color:#64748B;">No product items attached.</td></tr>'}
+        </tbody>
+      </table>
+
+      <!-- Bottom Split Section: Left Uploaded Receipt & Right Summary Box -->
+      <div class="split-bottom">
+        <!-- Left Column: Uploaded Godown / Transport Receipt -->
+        <div class="receipt-box">
+          ${
+            receiptSrc
+              ? `<img src="${receiptSrc}" class="receipt-img" alt="Transport Receipt" />`
+              : `<div style="text-align: center; color: #64748B; font-size: 11px; padding: 10px;">
+                   <div style="font-weight: 700; color: #0F172A; margin-bottom: 2px; font-size: 11.5px;">TRANSPORT / GODOWN RECEIPT</div>
+                   <div>(No physical receipt attached)</div>
+                 </div>`
+          }
+        </div>
+
+        <!-- Right Column: Summary Table -->
+        <div class="summary-box">
+          <table class="summary-table">
+            <tbody>
+              <tr>
+                <td class="summary-label-cell">Subtotal / Amount</td>
+                <td class="summary-val-cell">₹ ${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              </tr>
+              <tr>
+                <td class="summary-label-cell" style="color: ${discountAmt > 0 ? '#DC2626' : '#334155'};">${discountLabel}</td>
+                <td class="summary-val-cell" style="color: ${discountAmt > 0 ? '#DC2626' : '#64748B'};">- ₹ ${discountAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              </tr>
+              <tr>
+                <td class="summary-label-cell">${packingLabel}</td>
+                <td class="summary-val-cell" style="color: ${packingAmt > 0 ? '#0F172A' : '#64748B'};">+ ₹ ${packingAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              </tr>
+              <tr>
+                <td class="summary-label-cell">${taxLabel}</td>
+                <td class="summary-val-cell" style="color: ${taxAmt > 0 ? '#0F172A' : '#64748B'};">+ ₹ ${taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+              </tr>
+              <tr class="summary-total-row">
+                <td class="summary-label-cell" style="background-color: #0F172A; color: #FFFFFF; font-weight: 800;">NET TOTAL AMOUNT</td>
+                <td class="summary-val-cell" style="font-size: 13px;">₹ ${formattedTotal}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
-    <!-- Metadata Block -->
-    <div class="meta-box">
-      <div>
-        <div class="meta-row"><span class="meta-label">Bill No:</span><span class="meta-val" style="color:#1D4ED8; font-size:14px;">#${bill.billNo || '-'}</span></div>
-        <div class="meta-row"><span class="meta-label">Customer Name:</span><span class="meta-val">${bill.customerName || '-'}</span></div>
-        ${bill.companyName && bill.companyName.trim() ? `<div class="meta-row"><span class="meta-label">Company Name:</span><span class="meta-val">${bill.companyName.trim()}</span></div>` : ''}
-        <div class="meta-row"><span class="meta-label">Transport Name:</span><span class="meta-val">${transportName}</span></div>
-      </div>
-      <div>
-        <div class="meta-row"><span class="meta-label">Date:</span><span class="meta-val">${bill.date || '-'}</span></div>
-        <div class="meta-row"><span class="meta-label">Total Cases:</span><span class="meta-val" style="font-size:13.5px; color:#1D4ED8;">${computedCases}</span></div>
-        ${bill.phone && bill.phone.trim() && bill.phone !== '+91 98765 43210' ? `<div class="meta-row"><span class="meta-label">Phone:</span><span class="meta-val">${bill.phone.trim()}</span></div>` : ''}
-      </div>
-    </div>
-
-    <!-- Products Table -->
-    <table class="prod-table">
-      <thead>
-        <tr>
-          <th style="width: 40px; text-align: center;">#</th>
-          <th style="text-align: left;">Particular / Product Description</th>
-          <th style="width: 75px; text-align: center;">Cases</th>
-          <th style="width: 85px; text-align: right;">Rate (₹)</th>
-          <th style="width: 80px; text-align: center;">Pkt / Unit</th>
-          <th style="width: 110px; text-align: right;">Amount (₹)</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${productRowsHtml || '<tr><td colspan="6" style="text-align:center; padding:16px; color:#64748B;">No product items attached.</td></tr>'}
-      </tbody>
-    </table>
-
-    <!-- Bottom Split Section: Left Uploaded Receipt & Right Summary Box -->
-    <div class="split-bottom">
-      <!-- Left Column: Uploaded Godown / Transport Receipt -->
-      <div class="receipt-box">
-        ${
-          receiptSrc
-            ? `<img src="${receiptSrc}" class="receipt-img" alt="Transport Receipt" />`
-            : `<div style="text-align: center; color: #64748B; font-size: 11.5px; padding: 14px;">
-                 <div style="font-weight: 700; color: #0F172A; margin-bottom: 4px; font-size: 12px;">TRANSPORT / GODOWN RECEIPT</div>
-                 <div>(No physical receipt attached for this bill)</div>
-               </div>`
-        }
-      </div>
-
-      <!-- Right Column: Summary Table -->
-      <div class="summary-box">
-        <table class="summary-table">
-          <tbody>
-            <tr>
-              <td class="summary-label-cell">Subtotal / Particular Amount</td>
-              <td class="summary-val-cell">₹ ${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            </tr>
-            <tr>
-              <td class="summary-label-cell" style="color: ${discountAmt > 0 ? '#DC2626' : '#334155'};">${discountLabel}</td>
-              <td class="summary-val-cell" style="color: ${discountAmt > 0 ? '#DC2626' : '#64748B'};">- ₹ ${discountAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            </tr>
-            <tr>
-              <td class="summary-label-cell">${packingLabel}</td>
-              <td class="summary-val-cell" style="color: ${packingAmt > 0 ? '#0F172A' : '#64748B'};">+ ₹ ${packingAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            </tr>
-            <tr>
-              <td class="summary-label-cell">${taxLabel}</td>
-              <td class="summary-val-cell" style="color: ${taxAmt > 0 ? '#0F172A' : '#64748B'};">+ ₹ ${taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-            </tr>
-            <tr class="summary-total-row">
-              <td>NET TOTAL AMOUNT</td>
-              <td class="summary-val-cell">₹ ${formattedTotal}</td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-    </div>
-
-    <!-- Signatures -->
+    <!-- Signatures Pinned at Bottom of Bill -->
     <div class="sig-section">
       <div class="sig-block">
-        <div style="height: 28px;"></div>
+        <div class="sig-space"></div>
         <div class="sig-line"></div>
-        <div style="font-weight: 700; color:#334155;">Customer Signature</div>
+        <div class="sig-label">Customer Signature</div>
       </div>
       <div class="sig-block">
-        <div style="font-weight: 700; color:#0F172A; margin-bottom: 24px;">For GPK Crackers</div>
+        <div class="sig-space">For GPK Crackers</div>
         <div class="sig-line"></div>
-        <div style="font-weight: 700; color:#334155;">Authorized Signatory</div>
+        <div class="sig-label">Authorized Signatory</div>
       </div>
     </div>
   </div>
@@ -537,19 +653,20 @@ export const generateCustomerListPrintHtml = (
 
       return `
         <tr class="data-row" style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
-          <td class="text-center" style="width: 30px;">${globalIdx + 1}</td>
-          <td class="text-center" style="width: 55px; font-weight:700; color:#475569;">${idDisplay}</td>
-          <td style="font-weight:800; color:#0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${c.name}</td>
-          <td style="color:#475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 195px;">${c.address || '-'}${c.state ? `, ${c.state}` : ''}</td>
-          <td class="text-right" style="font-weight:700; color:#1E293B; width: 90px;">₹ ${deb}</td>
-          <td class="text-right" style="font-weight:700; color:#16A34A; width: 90px;">₹ ${cred}</td>
-          <td class="text-right" style="width: 105px;">${balanceHtml}</td>
+          <td class="text-center" style="width: 4%;">${globalIdx + 1}</td>
+          <td class="text-center" style="width: 8%; font-weight:700; color:#475569;">${idDisplay}</td>
+          <td style="width: 28%; font-weight:800; color:#0F172A; word-break: break-word;">${c.name}</td>
+          <td style="width: 26%; color:#475569; word-break: break-word;">${c.address || '-'}${c.state ? `, ${c.state}` : ''}</td>
+          <td class="text-right" style="width: 11%; font-weight:700; color:#1E293B;">₹ ${deb}</td>
+          <td class="text-right" style="width: 11%; font-weight:700; color:#16A34A;">₹ ${cred}</td>
+          <td class="text-right" style="width: 12%;">${balanceHtml}</td>
         </tr>
       `;
     }).join('');
 
     return `
       <div class="print-page ${isFinalPage ? 'final-page' : ''}">
+        <div class="page-body">
         ${
           isFirstPage
             ? `
@@ -611,13 +728,13 @@ export const generateCustomerListPrintHtml = (
         <table class="data-table">
           <thead>
             <tr>
-              <th class="text-center" style="width: 30px;">#</th>
-              <th class="text-center" style="width: 55px;">ID</th>
-              <th style="width: 180px;">Customer Name</th>
-              <th style="width: 195px;">Address</th>
-              <th class="text-right" style="width: 90px;">Debit (Dr)</th>
-              <th class="text-right" style="width: 90px;">Credit (Cr)</th>
-              <th class="text-right" style="width: 105px;">Net Balance / Status</th>
+              <th class="text-center" style="width: 4%;">#</th>
+              <th class="text-center" style="width: 8%;">ID</th>
+              <th style="width: 28%;">Customer Name</th>
+              <th style="width: 26%;">Address</th>
+              <th class="text-right" style="width: 11%;">Debit (Dr)</th>
+              <th class="text-right" style="width: 11%;">Credit (Cr)</th>
+              <th class="text-right" style="width: 12%;">Net Balance / Status</th>
             </tr>
           </thead>
           <tbody>
@@ -666,21 +783,25 @@ export const generateCustomerListPrintHtml = (
             }
           </tfoot>
         </table>
+        </div>
 
         ${
           isFinalPage
             ? `
-        <!-- Signature Section (Final Page Only) -->
+        <!-- Signature Section Pinned at Bottom of Final Page -->
         <div class="signature-section">
           <div class="sig-box">
+            <div class="sig-space"></div>
             <div class="sig-line"></div>
             <div class="sig-label">Prepared By</div>
           </div>
           <div class="sig-box">
+            <div class="sig-space"></div>
             <div class="sig-line"></div>
             <div class="sig-label">Checked & Verified By</div>
           </div>
           <div class="sig-box">
+            <div class="sig-space">For GPK Crackers</div>
             <div class="sig-line"></div>
             <div class="sig-label">Authorized Signatory</div>
           </div>
@@ -699,8 +820,8 @@ export const generateCustomerListPrintHtml = (
   <title>${reportTitle} - ${currentDate}</title>
   <style>
     @page {
-      size: auto;
-      margin: 0;
+      size: A4 portrait;
+      margin: 8mm 10mm;
     }
     *, *:before, *:after {
       box-sizing: border-box;
@@ -708,42 +829,60 @@ export const generateCustomerListPrintHtml = (
       padding: 0;
     }
     html, body {
-      background: #ffffff;
-      color: #000000;
+      background: #FFFFFF;
+      color: #0F172A;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
-      padding: 8mm 10mm;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
     }
     .print-page {
-      width: 100%;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: 272mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       box-sizing: border-box;
+      position: relative;
       page-break-after: always;
       break-after: page;
-      padding: 0;
+      margin: 0 auto;
     }
     .print-page:last-child,
     .print-page.final-page {
       page-break-after: auto;
       break-after: auto;
     }
+    .page-body {
+      flex: 1 0 auto;
+      width: 100%;
+    }
     @media screen {
-      .print-page {
-        margin-bottom: 25px;
-        padding-bottom: 25px;
-        border-bottom: 2px dashed #94A3B8;
+      body {
+        padding: 10mm;
+        background: #F1F5F9;
       }
-      .print-page:last-child {
-        margin-bottom: 0;
-        padding-bottom: 0;
-        border-bottom: none;
+      .print-page {
+        background: #FFFFFF;
+        padding: 8mm 10mm;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid #E2E8F0;
       }
     }
     @media print {
+      body {
+        padding: 0 !important;
+        background: #FFFFFF !important;
+      }
       .print-page {
-        margin: 0;
-        border: none;
-        padding: 0;
+        margin: 0 !important;
+        border: none !important;
+        padding: 0 !important;
+        min-height: 272mm;
         page-break-after: always;
         break-after: page;
       }
@@ -886,24 +1025,40 @@ export const generateCustomerListPrintHtml = (
       height: 26px;
     }
     .signature-section {
+      margin-top: auto;
+      padding-top: 18px;
+      padding-bottom: 4px;
       display: flex;
       justify-content: space-between;
-      margin-top: 12px;
-      padding: 0 15px;
+      align-items: flex-end;
       page-break-inside: avoid;
+      break-inside: avoid;
+      border-top: 1px dashed #CBD5E1;
     }
     .sig-box {
       text-align: center;
-      width: 160px;
+      width: 180px;
+    }
+    .sig-space {
+      height: 38px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: #0F172A;
+      padding-bottom: 4px;
     }
     .sig-line {
-      border-top: 1px solid #000000;
-      margin-bottom: 3px;
+      border-top: 1.5px solid #0F172A;
+      margin-bottom: 5px;
     }
     .sig-label {
-      font-size: 9px;
-      font-weight: 700;
+      font-size: 9.5px;
+      font-weight: 800;
       color: #334155;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
   </style>
 </head>
@@ -977,20 +1132,21 @@ export const generateLedgerStatementHtml = (
 
       return `
         <tr class="data-row" style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
-          <td class="text-center" style="width:75px; color:#334155;">${entry.date || '-'}</td>
-          <td class="text-center" style="width:30px;">${globalIdx + 1}</td>
-          <td style="font-weight:700; color:#0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 130px;">${desc}</td>
-          <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 110px;">${entry.type === 'BILL' ? 'Bill Debit' : (entry.paymentMode || 'Credit')}</td>
-          <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 135px;">${entry.type === 'BILL' ? '-' : (entry.depositAccount || '-')}</td>
-          <td class="text-right" style="width:100px; color:#1E293B; font-weight:700;">${deb > 0 ? `₹ ${deb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
-          <td class="text-right" style="width:100px; color:#16A34A; font-weight:700;">${cred > 0 ? `₹ ${cred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
-          <td class="text-right" style="width:105px; font-weight:800; color:#1D4ED8;">₹ ${entry.balance || '0.00'}</td>
+          <td class="text-center" style="width:11%; color:#334155;">${entry.date || '-'}</td>
+          <td class="text-center" style="width:4%;">${globalIdx + 1}</td>
+          <td style="width:25%; font-weight:700; color:#0F172A; word-break: break-word;">${desc}</td>
+          <td style="width:13%; color:#475569; font-size:9.5px; word-break: break-word;">${entry.type === 'BILL' ? 'Bill Debit' : (entry.paymentMode || 'Credit')}</td>
+          <td style="width:13%; color:#475569; font-size:9.5px; word-break: break-word;">${entry.type === 'BILL' ? '-' : (entry.depositAccount || '-')}</td>
+          <td class="text-right" style="width:11%; color:#1E293B; font-weight:700;">${deb > 0 ? `₹ ${deb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
+          <td class="text-right" style="width:11%; color:#16A34A; font-weight:700;">${cred > 0 ? `₹ ${cred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
+          <td class="text-right" style="width:12%; font-weight:800; color:#1D4ED8;">₹ ${entry.balance || '0.00'}</td>
         </tr>
       `;
     }).join('');
 
     return `
       <div class="print-page ${isFinalPage ? 'final-page' : ''}">
+        <div class="page-body">
         ${
           isFirstPage
             ? `
@@ -1046,14 +1202,14 @@ export const generateLedgerStatementHtml = (
         <table class="data-table">
           <thead>
             <tr>
-              <th class="text-center" style="width:75px;">Date</th>
-              <th class="text-center" style="width:30px;">#</th>
-              <th style="width:130px;">Particulars</th>
-              <th style="width:110px;">Payment Type</th>
-              <th style="width:135px;">Deposit Account</th>
-              <th class="text-right" style="width:100px;">Debit (Dr)</th>
-              <th class="text-right" style="width:100px;">Credit (Cr)</th>
-              <th class="text-right" style="width:105px;">Balance (₹)</th>
+              <th class="text-center" style="width:11%;">Date</th>
+              <th class="text-center" style="width:4%;">#</th>
+              <th style="width:25%;">Particulars</th>
+              <th style="width:13%;">Payment Type</th>
+              <th style="width:13%;">Deposit Account</th>
+              <th class="text-right" style="width:11%;">Debit (Dr)</th>
+              <th class="text-right" style="width:11%;">Credit (Cr)</th>
+              <th class="text-right" style="width:12%;">Balance (₹)</th>
             </tr>
           </thead>
           <tbody>
@@ -1086,21 +1242,25 @@ export const generateLedgerStatementHtml = (
             }
           </tfoot>
         </table>
+        </div>
 
         ${
           isFinalPage
             ? `
-        <!-- Signature Section (Final Page Only) -->
+        <!-- Signature Section Pinned at Bottom of Final Page -->
         <div class="signature-section">
           <div class="sig-box">
+            <div class="sig-space"></div>
             <div class="sig-line"></div>
             <div class="sig-label">Customer Verification</div>
           </div>
           <div class="sig-box">
+            <div class="sig-space"></div>
             <div class="sig-line"></div>
             <div class="sig-label">Checked & Verified By</div>
           </div>
           <div class="sig-box">
+            <div class="sig-space">For GPK Crackers</div>
             <div class="sig-line"></div>
             <div class="sig-label">Authorized Signatory</div>
           </div>
@@ -1119,8 +1279,8 @@ export const generateLedgerStatementHtml = (
   <title>Account Statement - ${customerName} - ${currentDate}</title>
   <style>
     @page {
-      size: auto;
-      margin: 0;
+      size: A4 portrait;
+      margin: 8mm 10mm;
     }
     *, *:before, *:after {
       box-sizing: border-box;
@@ -1128,42 +1288,60 @@ export const generateLedgerStatementHtml = (
       padding: 0;
     }
     html, body {
-      background: #ffffff;
-      color: #000000;
+      background: #FFFFFF;
+      color: #0F172A;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
-      padding: 8mm 10mm;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
     }
     .print-page {
-      width: 100%;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: 272mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       box-sizing: border-box;
+      position: relative;
       page-break-after: always;
       break-after: page;
-      padding: 0;
+      margin: 0 auto;
     }
     .print-page:last-child,
     .print-page.final-page {
       page-break-after: auto;
       break-after: auto;
     }
+    .page-body {
+      flex: 1 0 auto;
+      width: 100%;
+    }
     @media screen {
-      .print-page {
-        margin-bottom: 25px;
-        padding-bottom: 25px;
-        border-bottom: 2px dashed #94A3B8;
+      body {
+        padding: 10mm;
+        background: #F1F5F9;
       }
-      .print-page:last-child {
-        margin-bottom: 0;
-        padding-bottom: 0;
-        border-bottom: none;
+      .print-page {
+        background: #FFFFFF;
+        padding: 8mm 10mm;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid #E2E8F0;
       }
     }
     @media print {
+      body {
+        padding: 0 !important;
+        background: #FFFFFF !important;
+      }
       .print-page {
-        margin: 0;
-        border: none;
-        padding: 0;
+        margin: 0 !important;
+        border: none !important;
+        padding: 0 !important;
+        min-height: 272mm;
         page-break-after: always;
         break-after: page;
       }
@@ -1306,24 +1484,40 @@ export const generateLedgerStatementHtml = (
       height: 25px;
     }
     .signature-section {
+      margin-top: auto;
+      padding-top: 18px;
+      padding-bottom: 4px;
       display: flex;
       justify-content: space-between;
-      margin-top: 10px;
-      padding: 0 15px;
+      align-items: flex-end;
       page-break-inside: avoid;
+      break-inside: avoid;
+      border-top: 1px dashed #CBD5E1;
     }
     .sig-box {
       text-align: center;
-      width: 160px;
+      width: 180px;
+    }
+    .sig-space {
+      height: 38px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: #0F172A;
+      padding-bottom: 4px;
     }
     .sig-line {
-      border-top: 1px solid #000000;
-      margin-bottom: 3px;
+      border-top: 1.5px solid #0F172A;
+      margin-bottom: 5px;
     }
     .sig-label {
-      font-size: 9px;
-      font-weight: 700;
+      font-size: 9.5px;
+      font-weight: 800;
       color: #334155;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
   </style>
 </head>
@@ -1397,23 +1591,24 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
 
       return `
         <tr class="data-row" style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
-          <td class="text-center" style="width:26px;">${globalIdx + 1}</td>
-          <td class="text-center" style="font-weight:800; color:#1D4ED8; width:52px;">#${p.billNo || '-'}</td>
-          <td class="text-center" style="width:65px; color:#334155;">${p.date || '-'}</td>
-          <td style="font-weight:700; color:#0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 140px;">${p.customerName || '-'}</td>
-          <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 105px;">${p.companyName || '-'}</td>
-          <td class="text-center" style="width:38px; font-weight:700;">${p.caseCount || '-'}</td>
-          <td class="text-right" style="width:72px; color:#334155;">₹ ${subAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-          <td class="text-center" style="width:42px; color:${discStr !== '-' ? '#DC2626' : '#94A3B8'}; font-weight:600;">${discStr}</td>
-          <td class="text-center" style="width:42px; color:${packStr !== '-' ? '#0F172A' : '#94A3B8'}; font-weight:600;">${packStr}</td>
-          <td class="text-center" style="width:42px; color:${taxStr !== '-' ? '#0F172A' : '#94A3B8'}; font-weight:600;">${taxStr}</td>
-          <td class="text-right" style="font-weight:800; width:82px; color:#0F172A;">₹ ${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+          <td class="text-center" style="width:4%;">${globalIdx + 1}</td>
+          <td class="text-center" style="font-weight:800; color:#1D4ED8; width:8%;">#${p.billNo || '-'}</td>
+          <td class="text-center" style="width:10%; color:#334155;">${p.date || '-'}</td>
+          <td style="width:22%; font-weight:700; color:#0F172A; word-break: break-word;">${p.customerName || '-'}</td>
+          <td style="width:14%; color:#475569; font-size:9.5px; word-break: break-word;">${p.companyName || '-'}</td>
+          <td class="text-center" style="width:6%; font-weight:700;">${p.caseCount || '-'}</td>
+          <td class="text-right" style="width:11%; color:#334155;">₹ ${subAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+          <td class="text-center" style="width:5%; color:${discStr !== '-' ? '#DC2626' : '#94A3B8'}; font-weight:600;">${discStr}</td>
+          <td class="text-center" style="width:5%; color:${packStr !== '-' ? '#0F172A' : '#94A3B8'}; font-weight:600;">${packStr}</td>
+          <td class="text-center" style="width:5%; color:${taxStr !== '-' ? '#0F172A' : '#94A3B8'}; font-weight:600;">${taxStr}</td>
+          <td class="text-right" style="width:10%; font-weight:800; color:#0F172A;">₹ ${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         </tr>
       `;
     }).join('');
 
     return `
       <div class="print-page ${isFinalPage ? 'final-page' : ''}">
+        <div class="page-body">
         ${
           isFirstPage
             ? `
@@ -1467,17 +1662,17 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
         <table class="data-table">
           <thead>
             <tr>
-              <th class="text-center" style="width:26px;">#</th>
-              <th class="text-center" style="width:52px;">Bill No</th>
-              <th class="text-center" style="width:65px;">Date</th>
-              <th style="width:140px;">Customer Name</th>
-              <th style="width:105px;">Company</th>
-              <th class="text-center" style="width:38px;">Cases</th>
-              <th class="text-right" style="width:72px;">Subtotal</th>
-              <th class="text-center" style="width:42px;">Disc</th>
-              <th class="text-center" style="width:42px;">Pack</th>
-              <th class="text-center" style="width:42px;">Tax</th>
-              <th class="text-right" style="width:82px;">Net Total</th>
+              <th class="text-center" style="width:4%;">#</th>
+              <th class="text-center" style="width:8%;">Bill No</th>
+              <th class="text-center" style="width:10%;">Date</th>
+              <th style="width:22%;">Customer Name</th>
+              <th style="width:14%;">Company</th>
+              <th class="text-center" style="width:6%;">Cases</th>
+              <th class="text-right" style="width:11%;">Subtotal</th>
+              <th class="text-center" style="width:5%;">Disc</th>
+              <th class="text-center" style="width:5%;">Pack</th>
+              <th class="text-center" style="width:5%;">Tax</th>
+              <th class="text-right" style="width:10%;">Net Total</th>
             </tr>
           </thead>
           <tbody>
@@ -1508,21 +1703,25 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
             }
           </tfoot>
         </table>
+        </div>
 
         ${
           isFinalPage
             ? `
-        <!-- Signature Section (Final Page Only) -->
+        <!-- Signature Section Pinned at Bottom of Final Page -->
         <div class="signature-section">
           <div class="sig-box">
+            <div class="sig-space"></div>
             <div class="sig-line"></div>
             <div class="sig-label">Prepared By</div>
           </div>
           <div class="sig-box">
+            <div class="sig-space"></div>
             <div class="sig-line"></div>
             <div class="sig-label">Checked & Verified By</div>
           </div>
           <div class="sig-box">
+            <div class="sig-space">For GPK Crackers</div>
             <div class="sig-line"></div>
             <div class="sig-label">Authorized Signatory</div>
           </div>
@@ -1541,8 +1740,8 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
   <title>Particulars Bills Master Report - ${currentDate}</title>
   <style>
     @page {
-      size: auto;
-      margin: 0;
+      size: A4 portrait;
+      margin: 8mm 10mm;
     }
     *, *:before, *:after {
       box-sizing: border-box;
@@ -1550,40 +1749,69 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
       padding: 0;
     }
     html, body {
-      background: #ffffff;
-      color: #000000;
+      background: #FFFFFF;
+      color: #0F172A;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
-      padding: 8mm 10mm;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
     }
     .print-page {
-      width: 100%;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: 272mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       box-sizing: border-box;
+      position: relative;
       page-break-after: always;
       break-after: page;
-      padding: 0;
+      margin: 0 auto;
     }
     .print-page:last-child,
     .print-page.final-page {
       page-break-after: auto;
       break-after: auto;
     }
+    .page-body {
+      flex: 1 0 auto;
+      width: 100%;
+    }
     @media screen {
-      .print-page {
-        margin-bottom: 25px;
-        padding-bottom: 25px;
-        border-bottom: 2px dashed #94A3B8;
+      body {
+        padding: 10mm;
+        background: #F1F5F9;
       }
-      .print-page:last-child {
-        margin-bottom: 0;
-        padding-bottom: 0;
-        border-bottom: none;
+      .print-page {
+        background: #FFFFFF;
+        padding: 8mm 10mm;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid #E2E8F0;
       }
     }
     @media print {
+      body {
+        padding: 0 !important;
+        background: #FFFFFF !important;
+      }
       .print-page {
-        margin: 0;
+        margin: 0 !important;
+        border: none !important;
+        padding: 0 !important;
+        min-height: 272mm;
+        page-break-after: always;
+        break-after: page;
+      }
+      .print-page:last-child,
+      .print-page.final-page {
+        page-break-after: auto;
+        break-after: auto;
+      }
+    }
         border: none;
         padding: 0;
         page-break-after: always;
@@ -1728,24 +1956,40 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
       height: 24px;
     }
     .signature-section {
+      margin-top: auto;
+      padding-top: 18px;
+      padding-bottom: 4px;
       display: flex;
       justify-content: space-between;
-      margin-top: 10px;
-      padding: 0 15px;
+      align-items: flex-end;
       page-break-inside: avoid;
+      break-inside: avoid;
+      border-top: 1px dashed #CBD5E1;
     }
     .sig-box {
       text-align: center;
-      width: 160px;
+      width: 180px;
+    }
+    .sig-space {
+      height: 38px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: #0F172A;
+      padding-bottom: 4px;
     }
     .sig-line {
-      border-top: 1px solid #000000;
-      margin-bottom: 3px;
+      border-top: 1.5px solid #0F172A;
+      margin-bottom: 5px;
     }
     .sig-label {
-      font-size: 9px;
-      font-weight: 700;
+      font-size: 9.5px;
+      font-weight: 800;
       color: #334155;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
   </style>
 </head>
@@ -1770,11 +2014,11 @@ export const generateCompaniesListPrintHtml = (companies: any[]): string => {
     const isEven = idx % 2 === 1;
     return `
     <tr style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
-      <td class="text-center" style="width:40px; border: 1px solid #CBD5E1; padding: 6px;">${idx + 1}</td>
-      <td style="font-weight:700; color:#0F172A; border: 1px solid #CBD5E1; padding: 6px 8px;">${c.name}</td>
-      <td style="color:#334155; border: 1px solid #CBD5E1; padding: 6px 8px;">${c.phone || '-'}</td>
-      <td style="color:#334155; border: 1px solid #CBD5E1; padding: 6px 8px;">${c.gstin || '-'}</td>
-      <td style="color:#475569; border: 1px solid #CBD5E1; padding: 6px 8px;">${c.address || '-'}</td>
+      <td class="text-center" style="width:5%; border: 1px solid #CBD5E1; padding: 7px 4px;">${idx + 1}</td>
+      <td style="width:30%; font-weight:700; color:#0F172A; border: 1px solid #CBD5E1; padding: 7px 8px; word-break: break-word;">${c.name}</td>
+      <td style="width:18%; color:#334155; border: 1px solid #CBD5E1; padding: 7px 8px;">${c.phone || '-'}</td>
+      <td style="width:18%; color:#334155; border: 1px solid #CBD5E1; padding: 7px 8px;">${c.gstin || '-'}</td>
+      <td style="width:29%; color:#475569; border: 1px solid #CBD5E1; padding: 7px 8px; word-break: break-word;">${c.address || '-'}</td>
     </tr>
   `;
   }).join('');
@@ -1784,43 +2028,105 @@ export const generateCompaniesListPrintHtml = (companies: any[]): string => {
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Companies List - ${currentDate}</title>
+  <title>Companies Directory - ${currentDate}</title>
   <style>
-    @page { size: auto; margin: 0; }
+    @page {
+      size: A4 portrait;
+      margin: 8mm 10mm;
+    }
     *, *:before, *:after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin:0; padding:8mm 10mm; color:#0F172A; }
-    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0F172A; padding-bottom: 8px; margin-bottom: 12px; }
-    .table { width: 100%; border-collapse: collapse; font-size: 11.5px; border: 1px solid #0F172A; }
-    .table th { background: #0F172A; color:#FFFFFF; border: 1px solid #0F172A; padding: 7px; font-weight: 800; font-size: 11px; text-transform: uppercase; }
-    .table td { border: 1px solid #CBD5E1; padding: 6px; }
+    html, body {
+      background: #FFFFFF;
+      color: #0F172A;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .print-page {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: 272mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-sizing: border-box;
+      margin: 0 auto;
+    }
+    .page-body { flex: 1 0 auto; width: 100%; }
+    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0F172A; padding-bottom: 6px; margin-bottom: 12px; }
+    .table { width: 100%; border-collapse: collapse; font-size: 11px; border: 1.5px solid #0F172A; table-layout: fixed; }
+    .table th { background: #0F172A; color:#FFFFFF; border: 1px solid #0F172A; padding: 6px 8px; font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .table td { border: 1px solid #CBD5E1; padding: 6px 8px; vertical-align: middle; }
     .text-center { text-align: center; }
+    .signature-section {
+      margin-top: auto;
+      padding-top: 18px;
+      padding-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      border-top: 1px dashed #CBD5E1;
+    }
+    .sig-box { text-align: center; width: 180px; }
+    .sig-space { height: 38px; display: flex; align-items: flex-end; justify-content: center; font-size: 11px; font-weight: 800; color: #0F172A; padding-bottom: 4px; }
+    .sig-line { border-top: 1.5px solid #0F172A; margin-bottom: 5px; }
+    .sig-label { font-size: 9.5px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.04em; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div>
-      <div style="font-size:24px; font-weight:900; color:#1D4ED8;">GPK CRACKERS</div>
-      <h2 style="font-size:15px; margin-top:2px;">COMPANIES DIRECTORY</h2>
+  <div class="print-page">
+    <div class="page-body">
+      <div class="header">
+        <div>
+          <div style="font-size:22px; font-weight:900; color:#1D4ED8; text-transform:uppercase;">GPK CRACKERS</div>
+          <div style="font-size:10px; font-weight:700; color:#475569; text-transform:uppercase; margin-bottom: 4px;">Wholesale & Retail Trading • Sivakasi</div>
+          <div style="font-size:12px; font-weight:800; color:#0F172A;">COMPANIES DIRECTORY</div>
+        </div>
+        <div style="text-align:right; font-size:10px; color:#334155;">
+          <div>Date: <b>${currentDate}</b></div>
+          <div>Total Companies: <b>${companies.length}</b></div>
+        </div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="text-center" style="width:5%;">#</th>
+            <th style="width:30%;">Company Name</th>
+            <th style="width:18%;">Phone</th>
+            <th style="width:18%;">GSTIN</th>
+            <th style="width:29%;">Address</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml || '<tr><td colspan="5" class="text-center" style="padding:16px;">No companies found.</td></tr>'}
+        </tbody>
+      </table>
     </div>
-    <div style="text-align:right; font-size:11.5px;">
-      <div>Date: <b>${currentDate}</b></div>
-      <div>Total Companies: <b>${companies.length}</b></div>
+
+    <!-- Bottom Signatures -->
+    <div class="signature-section">
+      <div class="sig-box">
+        <div class="sig-space"></div>
+        <div class="sig-line"></div>
+        <div class="sig-label">Prepared By</div>
+      </div>
+      <div class="sig-box">
+        <div class="sig-space"></div>
+        <div class="sig-line"></div>
+        <div class="sig-label">Checked & Verified By</div>
+      </div>
+      <div class="sig-box">
+        <div class="sig-space">For GPK Crackers</div>
+        <div class="sig-line"></div>
+        <div class="sig-label">Authorized Signatory</div>
+      </div>
     </div>
   </div>
-  <table class="table">
-    <thead>
-      <tr>
-        <th class="text-center">#</th>
-        <th>Company Name</th>
-        <th>Phone</th>
-        <th>GSTIN</th>
-        <th>Address</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rowsHtml || '<tr><td colspan="5" class="text-center" style="padding:16px;">No companies found.</td></tr>'}
-    </tbody>
-  </table>
 </body>
 </html>
   `;
@@ -1840,12 +2146,12 @@ export const generateProductsListPrintHtml = (products: any[]): string => {
     const isEven = idx % 2 === 1;
     return `
     <tr style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
-      <td class="text-center" style="width:40px; border: 1px solid #CBD5E1; padding: 6px;">${idx + 1}</td>
-      <td style="font-weight:700; color:#0F172A; border: 1px solid #CBD5E1; padding: 6px 8px;">${p.name}</td>
-      <td style="color:#475569; border: 1px solid #CBD5E1; padding: 6px 8px;">${p.company || '-'}</td>
-      <td class="text-center" style="color:#64748B; border: 1px solid #CBD5E1; padding: 6px;">${p.caseCount || '-'}</td>
-      <td style="text-align:right; font-weight:700; color:#1D4ED8; border: 1px solid #CBD5E1; padding: 6px 8px;">₹ ${(parseFloat(p.rate) || 0).toFixed(2)}</td>
-      <td class="text-center" style="color:#64748B; border: 1px solid #CBD5E1; padding: 6px;">${p.pktUnit || '1'}</td>
+      <td class="text-center" style="width:5%; border: 1px solid #CBD5E1; padding: 6px 4px;">${idx + 1}</td>
+      <td style="width:35%; font-weight:700; color:#0F172A; border: 1px solid #CBD5E1; padding: 6px 8px; word-break: break-word;">${p.name}</td>
+      <td style="width:22%; color:#475569; border: 1px solid #CBD5E1; padding: 6px 8px; word-break: break-word;">${p.company || '-'}</td>
+      <td class="text-center" style="width:12%; color:#64748B; border: 1px solid #CBD5E1; padding: 6px;">${p.caseCount || '-'}</td>
+      <td style="width:14%; text-align:right; font-weight:700; color:#1D4ED8; border: 1px solid #CBD5E1; padding: 6px 8px;">₹ ${(parseFloat(p.rate) || 0).toFixed(2)}</td>
+      <td class="text-center" style="width:12%; color:#64748B; border: 1px solid #CBD5E1; padding: 6px;">${p.pktUnit || '1'}</td>
     </tr>
   `;
   }).join('');
@@ -1857,42 +2163,104 @@ export const generateProductsListPrintHtml = (products: any[]): string => {
   <meta charset="utf-8" />
   <title>Products Catalog - ${currentDate}</title>
   <style>
-    @page { size: auto; margin: 0; }
+    @page {
+      size: A4 portrait;
+      margin: 8mm 10mm;
+    }
     *, *:before, *:after { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; margin:0; padding:8mm 10mm; color:#0F172A; }
-    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0F172A; padding-bottom: 8px; margin-bottom: 12px; }
-    .table { width: 100%; border-collapse: collapse; font-size: 11.5px; border: 1px solid #0F172A; }
-    .table th { background: #0F172A; color:#FFFFFF; border: 1px solid #0F172A; padding: 7px; font-weight: 800; font-size: 11px; text-transform: uppercase; }
-    .table td { border: 1px solid #CBD5E1; padding: 6px; }
+    html, body {
+      background: #FFFFFF;
+      color: #0F172A;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
+    .print-page {
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: 272mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-sizing: border-box;
+      margin: 0 auto;
+    }
+    .page-body { flex: 1 0 auto; width: 100%; }
+    .header { display: flex; justify-content: space-between; border-bottom: 2px solid #0F172A; padding-bottom: 6px; margin-bottom: 12px; }
+    .table { width: 100%; border-collapse: collapse; font-size: 11px; border: 1.5px solid #0F172A; table-layout: fixed; }
+    .table th { background: #0F172A; color:#FFFFFF; border: 1px solid #0F172A; padding: 6px 8px; font-weight: 800; font-size: 10px; text-transform: uppercase; letter-spacing: 0.03em; }
+    .table td { border: 1px solid #CBD5E1; padding: 6px 8px; vertical-align: middle; }
     .text-center { text-align: center; }
+    .signature-section {
+      margin-top: auto;
+      padding-top: 18px;
+      padding-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      page-break-inside: avoid;
+      break-inside: avoid;
+      border-top: 1px dashed #CBD5E1;
+    }
+    .sig-box { text-align: center; width: 180px; }
+    .sig-space { height: 38px; display: flex; align-items: flex-end; justify-content: center; font-size: 11px; font-weight: 800; color: #0F172A; padding-bottom: 4px; }
+    .sig-line { border-top: 1.5px solid #0F172A; margin-bottom: 5px; }
+    .sig-label { font-size: 9.5px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.04em; }
   </style>
 </head>
 <body>
-  <div class="header">
-    <div>
-      <div style="font-size:24px; font-weight:900; color:#1D4ED8;">GPK CRACKERS</div>
-      <h2 style="font-size:15px; margin-top:2px;">PRODUCTS PRICE CATALOG</h2>
+  <div class="print-page">
+    <div class="page-body">
+      <div class="header">
+        <div>
+          <div style="font-size:22px; font-weight:900; color:#1D4ED8; text-transform:uppercase;">GPK CRACKERS</div>
+          <div style="font-size:10px; font-weight:700; color:#475569; text-transform:uppercase; margin-bottom: 4px;">Wholesale & Retail Trading • Sivakasi</div>
+          <div style="font-size:12px; font-weight:800; color:#0F172A;">PRODUCTS PRICE CATALOG</div>
+        </div>
+        <div style="text-align:right; font-size:10px; color:#334155;">
+          <div>Date: <b>${currentDate}</b></div>
+          <div>Total Products: <b>${products.length}</b></div>
+        </div>
+      </div>
+      <table class="table">
+        <thead>
+          <tr>
+            <th class="text-center" style="width:5%;">#</th>
+            <th style="width:35%;">Product Name</th>
+            <th style="width:22%;">Company</th>
+            <th class="text-center" style="width:12%;">Case</th>
+            <th style="width:14%; text-align:right;">Rate</th>
+            <th class="text-center" style="width:12%;">Pkts/Unit</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${rowsHtml || '<tr><td colspan="6" class="text-center" style="padding:16px;">No products found.</td></tr>'}
+        </tbody>
+      </table>
     </div>
-    <div style="text-align:right; font-size:11.5px;">
-      <div>Date: <b>${currentDate}</b></div>
-      <div>Total Products: <b>${products.length}</b></div>
+
+    <!-- Bottom Signatures -->
+    <div class="signature-section">
+      <div class="sig-box">
+        <div class="sig-space"></div>
+        <div class="sig-line"></div>
+        <div class="sig-label">Prepared By</div>
+      </div>
+      <div class="sig-box">
+        <div class="sig-space"></div>
+        <div class="sig-line"></div>
+        <div class="sig-label">Checked & Verified By</div>
+      </div>
+      <div class="sig-box">
+        <div class="sig-space">For GPK Crackers</div>
+        <div class="sig-line"></div>
+        <div class="sig-label">Authorized Signatory</div>
+      </div>
     </div>
   </div>
-  <table class="table">
-    <thead>
-      <tr>
-        <th class="text-center">#</th>
-        <th>Product Name</th>
-        <th>Company</th>
-        <th class="text-center">Case</th>
-        <th style="text-align:right;">Rate</th>
-        <th class="text-center">Pkts/Unit</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${rowsHtml || '<tr><td colspan="6" class="text-center" style="padding:16px;">No products found.</td></tr>'}
-    </tbody>
-  </table>
 </body>
 </html>
   `;
@@ -1953,13 +2321,18 @@ export const generatePerformaHtml = (performa: any): string => {
     }
   }
 
-  const rawTax = String(performa.tax ?? '').trim().replace(/[^0-9.]/g, '');
-  const taxNum = parseFloat(rawTax) || 0;
+  const rawTax = String(performa.tax ?? '').trim();
+  const taxNum = parseFloat(rawTax.replace(/[^0-9.]/g, '')) || 0;
   let taxAmt = 0;
   if (performa.taxAmount !== undefined && Number(performa.taxAmount) > 0) {
     taxAmt = Number(performa.taxAmount);
   } else if (taxNum > 0) {
-    taxAmt = taxNum;
+    if (rawTax.includes('%') || taxNum <= 100) {
+      const casesVal = Number(performa.totalRequiredCases) || (performa.products || []).reduce((acc: number, p: any) => acc + (Number(p.requiredCases) || 0), 0);
+      taxAmt = (2500 * casesVal * taxNum) / 100;
+    } else {
+      taxAmt = taxNum;
+    }
   }
 
   const totalAllocatedVal = Math.max(0, subtotalVal - discountAmt + packingAmt + taxAmt);
@@ -2005,104 +2378,248 @@ export const generatePerformaHtml = (performa: any): string => {
         <meta charset="utf-8" />
         <title>Performa - ${performa.performaNumber || 'Quotation'}</title>
         <style>
-          @page { size: auto; margin: 0; }
-          *, *:before, *:after { box-sizing: border-box; margin: 0; padding: 0; }
-          body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; margin: 0; padding: 8mm 10mm; color: #0F172A; background: #FFFFFF; }
-          .banner { background-color: #0F172A; color: #FFFFFF; text-align: center; padding: 6px 12px; border-radius: 4px; font-weight: 800; font-size: 13px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 14px; }
-          .meta-card { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; border: 1px solid #CBD5E1; border-radius: 6px; padding: 12px 16px; margin-bottom: 14px; background-color: #F8FAFC; font-size: 12.5px; }
-          table { width: 100%; border-collapse: collapse; margin-bottom: 16px; font-size: 12px; border: 1px solid #0F172A; }
-          th { background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 8px 6px; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.03em; }
-          td { border: 1px solid #CBD5E1; vertical-align: middle; }
-          .summary-card { width: 44%; font-size: 12.5px; border: 1px solid #CBD5E1; border-radius: 6px; background-color: #F8FAFC; padding: 10px 14px; }
-          .summary-row { display: flex; justify-content: space-between; margin-bottom: 5px; }
+          @page {
+            size: A4 portrait;
+            margin: 8mm 10mm;
+          }
+          *, *:before, *:after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+          }
+          body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            color: #0F172A;
+            background: #FFFFFF;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+          .performa-wrapper {
+            min-height: 272mm;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-sizing: border-box;
+            padding: 0;
+          }
+          .performa-body {
+            flex: 1 0 auto;
+          }
+          .top-header {
+            position: relative;
+            text-align: center;
+            border-bottom: 2px solid #0F172A;
+            padding-bottom: 6px;
+            margin-bottom: 8px;
+          }
+          .signatory {
+            position: absolute;
+            right: 0;
+            top: 0;
+            font-size: 11px;
+            font-weight: 700;
+            color: #475569;
+          }
+          .comp-name {
+            font-size: 24px;
+            font-weight: 900;
+            color: #1D4ED8;
+            margin: 0 0 1px 0;
+            text-transform: uppercase;
+            letter-spacing: -0.01em;
+          }
+          .comp-sub {
+            font-size: 10.5px;
+            font-weight: 700;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+          }
+          .banner {
+            background-color: #0F172A;
+            color: #FFFFFF;
+            text-align: center;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-weight: 800;
+            font-size: 12px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+          }
+          .meta-card {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            border: 1px solid #CBD5E1;
+            border-radius: 6px;
+            padding: 9px 14px;
+            margin-bottom: 10px;
+            background-color: #F8FAFC;
+            font-size: 12px;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 12px;
+            font-size: 11.5px;
+            border: 1px solid #0F172A;
+          }
+          th {
+            background-color: #0F172A;
+            color: #FFFFFF;
+            border: 1px solid #0F172A;
+            padding: 7px 6px;
+            font-weight: 800;
+            font-size: 10.5px;
+            text-transform: uppercase;
+            letter-spacing: 0.03em;
+          }
+          td {
+            border: 1px solid #CBD5E1;
+            vertical-align: middle;
+          }
+          .summary-card {
+            width: 44%;
+            font-size: 12px;
+            border: 1px solid #CBD5E1;
+            border-radius: 6px;
+            background-color: #F8FAFC;
+            padding: 9px 12px;
+          }
+          .summary-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 4px;
+          }
+          .sig-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-top: auto;
+            padding-top: 18px;
+            page-break-inside: avoid;
+          }
+          .sig-block {
+            text-align: center;
+            width: 175px;
+          }
+          .sig-space {
+            height: 38px;
+            font-weight: 700;
+            font-size: 11px;
+            color: #0F172A;
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+          }
+          .sig-line {
+            border-top: 1.5px solid #0F172A;
+            margin-bottom: 4px;
+          }
+          .sig-label {
+            font-size: 9.5px;
+            font-weight: 800;
+            color: #334155;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+          }
         </style>
       </head>
       <body>
-        <div style="position: relative; text-align: center; border-bottom: 2px solid #0F172A; padding-bottom: 8px; margin-bottom: 10px;">
-          ${performa.preparedBy && performa.preparedBy !== 'S.Nagaraj' && performa.preparedBy !== 'Nagaraj' ? `<div style="position: absolute; right: 0; top: 0; font-size: 12px; font-weight: 700; color: #475569;">Prepared By: <b>${performa.preparedBy.trim()}</b></div>` : ''}
-          <h1 style="font-size: 26px; font-weight: 900; color: #1D4ED8; margin: 0 0 2px 0; text-transform: uppercase;">GPK Crackers</h1>
-          <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase;">Wholesale & Retail Trading • Sivakasi</div>
-        </div>
+        <div class="performa-wrapper">
+          <div class="performa-body">
+            <div class="top-header">
+              ${performa.preparedBy && performa.preparedBy !== 'S.Nagaraj' && performa.preparedBy !== 'Nagaraj' ? `<div class="signatory">Prepared By: <b>${performa.preparedBy.trim()}</b></div>` : ''}
+              <div class="comp-name">GPK Crackers</div>
+              <div class="comp-sub">Wholesale & Retail Trading • Sivakasi</div>
+            </div>
 
-        <div class="banner">PERFORMA INVOICE / QUOTATION (NOT A TAX INVOICE)</div>
+            <div class="banner">PERFORMA INVOICE / QUOTATION (NOT A TAX INVOICE)</div>
 
-        <div class="meta-card">
-          <div>
-            <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Performa No: </span><span style="font-weight: 900; color: #1D4ED8; font-size: 15px;">#${performa.performaNumber || '-'}</span></div>
-            <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Date: </span><span style="font-weight: 700;">${performa.date || '-'}</span></div>
-            <div>
-              <span style="color: #64748B; font-weight: 600;">Status: </span>
-              <span style="font-weight: 800; color: ${performa.status === 'ACTIVE' ? '#16A34A' : performa.status === 'PARTIALLY_USED' ? '#D97706' : '#1D4ED8'}; font-size: 11.5px;">
-                ${performa.status || 'ACTIVE'}
-              </span>
+            <div class="meta-card">
+              <div>
+                <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Performa No: </span><span style="font-weight: 900; color: #1D4ED8; font-size: 14px;">#${performa.performaNumber || '-'}</span></div>
+                <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Date: </span><span style="font-weight: 700;">${performa.date || '-'}</span></div>
+                <div>
+                  <span style="color: #64748B; font-weight: 600;">Status: </span>
+                  <span style="font-weight: 800; color: ${performa.status === 'ACTIVE' ? '#16A34A' : performa.status === 'PARTIALLY_USED' ? '#D97706' : '#1D4ED8'}; font-size: 11px;">
+                    ${performa.status || 'ACTIVE'}
+                  </span>
+                </div>
+              </div>
+              <div>
+                <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Customer: </span><span style="font-weight: 800; font-size: 13px; color: #0F172A;">${customer.name || '-'}</span></div>
+                ${customer.phone ? `<div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Phone: </span><span style="font-weight: 600;">${customer.phone}</span></div>` : ''}
+                ${customer.companyName ? `<div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Company: </span><span>${customer.companyName}</span></div>` : ''}
+                ${customer.address ? `<div><span style="color: #64748B; font-weight: 600;">Address: </span><span>${customer.address}</span></div>` : ''}
+              </div>
+            </div>
+
+            <table>
+              <thead>
+                <tr>
+                  <th style="width: 4%; text-align: center;">#</th>
+                  <th style="width: 38%; text-align: left;">Product Description</th>
+                  <th style="width: 18%; text-align: left;">Company</th>
+                  <th style="width: 9%; text-align: center;">Total Cases</th>
+                  <th style="width: 11%; text-align: right;">Rate (₹)</th>
+                  <th style="width: 7%; text-align: center;">Units</th>
+                  <th style="width: 13%; text-align: right;">Amount (₹)</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${productRowsHtml || '<tr><td colspan="7" style="text-align:center; padding:16px; color:#64748B;">No products allocated.</td></tr>'}
+              </tbody>
+            </table>
+
+            <!-- Summary Section -->
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 14px; page-break-inside: avoid;">
+              <div style="width: 52%; font-size: 11px; color: #64748B; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 14px; background-color: #FAFAFA;">
+                ${performa.notes ? `<div style="font-size: 11.5px; color: #1E293B; margin-bottom: 5px;"><strong>Notes / Terms:</strong> <em>${performa.notes}</em></div>` : ''}
+                <div style="line-height: 1.4;">• This quotation reserves product requirement allocation.</div>
+              </div>
+
+              <div class="summary-card">
+                <div class="summary-row">
+                  <span style="color:#475569;">Total Cases:</span><strong style="color:#0F172A;">${performa.totalRequiredCases || performa.totalCases || 0}</strong>
+                </div>
+                <div class="summary-row">
+                  <span style="color:#475569;">Subtotal:</span><strong style="color:#0F172A;">₹ ${formatCurrency(subtotalVal)}</strong>
+                </div>
+                ${discountAmt > 0 ? `
+                <div class="summary-row" style="color: #DC2626;">
+                  <span>Discount ${performa.discount ? `(${performa.discount}${String(performa.discount).includes('%') ? '' : '%'})` : ''}:</span><strong style="font-weight: 700;">- ₹ ${formatCurrency(discountAmt)}</strong>
+                </div>` : ''}
+                ${packingAmt > 0 ? `
+                <div class="summary-row" style="color: #475569;">
+                  <span>Packing ${performa.packing ? `(${performa.packing}${String(performa.packing).includes('%') ? '' : '%'})` : ''}:</span><strong style="font-weight: 700; color: #0F172A;">+ ₹ ${formatCurrency(packingAmt)}</strong>
+                </div>` : ''}
+                ${taxAmt > 0 ? `
+                <div class="summary-row" style="color: #475569;">
+                  <span>Tax (Amount):</span><strong style="font-weight: 700; color: #0F172A;">+ ₹ ${formatCurrency(taxAmt)}</strong>
+                </div>` : ''}
+                <div class="summary-row" style="padding-top: 6px; border-top: 2px solid #1D4ED8; margin-top: 4px; font-size: 12.5px; color: #1D4ED8;">
+                  <span style="font-weight: 800;">Total Allocated Value:</span><strong style="font-weight: 900; font-size: 13.5px;">₹ ${formatCurrency(totalAllocatedVal)}</strong>
+                </div>
+              </div>
             </div>
           </div>
-          <div>
-            <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Customer: </span><span style="font-weight: 800; font-size: 13.5px; color: #0F172A;">${customer.name || '-'}</span></div>
-            ${customer.phone ? `<div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Phone: </span><span style="font-weight: 600;">${customer.phone}</span></div>` : ''}
-            ${customer.companyName ? `<div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Company: </span><span>${customer.companyName}</span></div>` : ''}
-            ${customer.address ? `<div><span style="color: #64748B; font-weight: 600;">Address: </span><span>${customer.address}</span></div>` : ''}
-          </div>
-        </div>
 
-        <table>
-          <thead>
-            <tr>
-              <th style="width: 35px; text-align: center;">#</th>
-              <th style="text-align: left;">Product Description</th>
-              <th style="width: 110px; text-align: left;">Company</th>
-              <th style="width: 70px; text-align: center;">Total Cases</th>
-              <th style="width: 80px; text-align: right;">Rate (₹)</th>
-              <th style="width: 55px; text-align: center;">Units</th>
-              <th style="width: 105px; text-align: right;">Amount (₹)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${productRowsHtml || '<tr><td colspan="7" style="text-align:center; padding:16px; color:#64748B;">No products allocated.</td></tr>'}
-          </tbody>
-        </table>
-
-        <!-- Summary Section -->
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; margin-bottom: 18px; page-break-inside: avoid;">
-          <div style="width: 52%; font-size: 11px; color: #64748B; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 14px; background-color: #FAFAFA;">
-            ${performa.notes ? `<div style="font-size: 12px; color: #1E293B; margin-bottom: 6px;"><strong>Notes / Terms:</strong> <em>${performa.notes}</em></div>` : ''}
-            <div style="line-height: 1.4;">• This quotation reserves product requirement allocation.</div>
-          </div>
-
-          <div class="summary-card">
-            <div class="summary-row">
-              <span style="color:#475569;">Total Cases:</span><strong style="color:#0F172A;">${performa.totalRequiredCases || performa.totalCases || 0}</strong>
+          <!-- Signatures Pinned at Bottom of Page -->
+          <div class="sig-section">
+            <div class="sig-block">
+              <div class="sig-space"></div>
+              <div class="sig-line"></div>
+              <div class="sig-label">Customer Signature</div>
             </div>
-            <div class="summary-row">
-              <span style="color:#475569;">Subtotal:</span><strong style="color:#0F172A;">₹ ${formatCurrency(subtotalVal)}</strong>
+            <div class="sig-block">
+              <div class="sig-space">For GPK Crackers</div>
+              <div class="sig-line"></div>
+              <div class="sig-label">Authorized Signatory</div>
             </div>
-            ${discountAmt > 0 ? `
-            <div class="summary-row" style="color: #DC2626;">
-              <span>Discount ${performa.discount ? `(${performa.discount}${String(performa.discount).includes('%') ? '' : '%'})` : ''}:</span><strong style="font-weight: 700;">- ₹ ${formatCurrency(discountAmt)}</strong>
-            </div>` : ''}
-            ${packingAmt > 0 ? `
-            <div class="summary-row" style="color: #475569;">
-              <span>Packing ${performa.packing ? `(${performa.packing}${String(performa.packing).includes('%') ? '' : '%'})` : ''}:</span><strong style="font-weight: 700; color: #0F172A;">+ ₹ ${formatCurrency(packingAmt)}</strong>
-            </div>` : ''}
-            ${taxAmt > 0 ? `
-            <div class="summary-row" style="color: #475569;">
-              <span>Tax (Amount):</span><strong style="font-weight: 700; color: #0F172A;">+ ₹ ${formatCurrency(taxAmt)}</strong>
-            </div>` : ''}
-            <div class="summary-row" style="padding-top: 6px; border-top: 2px solid #1D4ED8; margin-top: 4px; font-size: 13px; color: #1D4ED8;">
-              <span style="font-weight: 800;">Total Allocated Value:</span><strong style="font-weight: 900; font-size: 14px;">₹ ${formatCurrency(totalAllocatedVal)}</strong>
-            </div>
-          </div>
-        </div>
-
-        <!-- Signatures -->
-        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 28px; padding-top: 14px; border-top: 1px dashed #CBD5E1; font-size: 11px; page-break-inside: avoid;">
-          <div style="text-align: center; width: 160px;">
-            <div style="height: 28px;"></div>
-            <div style="border-top: 1px solid #0F172A; padding-top: 4px; font-weight: 700;">Customer Signature</div>
-          </div>
-          <div style="text-align: center; width: 160px;">
-            <div style="font-weight: 700; margin-bottom: 24px;">For GPK Crackers</div>
-            <div style="border-top: 1px solid #0F172A; padding-top: 4px; font-weight: 700;">Authorized Signatory</div>
           </div>
         </div>
       </body>
@@ -2156,20 +2673,21 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
 
       return `
         <tr class="data-row" style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
-          <td class="text-center" style="width:30px;">${globalIdx + 1}</td>
-          <td class="text-center" style="font-weight:800; color:#1D4ED8; width:65px;">#${p.performaNumber || '-'}</td>
-          <td class="text-center" style="width:75px; color:#334155;">${p.date || '-'}</td>
-          <td style="font-weight:700; color:#0F172A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 180px;">${custName}</td>
-          <td style="color:#475569; font-size:9.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px;">${compName}</td>
-          <td class="text-center" style="width:50px; font-weight:800;">${cases}</td>
-          <td class="text-center" style="width:70px; font-size:9.5px; font-weight:700; color:${p.status === 'ACTIVE' ? '#16A34A' : '#1D4ED8'};">${p.status || 'ACTIVE'}</td>
-          <td class="text-right" style="font-weight:800; width:110px; color:#0F172A;">₹ ${value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+          <td class="text-center" style="width:4%;">${globalIdx + 1}</td>
+          <td class="text-center" style="font-weight:800; color:#1D4ED8; width:12%;">#${p.performaNumber || '-'}</td>
+          <td class="text-center" style="width:11%; color:#334155;">${p.date || '-'}</td>
+          <td style="width:27%; font-weight:700; color:#0F172A; word-break: break-word;">${custName}</td>
+          <td style="width:17%; color:#475569; font-size:9.5px; word-break: break-word;">${compName}</td>
+          <td class="text-center" style="width:8%; font-weight:800;">${cases}</td>
+          <td class="text-center" style="width:9%; font-size:9.5px; font-weight:700; color:${p.status === 'ACTIVE' ? '#16A34A' : '#1D4ED8'};">${p.status || 'ACTIVE'}</td>
+          <td class="text-right" style="width:12%; font-weight:800; color:#0F172A;">₹ ${value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         </tr>
       `;
     }).join('');
 
     return `
       <div class="print-page ${isFinalPage ? 'final-page' : ''}">
+        <div class="page-body">
         ${
           isFirstPage
             ? `
@@ -2223,14 +2741,14 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
         <table class="data-table">
           <thead>
             <tr>
-              <th class="text-center" style="width:30px;">#</th>
-              <th class="text-center" style="width:65px;">Performa #</th>
-              <th class="text-center" style="width:75px;">Date</th>
-              <th style="width:180px;">Customer Name</th>
-              <th style="width:150px;">Company</th>
-              <th class="text-center" style="width:50px;">Cases</th>
-              <th class="text-center" style="width:70px;">Status</th>
-              <th class="text-right" style="width:110px;">Total Value</th>
+              <th class="text-center" style="width:4%;">#</th>
+              <th class="text-center" style="width:12%;">Performa #</th>
+              <th class="text-center" style="width:11%;">Date</th>
+              <th style="width:27%;">Customer Name</th>
+              <th style="width:17%;">Company</th>
+              <th class="text-center" style="width:8%;">Cases</th>
+              <th class="text-center" style="width:9%;">Status</th>
+              <th class="text-right" style="width:12%;">Total Value</th>
             </tr>
           </thead>
           <tbody>
@@ -2259,21 +2777,25 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
             }
           </tfoot>
         </table>
+        </div>
 
         ${
           isFinalPage
             ? `
-        <!-- Signature Section (Final Page Only) -->
+        <!-- Signature Section Pinned at Bottom of Final Page -->
         <div class="signature-section">
           <div class="sig-box">
+            <div class="sig-space"></div>
             <div class="sig-line"></div>
             <div class="sig-label">Prepared By</div>
           </div>
           <div class="sig-box">
+            <div class="sig-space"></div>
             <div class="sig-line"></div>
             <div class="sig-label">Checked & Verified By</div>
           </div>
           <div class="sig-box">
+            <div class="sig-space">For GPK Crackers</div>
             <div class="sig-line"></div>
             <div class="sig-label">Authorized Signatory</div>
           </div>
@@ -2292,8 +2814,8 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
   <title>${reportTitle} - ${currentDate}</title>
   <style>
     @page {
-      size: auto;
-      margin: 0;
+      size: A4 portrait;
+      margin: 8mm 10mm;
     }
     *, *:before, *:after {
       box-sizing: border-box;
@@ -2301,42 +2823,60 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
       padding: 0;
     }
     html, body {
-      background: #ffffff;
-      color: #000000;
+      background: #FFFFFF;
+      color: #0F172A;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       -webkit-print-color-adjust: exact !important;
       print-color-adjust: exact !important;
-      padding: 8mm 10mm;
+      margin: 0 !important;
+      padding: 0 !important;
+      width: 100% !important;
     }
     .print-page {
-      width: 100%;
+      width: 100% !important;
+      max-width: 100% !important;
+      min-height: 272mm;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
       box-sizing: border-box;
+      position: relative;
       page-break-after: always;
       break-after: page;
-      padding: 0;
+      margin: 0 auto;
     }
     .print-page:last-child,
     .print-page.final-page {
       page-break-after: auto;
       break-after: auto;
     }
+    .page-body {
+      flex: 1 0 auto;
+      width: 100%;
+    }
     @media screen {
-      .print-page {
-        margin-bottom: 25px;
-        padding-bottom: 25px;
-        border-bottom: 2px dashed #94A3B8;
+      body {
+        padding: 10mm;
+        background: #F1F5F9;
       }
-      .print-page:last-child {
-        margin-bottom: 0;
-        padding-bottom: 0;
-        border-bottom: none;
+      .print-page {
+        background: #FFFFFF;
+        padding: 8mm 10mm;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        border: 1px solid #E2E8F0;
       }
     }
     @media print {
+      body {
+        padding: 0 !important;
+        background: #FFFFFF !important;
+      }
       .print-page {
-        margin: 0;
-        border: none;
-        padding: 0;
+        margin: 0 !important;
+        border: none !important;
+        padding: 0 !important;
+        min-height: 272mm;
         page-break-after: always;
         break-after: page;
       }
@@ -2479,24 +3019,40 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
       height: 25px;
     }
     .signature-section {
+      margin-top: auto;
+      padding-top: 18px;
+      padding-bottom: 4px;
       display: flex;
       justify-content: space-between;
-      margin-top: 10px;
-      padding: 0 15px;
+      align-items: flex-end;
       page-break-inside: avoid;
+      break-inside: avoid;
+      border-top: 1px dashed #CBD5E1;
     }
     .sig-box {
       text-align: center;
-      width: 160px;
+      width: 180px;
+    }
+    .sig-space {
+      height: 38px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      font-size: 11px;
+      font-weight: 800;
+      color: #0F172A;
+      padding-bottom: 4px;
     }
     .sig-line {
-      border-top: 1px solid #000000;
-      margin-bottom: 3px;
+      border-top: 1.5px solid #0F172A;
+      margin-bottom: 5px;
     }
     .sig-label {
-      font-size: 9px;
-      font-weight: 700;
+      font-size: 9.5px;
+      font-weight: 800;
       color: #334155;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
     }
   </style>
 </head>

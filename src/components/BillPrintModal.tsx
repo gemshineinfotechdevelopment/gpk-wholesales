@@ -56,26 +56,30 @@ export const BillPrintModal: React.FC<BillPrintModalProps> = ({ open, onClose, b
               visibility: visible !important;
             }
             .gpk-printable-section {
-              position: absolute !important;
-              left: 0 !important;
-              top: 0 !important;
+              position: relative !important;
               width: 100% !important;
-              margin: 0 !important;
+              max-width: 100% !important;
+              margin: 0 auto !important;
               padding: 0 !important;
+              box-sizing: border-box !important;
               background-color: #FFFFFF !important;
               -webkit-print-color-adjust: exact !important;
               print-color-adjust: exact !important;
+              page-break-after: avoid !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
             }
             .gpk-no-print {
               display: none !important;
             }
             @page {
-              size: auto;
-              margin: 0;
+              size: A4 portrait;
+              margin: 8mm 10mm;
             }
             body {
               margin: 0 !important;
               padding: 0 !important;
+              width: 100% !important;
             }
           }
         `}

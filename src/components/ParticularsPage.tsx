@@ -96,10 +96,18 @@ interface ParticularsPageProps {
 export const ParticularsPage: FC<ParticularsPageProps> = ({
   initialCustomerName,
   initialSubTab,
-  userRole = 'superadmin',
+  userRole,
   onNavigateToPerforma,
 }) => {
   const isCustomer = userRole === 'user';
+  const isAdmin = userRole ? userRole === 'admin' : (() => {
+    try {
+      const u = localStorage.getItem('gpk_user') || localStorage.getItem('gpk_auth_user') || localStorage.getItem('dheeksha_auth_user');
+      return u ? JSON.parse(u).role === 'admin' : false;
+    } catch {
+      return false;
+    }
+  })();
   const [activeSubTab, setActiveSubTab] = useState<ParticularSubTab>(() => {
     if (isCustomer) return 'Account Details';
     return initialSubTab || (localStorage.getItem('gpk_particular_subtab') as ParticularSubTab) || (localStorage.getItem('dheeksha_particular_subtab') as ParticularSubTab) || 'Select Customer';
@@ -891,14 +899,19 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     return num;
   }, [packing, subtotalAmount, discountVal]);
 
-  // Tax Calculation (Manual fixed amount directly added)
+  // Tax Calculation (Formula: 2500 * totalCases * 18% or specified %)
   const taxVal = useMemo(() => {
     if (!tax) return 0;
-    const cleanTax = String(tax).trim().replace(/[^0-9.]/g, '');
-    const num = parseFloat(cleanTax) || 0;
+    const cleanTax = String(tax).trim();
+    if (cleanTax === '0') return 0;
+    const num = parseFloat(cleanTax.replace(/[^0-9.]/g, '')) || 0;
     if (num <= 0) return 0;
+    const totalCases = productRows.reduce((acc, row) => acc + (parseFloat(row.quantity) || 0), 0);
+    if (cleanTax.endsWith('%') || num <= 100) {
+      return Number(((2500 * totalCases * num) / 100).toFixed(2));
+    }
     return num;
-  }, [tax]);
+  }, [tax, productRows]);
 
   // Final Net Total Amount
   const finalTotalAmount = useMemo(() => {
@@ -1290,12 +1303,16 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
 
   const editTaxVal = useMemo(() => {
     const tStr = String(editBillForm.tax || '').trim();
-    if (!tStr) return 0;
+    if (!tStr || tStr === '0') return 0;
     const cleanTax = tStr.replace(/[^0-9.]/g, '');
     const tNum = parseFloat(cleanTax) || 0;
     if (tNum <= 0) return 0;
+    if (tStr.includes('%') || tNum <= 100) {
+      const totalCases = (editBillForm.products || []).reduce((sum, p) => sum + (parseFloat(p.quantity) || 0), 0);
+      return Number(((2500 * totalCases * tNum) / 100).toFixed(2));
+    }
     return tNum;
-  }, [editBillForm.tax]);
+  }, [editBillForm.tax, editBillForm.products]);
 
   const editFinalTotal = useMemo(() => {
     const net = Math.max(0, editSubtotal - editDiscountVal + editPackingVal + editTaxVal);
@@ -1605,87 +1622,102 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
               </Typography>
             </Box>
 
-            <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.6 }}>
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 1.5 }}>
-                <Box>
-                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                    Customer
-                  </Typography>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    autoHighlight
-                    options={customerOptions}
-                    getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
-                    isOptionEqualToValue={(option, val) => option.id === val.id || option.name === val.name}
-                    value={customerOptions.find((c) => c.name === currentCustomerName) || null}
-                    onChange={(_, val) => {
-                      const name = val ? val.name : '';
-                      setCurrentCustomerName(name);
-                      localStorage.setItem('gpk_active_customer', name);
-                      if (val) {
-                        setSelectedCustomerId(val.id);
-                        setFilterCustomer(val.name);
-                        setAddCreditCustomerName(val.name);
-                      } else {
-                        setSelectedCustomerId('');
-                      }
-                    }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        placeholder="Search Customer..."
-                        sx={{
-                          backgroundColor: '#FFFFFF',
+            <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.8 }}>
+              {/* Date */}
+              <Box>
+                <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
+                  Date *
+                </Typography>
+                <DatePickerField
+                  value={date}
+                  onChange={setDate}
+                  placeholder="dd-mm-yyyy"
+                  iconSize={16}
+                  inputSx={{ height: '36px' }}
+                />
+              </Box>
+
+              {/* Customer */}
+              <Box>
+                <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
+                  Customer *
+                </Typography>
+                <Autocomplete
+                  fullWidth
+                  size="small"
+                  autoHighlight
+                  options={customerOptions}
+                  getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
+                  isOptionEqualToValue={(option, val) => option.id === val.id || option.name === val.name}
+                  value={customerOptions.find((c) => c.name === currentCustomerName) || null}
+                  onChange={(_, val) => {
+                    const name = val ? val.name : '';
+                    setCurrentCustomerName(name);
+                    localStorage.setItem('gpk_active_customer', name);
+                    if (val) {
+                      setSelectedCustomerId(val.id);
+                      setFilterCustomer(val.name);
+                      setAddCreditCustomerName(val.name);
+                    } else {
+                      setSelectedCustomerId('');
+                    }
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Search Customer..."
+                      sx={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '6px',
+                        '& .MuiOutlinedInput-root': {
+                          height: '36px',
                           borderRadius: '6px',
-                          '& .MuiOutlinedInput-root': {
-                            height: '36px',
-                            borderRadius: '6px',
-                            fontSize: '13px',
-                            fontWeight: 600,
-                            color: '#0F172A',
-                            '& fieldset': {
-                              borderColor: '#CBD5E1',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: '#94A3B8',
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: '#1D4ED8',
-                              borderWidth: '1.5px',
-                            },
-                          },
-                        }}
-                      />
-                    )}
-                  />
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                    Case Count
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={caseCount}
-                    onChange={(e) => setCaseCount(e.target.value)}
-                    slotProps={{
-                      input: {
-                        sx: {
                           fontSize: '13px',
                           fontWeight: 600,
-                          height: '36px',
-                          backgroundColor: '#F8FAFC',
-                          borderRadius: '6px',
                           color: '#0F172A',
-                          '& .MuiOutlinedInput-notchedOutline': {
+                          '& fieldset': {
                             borderColor: '#CBD5E1',
                           },
+                          '&:hover fieldset': {
+                            borderColor: '#94A3B8',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#1D4ED8',
+                            borderWidth: '1.5px',
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                />
+              </Box>
+
+              {/* Bill No */}
+              <Box>
+                <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
+                  Bill No *
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Enter Bill No (e.g. 101)"
+                  value={billNo}
+                  onChange={(e) => setBillNo(e.target.value)}
+                  slotProps={{
+                    input: {
+                      sx: {
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        height: '36px',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '6px',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#CBD5E1',
                         },
                       },
-                    }}
-                  />
-                </Box>
+                    },
+                  }}
+                />
               </Box>
 
               {/* Linked Active Performa Card */}
@@ -1769,278 +1801,33 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 </Box>
               )}
 
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 1.5 }}>
-                <Box>
-                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                    Company
-                  </Typography>
-                  <Autocomplete
-                    fullWidth
-                    size="small"
-                    autoHighlight
-                    options={companyOptions}
-                    getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
-                    isOptionEqualToValue={(option, val) => option.id === val.id || option.name === val.name}
-                    value={companyOptions.find((c) => c.name === company) || null}
-                    onChange={(_, val) => setCompany(val ? val.name : '')}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        placeholder="Search Company..."
-                        sx={{
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: '6px',
-                          '& .MuiOutlinedInput-root': {
-                            height: '36px',
-                            borderRadius: '6px',
-                            fontSize: '13px',
-                            fontWeight: 500,
-                            color: '#0F172A',
-                            '& fieldset': {
-                              borderColor: '#CBD5E1',
-                            },
-                            '&:hover fieldset': {
-                              borderColor: '#94A3B8',
-                            },
-                            '&.Mui-focused fieldset': {
-                              borderColor: '#1D4ED8',
-                              borderWidth: '1.5px',
-                            },
-                          },
-                        }}
-                      />
-                    )}
-                  />
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                    Discount (%)
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={discount}
-                    onChange={(e) => setDiscount(e.target.value)}
-                    slotProps={{
-                      input: {
-                        sx: {
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          height: '36px',
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: '6px',
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#CBD5E1',
-                          },
+              {/* Transport Name */}
+              <Box>
+                <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
+                  Transport Name
+                </Typography>
+                <TextField
+                  fullWidth
+                  size="small"
+                  placeholder="Enter Transport Name"
+                  value={transport}
+                  onChange={(e) => setTransport(e.target.value)}
+                  slotProps={{
+                    input: {
+                      sx: {
+                        fontSize: '13px',
+                        fontWeight: 500,
+                        height: '36px',
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '6px',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#CBD5E1',
                         },
                       },
-                    }}
-                  />
-                </Box>
+                    },
+                  }}
+                />
               </Box>
-
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 1.5 }}>
-                <Box>
-                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                    Transport
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={transport}
-                    onChange={(e) => setTransport(e.target.value)}
-                    slotProps={{
-                      input: {
-                        sx: {
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          height: '36px',
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: '6px',
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#CBD5E1',
-                          },
-                        },
-                      },
-                    }}
-                  />
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                    Packing (%)
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    value={packing}
-                    onChange={(e) => setPacking(e.target.value)}
-                    slotProps={{
-                      input: {
-                        sx: {
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          height: '36px',
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: '6px',
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#CBD5E1',
-                          },
-                        },
-                      },
-                    }}
-                  />
-                </Box>
-              </Box>
-
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1.4fr 1fr', gap: 1.5 }}>
-                <Box>
-                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                    Bill No *
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    placeholder="Enter Bill No (e.g. 101)"
-                    value={billNo}
-                    onChange={(e) => setBillNo(e.target.value)}
-                    slotProps={{
-                      input: {
-                        sx: {
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          height: '36px',
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: '6px',
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#CBD5E1',
-                          },
-                        },
-                      },
-                    }}
-                  />
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                    Tax (₹)
-                  </Typography>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    placeholder="Enter Tax Amount"
-                    value={tax}
-                    onChange={(e) => setTax(e.target.value)}
-                    slotProps={{
-                      input: {
-                        sx: {
-                          fontSize: '13px',
-                          fontWeight: 500,
-                          height: '36px',
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: '6px',
-                          '& .MuiOutlinedInput-notchedOutline': {
-                            borderColor: '#CBD5E1',
-                          },
-                        },
-                      },
-                    }}
-                  />
-                </Box>
-              </Box>
-
-
-
-              <Box
-                sx={{
-                  backgroundColor: '#F8FAFC',
-                  p: 1.4,
-                  borderRadius: '6px',
-                  border: '1px solid #E2E8F0',
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1fr',
-                  gap: 1.5,
-                }}
-              >
-                <Box>
-                  <Typography sx={{ fontSize: '11.5px', fontWeight: 600, color: '#64748B', mb: 0.5 }}>
-                    Amount
-                  </Typography>
-                  <Box
-                    sx={{
-                      backgroundColor: '#E2E8F0',
-                      borderRadius: '4px',
-                      px: 1.5,
-                      py: 0.7,
-                      fontSize: '13px',
-                      fontWeight: 700,
-                      color: '#0F172A',
-                      textAlign: 'right',
-                    }}
-                  >
-                    {subtotalAmount.toFixed(2)}
-                  </Box>
-                </Box>
-                <Box>
-                  <Typography sx={{ fontSize: '11.5px', fontWeight: 600, color: '#64748B', mb: 0.5 }}>
-                    Total
-                  </Typography>
-                  <Box
-                    sx={{
-                      backgroundColor: '#E2E8F0',
-                      borderRadius: '4px',
-                      px: 1.5,
-                      py: 0.7,
-                      fontSize: '13px',
-                      fontWeight: 700,
-                      color: '#1D4ED8',
-                      textAlign: 'right',
-                    }}
-                  >
-                    {finalTotalAmount}
-                  </Box>
-                </Box>
-              </Box>
-
-
-
-              <Box sx={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 1.5, mt: 0.5 }}>
-                <Box>
-                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                    Date
-                  </Typography>
-                  <DatePickerField
-                    value={date}
-                    onChange={setDate}
-                    placeholder="dd-mm-yyyy"
-                    iconSize={16}
-                    inputSx={{ height: '36px' }}
-                  />
-                </Box>
-                <Box sx={{ display: 'flex', alignItems: 'flex-end' }}>
-                  <Button
-                    variant="contained"
-                    disableElevation
-                    fullWidth
-                    onClick={handleCreateParticular}
-                    disabled={createLoading}
-                    sx={{
-                      backgroundColor: '#0284C7',
-                      color: '#FFFFFF',
-                      height: '36px',
-                      fontSize: '13px',
-                      fontWeight: 700,
-                      textTransform: 'none',
-                      borderRadius: '6px',
-                      '&:hover': {
-                        backgroundColor: '#0369A1',
-                      },
-                    }}
-                  >
-                    {createLoading ? 'Creating...' : 'Click to Create'}
-                  </Button>
-                </Box>
-              </Box>
-
-
             </Box>
           </Paper>
 
@@ -2868,6 +2655,217 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 </TableBody>
               </Table>
             </TableContainer>
+
+            {/* Bottom Summary & Calculation Section (Right Side Bottom Corner for Discount, Packing, Tax) */}
+            <Box
+              sx={{
+                p: 2,
+                backgroundColor: '#F8FAFC',
+                borderTop: '1px solid #E2E8F0',
+                display: 'flex',
+                flexDirection: { xs: 'column', md: 'row' },
+                justifyContent: 'space-between',
+                alignItems: { xs: 'stretch', md: 'flex-start' },
+                gap: 2,
+              }}
+            >
+              {/* Left Side: Summary Badges */}
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+                <Chip
+                  label={`Total Items: ${productRows.length}`}
+                  sx={{
+                    fontWeight: 700,
+                    fontSize: '12px',
+                    backgroundColor: '#FFFFFF',
+                    border: '1px solid #CBD5E1',
+                    color: '#475569',
+                  }}
+                />
+                <Chip
+                  label={`Total Cases: ${caseCount} Cases`}
+                  sx={{
+                    fontWeight: 800,
+                    fontSize: '12px',
+                    backgroundColor: '#EFF6FF',
+                    border: '1px solid #BFDBFE',
+                    color: '#1D4ED8',
+                  }}
+                />
+              </Box>
+
+              {/* Right Side Bottom Corner: Discount, Packing, Tax & Totals */}
+              <Box
+                sx={{
+                  width: { xs: '100%', sm: '380px', md: '400px' },
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '10px',
+                  border: '1px solid #E2E8F0',
+                  boxShadow: '0 2px 8px -2px rgba(15, 23, 42, 0.06)',
+                  p: 2,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 1.2,
+                }}
+              >
+                {/* Subtotal */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#64748B' }}>
+                    Subtotal:
+                  </Typography>
+                  <Typography sx={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
+                    ₹{subtotalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </Typography>
+                </Box>
+
+                {/* Discount */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                  <Typography sx={{ fontSize: '12.5px', fontWeight: 600, color: '#475569', width: '110px', flexShrink: 0 }}>
+                    Discount (% or ₹):
+                  </Typography>
+                  <TextField
+                    size="small"
+                    placeholder="e.g. 5% or 500"
+                    value={discount}
+                    onChange={(e) => setDiscount(e.target.value)}
+                    slotProps={{
+                      input: {
+                        sx: {
+                          height: '32px',
+                          fontSize: '12.5px',
+                          fontWeight: 600,
+                          textAlign: 'right',
+                          backgroundColor: '#F8FAFC',
+                          borderRadius: '6px',
+                          '& input': { textAlign: 'right', py: 0.5 },
+                        },
+                      },
+                    }}
+                    sx={{ width: '130px' }}
+                  />
+                  <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#DC2626', minWidth: '85px', textAlign: 'right' }}>
+                    {discountVal > 0 ? `- ₹${discountVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '₹0.00'}
+                  </Typography>
+                </Box>
+
+                {/* Packing */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                  <Typography sx={{ fontSize: '12.5px', fontWeight: 600, color: '#475569', width: '110px', flexShrink: 0 }}>
+                    Packing (% or ₹):
+                  </Typography>
+                  <TextField
+                    size="small"
+                    placeholder="e.g. 2% or 200"
+                    value={packing}
+                    onChange={(e) => setPacking(e.target.value)}
+                    slotProps={{
+                      input: {
+                        sx: {
+                          height: '32px',
+                          fontSize: '12.5px',
+                          fontWeight: 600,
+                          textAlign: 'right',
+                          backgroundColor: '#F8FAFC',
+                          borderRadius: '6px',
+                          '& input': { textAlign: 'right', py: 0.5 },
+                        },
+                      },
+                    }}
+                    sx={{ width: '130px' }}
+                  />
+                  <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#2563EB', minWidth: '85px', textAlign: 'right' }}>
+                    {packingVal > 0 ? `+ ₹${packingVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '₹0.00'}
+                  </Typography>
+                </Box>
+
+                {/* Tax */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5, width: '110px', flexShrink: 0 }}>
+                    <Typography sx={{ fontSize: '12.5px', fontWeight: 600, color: '#475569' }}>
+                      Tax:
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="text"
+                      onClick={() => setTax(tax ? '' : '18%')}
+                      sx={{
+                        fontSize: '10px',
+                        fontWeight: 700,
+                        p: 0,
+                        px: 0.5,
+                        minWidth: 0,
+                        height: '18px',
+                        color: tax ? '#DC2626' : '#166534',
+                        backgroundColor: tax ? '#FEF2F2' : '#F0FDF4',
+                        borderRadius: '3px',
+                        textTransform: 'none',
+                        lineHeight: 1,
+                      }}
+                    >
+                      {tax ? '0' : '18%'}
+                    </Button>
+                  </Box>
+                  <TextField
+                    size="small"
+                    placeholder="e.g. 18%"
+                    value={tax}
+                    onChange={(e) => setTax(e.target.value)}
+                    slotProps={{
+                      input: {
+                        sx: {
+                          height: '32px',
+                          fontSize: '12.5px',
+                          fontWeight: 600,
+                          textAlign: 'right',
+                          backgroundColor: '#F8FAFC',
+                          borderRadius: '6px',
+                          '& input': { textAlign: 'right', py: 0.5 },
+                        },
+                      },
+                    }}
+                    sx={{ width: '130px' }}
+                  />
+                  <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#16A34A', minWidth: '85px', textAlign: 'right' }}>
+                    {taxVal > 0 ? `+ ₹${taxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '₹0.00'}
+                  </Typography>
+                </Box>
+
+                <Box sx={{ borderTop: '1px dashed #CBD5E1', my: 0.5 }} />
+
+                {/* Net Total */}
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Typography sx={{ fontSize: '14px', fontWeight: 800, color: '#0F172A' }}>
+                    Net Total:
+                  </Typography>
+                  <Typography sx={{ fontSize: '18px', fontWeight: 900, color: '#1D4ED8' }}>
+                    ₹{parseFloat(finalTotalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </Typography>
+                </Box>
+
+                {/* Submit Button in Bottom Right Corner */}
+                <Button
+                  variant="contained"
+                  disableElevation
+                  fullWidth
+                  onClick={handleCreateParticular}
+                  disabled={createLoading}
+                  sx={{
+                    mt: 1,
+                    background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                    color: '#FFFFFF !important',
+                    height: '38px',
+                    fontSize: '13.5px',
+                    fontWeight: 700,
+                    textTransform: 'none',
+                    borderRadius: '6px',
+                    '&:hover': {
+                      background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                    },
+                  }}
+                >
+                  {createLoading ? 'Submitting...' : 'Submit'}
+                </Button>
+              </Box>
+            </Box>
           </Paper>
         </Box>
       )}
@@ -2875,128 +2873,130 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       {/* View 3: Account Details View */}
       {activeSubTab === 'Account Details' && (
         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-          {/* Top Metric Cards */}
-          <Box
-            sx={{
-              display: 'grid',
-              gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
-              gap: 2,
-            }}
-          >
-            <Paper
-              elevation={0}
+          {/* Top Metric Cards (Hidden for Admin, visible for Superadmin & Customer) */}
+          {!isAdmin && (
+            <Box
               sx={{
-                p: 2.2,
-                borderRadius: '10px',
-                border: '1px solid #E2E8F0',
-                backgroundColor: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
+                display: 'grid',
+                gridTemplateColumns: { xs: '1fr', sm: 'repeat(3, 1fr)' },
                 gap: 2,
               }}
             >
-              <Box
+              <Paper
+                elevation={0}
                 sx={{
-                  width: 44,
-                  height: 44,
+                  p: 2.2,
                   borderRadius: '10px',
-                  backgroundColor: '#FEF2F2',
-                  color: '#DC2626',
+                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#FFFFFF',
                   display: 'flex',
                   alignItems: 'center',
-                  justifyContent: 'center',
+                  gap: 2,
                 }}
               >
-                <ReceiptLongRoundedIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Box>
-                <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#64748B' }}>
-                  Total Purchases (Debit)
-                </Typography>
-                <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#DC2626' }}>
-                  ₹{overallTotals.totalDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </Typography>
-              </Box>
-            </Paper>
-
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.2,
-                borderRadius: '10px',
-                border: '1px solid #E2E8F0',
-                backgroundColor: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: '10px',
-                  backgroundColor: '#F0FDF4',
-                  color: '#16A34A',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <AccountBalanceWalletRoundedIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Box>
-                <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#64748B' }}>
-                  Total Paid / Credits
-                </Typography>
-                <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#16A34A' }}>
-                  ₹{overallTotals.totalCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </Typography>
-              </Box>
-            </Paper>
-
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2.2,
-                borderRadius: '10px',
-                border: '1px solid #E2E8F0',
-                backgroundColor: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: '10px',
-                  backgroundColor: overallTotals.netBalance < 0 ? '#FEF2F2' : '#F0FDF4',
-                  color: overallTotals.netBalance < 0 ? '#DC2626' : '#16A34A',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                <AccountBalanceWalletRoundedIcon sx={{ fontSize: 24 }} />
-              </Box>
-              <Box>
-                <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#64748B' }}>
-                  Net Outstanding Balance
-                </Typography>
-                <Typography
+                <Box
                   sx={{
-                    fontSize: '18px',
-                    fontWeight: 800,
-                    color: overallTotals.netBalance < 0 ? '#DC2626' : '#16A34A',
+                    width: 44,
+                    height: 44,
+                    borderRadius: '10px',
+                    backgroundColor: '#FEF2F2',
+                    color: '#DC2626',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                   }}
                 >
-                  ₹{overallTotals.netBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                </Typography>
-              </Box>
-            </Paper>
-          </Box>
+                  <ReceiptLongRoundedIcon sx={{ fontSize: 24 }} />
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#64748B' }}>
+                    Total Purchases (Debit)
+                  </Typography>
+                  <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#DC2626' }}>
+                    ₹{overallTotals.totalDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </Typography>
+                </Box>
+              </Paper>
+
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2.2,
+                  borderRadius: '10px',
+                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '10px',
+                    backgroundColor: '#F0FDF4',
+                    color: '#16A34A',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <AccountBalanceWalletRoundedIcon sx={{ fontSize: 24 }} />
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#64748B' }}>
+                    Total Paid / Credits
+                  </Typography>
+                  <Typography sx={{ fontSize: '18px', fontWeight: 800, color: '#16A34A' }}>
+                    ₹{overallTotals.totalCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </Typography>
+                </Box>
+              </Paper>
+
+              <Paper
+                elevation={0}
+                sx={{
+                  p: 2.2,
+                  borderRadius: '10px',
+                  border: '1px solid #E2E8F0',
+                  backgroundColor: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 2,
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 44,
+                    height: 44,
+                    borderRadius: '10px',
+                    backgroundColor: overallTotals.netBalance < 0 ? '#FEF2F2' : '#F0FDF4',
+                    color: overallTotals.netBalance < 0 ? '#DC2626' : '#16A34A',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <AccountBalanceWalletRoundedIcon sx={{ fontSize: 24 }} />
+                </Box>
+                <Box>
+                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#64748B' }}>
+                    Net Outstanding Balance
+                  </Typography>
+                  <Typography
+                    sx={{
+                      fontSize: '18px',
+                      fontWeight: 800,
+                      color: overallTotals.netBalance < 0 ? '#DC2626' : '#16A34A',
+                    }}
+                  >
+                    ₹{overallTotals.netBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                  </Typography>
+                </Box>
+              </Paper>
+            </Box>
+          )}
 
           {/* Account Details Table */}
           <Paper

@@ -113,14 +113,19 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
     }
   }
 
-  // Tax calculation (flat ₹ amount)
-  const rawTax = String(performa.tax ?? '').trim().replace(/[^0-9.]/g, '');
-  const taxNum = parseFloat(rawTax) || 0;
+  // Tax calculation (Formula: 2500 * cases * 18% or specified %)
+  const rawTax = String(performa.tax ?? '').trim();
+  const taxNum = parseFloat(rawTax.replace(/[^0-9.]/g, '')) || 0;
   let taxAmt = 0;
   if (performa.taxAmount !== undefined && Number(performa.taxAmount) > 0) {
     taxAmt = Number(performa.taxAmount);
   } else if (taxNum > 0) {
-    taxAmt = taxNum;
+    if (rawTax.includes('%') || taxNum <= 100) {
+      const casesVal = Number(performa.totalRequiredCases) || (performa.products || []).reduce((acc: number, p: any) => acc + (Number(p.requiredCases) || 0), 0);
+      taxAmt = (2500 * casesVal * taxNum) / 100;
+    } else {
+      taxAmt = taxNum;
+    }
   }
 
   // Total Allocated Value = Subtotal - Discount + Packing + Tax
@@ -401,20 +406,24 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
           justifyContent: 'space-between',
           alignItems: 'flex-end',
           marginTop: '28px',
-          paddingTop: '14px',
+          paddingTop: '16px',
           borderTop: '1px dashed #CBD5E1',
           fontSize: '11px',
         }}
       >
-        <div style={{ textAlign: 'center', width: '160px' }}>
-          <div style={{ height: '28px' }} />
-          <div style={{ borderTop: '1px solid #0F172A', paddingTop: '4px', fontWeight: 700 }}>
+        <div style={{ textAlign: 'center', width: '175px' }}>
+          <div style={{ height: '38px' }} />
+          <div style={{ borderTop: '1.5px solid #0F172A', marginBottom: '4px' }} />
+          <div style={{ fontWeight: 800, color: '#334155', textTransform: 'uppercase', fontSize: '9.5px', letterSpacing: '0.04em' }}>
             Customer Signature
           </div>
         </div>
-        <div style={{ textAlign: 'center', width: '160px' }}>
-          <div style={{ fontWeight: 700, marginBottom: '24px' }}>For GPK Crackers</div>
-          <div style={{ borderTop: '1px solid #0F172A', paddingTop: '4px', fontWeight: 700 }}>
+        <div style={{ textAlign: 'center', width: '175px' }}>
+          <div style={{ height: '38px', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', fontSize: '11px' }}>
+            For GPK Crackers
+          </div>
+          <div style={{ borderTop: '1.5px solid #0F172A', marginBottom: '4px' }} />
+          <div style={{ fontWeight: 800, color: '#334155', textTransform: 'uppercase', fontSize: '9.5px', letterSpacing: '0.04em' }}>
             Authorized Signatory
           </div>
         </div>

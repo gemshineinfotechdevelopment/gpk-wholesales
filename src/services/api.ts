@@ -87,8 +87,16 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     }
 
     return json.data !== undefined ? json.data : json;
-  } catch (error) {
+  } catch (error: any) {
     console.error(`[API Error] Request to ${endpoint} failed:`, error);
+    if (
+      error?.name === 'TypeError' &&
+      (String(error?.message).toLowerCase().includes('fetch') ||
+       String(error?.message).toLowerCase().includes('network') ||
+       String(error?.message).toLowerCase().includes('failed'))
+    ) {
+      throw new Error('Backend server is not reachable. Please ensure your backend server is running on port 5032 (npm run dev:server).');
+    }
     throw error;
   }
 }

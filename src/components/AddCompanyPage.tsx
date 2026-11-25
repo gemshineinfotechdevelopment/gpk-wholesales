@@ -59,9 +59,9 @@ export const AddCompanyPage: FC<AddCompanyPageProps> = ({
       if (onSubmitSuccess) {
         onSubmitSuccess();
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to create company:', err);
-      alert('Error creating company. Please check your backend connection.');
+      alert(err?.message || 'Error creating company. Please check your backend connection.');
     } finally {
       setLoading(false);
     }

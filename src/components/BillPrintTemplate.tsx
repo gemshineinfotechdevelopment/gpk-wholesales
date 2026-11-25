@@ -83,15 +83,21 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
     packingLabel = 'Packing Charges';
   }
 
-  // Tax calculation (Flat amount or tax)
+  // Tax calculation (Formula: 2500 * cases * 18% or specified %)
   const rawTaxStr = String(bill.tax ?? '').trim();
   const cleanTax = rawTaxStr.replace(/[^0-9.]/g, '');
   const taxNum = parseFloat(cleanTax) || 0;
   let taxAmt = 0;
   let taxLabel = 'Tax Amount';
   if (taxNum > 0) {
-    taxAmt = taxNum;
-    taxLabel = `Tax Amount (₹${taxNum.toLocaleString('en-IN')})`;
+    if (rawTaxStr.includes('%') || taxNum <= 100) {
+      const casesVal = parseFloat(String(bill.caseCount || '0')) || (Array.isArray(bill.products) ? bill.products.reduce((acc: number, p: any) => acc + (parseFloat(p.quantity) || 0), 0) : 0);
+      taxAmt = (2500 * casesVal * taxNum) / 100;
+      taxLabel = `Tax Amount (${taxNum}% on ₹2500/case)`;
+    } else {
+      taxAmt = taxNum;
+      taxLabel = `Tax Amount (₹${taxNum.toLocaleString('en-IN')})`;
+    }
   } else {
     taxLabel = 'Tax Amount';
   }
@@ -399,21 +405,21 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'flex-end',
-          marginTop: '24px',
-          paddingTop: '14px',
+          marginTop: '28px',
+          paddingTop: '16px',
           borderTop: '1px dashed #CBD5E1',
-          fontSize: '11.5px',
+          fontSize: '11px',
         }}
       >
-        <div style={{ textAlign: 'center', width: '160px' }}>
-          <div style={{ height: '28px' }}></div>
-          <div style={{ borderTop: '1px solid #0F172A', marginBottom: '4px' }}></div>
-          <div style={{ fontWeight: 700, color: '#334155' }}>Customer Signature</div>
+        <div style={{ textAlign: 'center', width: '175px' }}>
+          <div style={{ height: '38px' }}></div>
+          <div style={{ borderTop: '1.5px solid #0F172A', marginBottom: '4px' }}></div>
+          <div style={{ fontWeight: 800, color: '#334155', textTransform: 'uppercase', fontSize: '9.5px', letterSpacing: '0.04em' }}>Customer Signature</div>
         </div>
-        <div style={{ textAlign: 'center', width: '160px' }}>
-          <div style={{ fontWeight: 700, color: '#0F172A', marginBottom: '24px' }}>For GPK Crackers</div>
-          <div style={{ borderTop: '1px solid #0F172A', marginBottom: '4px' }}></div>
-          <div style={{ fontWeight: 700, color: '#334155' }}>Authorized Signatory</div>
+        <div style={{ textAlign: 'center', width: '175px' }}>
+          <div style={{ height: '38px', fontWeight: 700, color: '#0F172A', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', fontSize: '11px' }}>For GPK Crackers</div>
+          <div style={{ borderTop: '1.5px solid #0F172A', marginBottom: '4px' }}></div>
+          <div style={{ fontWeight: 800, color: '#334155', textTransform: 'uppercase', fontSize: '9.5px', letterSpacing: '0.04em' }}>Authorized Signatory</div>
         </div>
       </div>
     </div>

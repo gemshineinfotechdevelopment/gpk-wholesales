@@ -197,7 +197,17 @@ export const shareBillOnWhatsApp = async (bill: BillPrintData, phone?: string) =
 
   const rawDisc = parseFloat(String(bill.discount || '0').replace(/[^0-9.]/g, '')) || 0;
   const rawPack = parseFloat(String(bill.packing || '0').replace(/[^0-9.]/g, '')) || 0;
-  const rawTax = parseFloat(String(bill.tax || '0').replace(/[^0-9.]/g, '')) || 0;
+  const rawTaxStr = String(bill.tax || '0').trim();
+  const taxNum = parseFloat(rawTaxStr.replace(/[^0-9.]/g, '')) || 0;
+  let taxAmt = 0;
+  if (taxNum > 0) {
+    if (rawTaxStr.includes('%') || taxNum <= 100) {
+      const casesVal = parseFloat(String(bill.caseCount || '0')) || (Array.isArray(bill.products) ? bill.products.reduce((acc: number, p: any) => acc + (parseFloat(p.quantity) || 0), 0) : 0);
+      taxAmt = (2500 * casesVal * taxNum) / 100;
+    } else {
+      taxAmt = taxNum;
+    }
+  }
 
   const text = `*GPK CRACKERS - INVOICE BILL* 🧾
 ----------------------------------------
@@ -213,7 +223,7 @@ ${itemsText || '-'}
 *Subtotal:* ₹${bill.amount || '0.00'}
 *Discount:* ${rawDisc > 0 ? `${bill.discount}${String(bill.discount).includes('%') ? '' : '%'}` : '0%'}
 *Packing:* ${rawPack > 0 ? `${bill.packing}${String(bill.packing).includes('%') ? '' : '%'}` : '0%'}
-*Tax:* ₹${rawTax > 0 ? rawTax.toLocaleString('en-IN') : '0.00'}
+*Tax:* ₹${taxAmt > 0 ? taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
 *NET TOTAL:* ₹${bill.total || '0.00'}
 ----------------------------------------
 _Thank you for your business!_
@@ -338,8 +348,19 @@ export const sharePerformaOnWhatsApp = async (performa: any, phone?: string) => 
       packingAmt = packNum;
     }
   }
-  const cleanTax = String(performa.tax || '0').trim().replace(/[^0-9.]/g, '');
-  const taxAmt = performa.taxAmount !== undefined ? Number(performa.taxAmount) : (parseFloat(cleanTax) || 0);
+  const rawTax = String(performa.tax || '0').trim();
+  const taxNum = parseFloat(rawTax.replace(/[^0-9.]/g, '')) || 0;
+  let taxAmt = 0;
+  if (performa.taxAmount !== undefined && Number(performa.taxAmount) > 0) {
+    taxAmt = Number(performa.taxAmount);
+  } else if (taxNum > 0) {
+    if (rawTax.includes('%') || taxNum <= 100) {
+      const casesVal = Number(performa.totalRequiredCases) || (performa.products || []).reduce((acc: number, p: any) => acc + (Number(p.requiredCases) || 0), 0);
+      taxAmt = (2500 * casesVal * taxNum) / 100;
+    } else {
+      taxAmt = taxNum;
+    }
+  }
 
   const totalAmount =
     performa.totalAllocatedAmount !== undefined
