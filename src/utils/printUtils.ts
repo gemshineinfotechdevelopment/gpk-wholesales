@@ -1153,15 +1153,16 @@ export const generateLedgerStatementHtml = (
       const cred = parseFloat(String(entry.credit || '0').replace(/,/g, '')) || 0;
       const isEven = localIdx % 2 === 1;
 
-      const desc = entry.billNo ? `Bill #${entry.billNo}` : entry.type || 'PAYMENT / RECEIPT';
+      const desc = entry.customerName || (deb > 0 ? 'Bill Debit' : entry.type || 'PAYMENT / RECEIPT');
+      const billNoText = deb > 0 && entry.billNo ? entry.billNo : '-';
 
       return `
         <tr class="data-row" style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
           <td class="text-center" style="width:11%; color:#334155;">${entry.date || '-'}</td>
           <td class="text-center" style="width:4%;">${globalIdx + 1}</td>
-          <td style="width:25%; font-weight:700; color:#0F172A; word-break: break-word;">${desc}</td>
-          <td style="width:13%; color:#475569; font-size:9.5px; word-break: break-word;">${entry.type === 'BILL' ? 'Bill Debit' : (entry.paymentMode || 'Credit')}</td>
-          <td style="width:13%; color:#475569; font-size:9.5px; word-break: break-word;">${entry.type === 'BILL' ? '-' : (entry.depositAccount || '-')}</td>
+          <td style="width:24%; font-weight:700; color:#0F172A; word-break: break-word;">${desc}</td>
+          <td style="width:12%; font-weight:700; color:#334155; word-break: break-word;">${billNoText}</td>
+          <td style="width:15%; color:#475569; font-size:9.5px; word-break: break-word;">${entry.type === 'BILL' ? 'Bill Debit' : (entry.paymentMode || 'Credit')}</td>
           <td class="text-right" style="width:11%; color:#1E293B; font-weight:700;">${deb > 0 ? `₹ ${deb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
           <td class="text-right" style="width:11%; color:#16A34A; font-weight:700;">${cred > 0 ? `₹ ${cred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
           <td class="text-right" style="width:12%; font-weight:800; color:#1D4ED8;">₹ ${entry.balance || '0.00'}</td>
@@ -1229,9 +1230,9 @@ export const generateLedgerStatementHtml = (
             <tr>
               <th class="text-center" style="width:11%;">Date</th>
               <th class="text-center" style="width:4%;">#</th>
-              <th style="width:25%;">Particulars</th>
-              <th style="width:13%;">Payment Type</th>
-              <th style="width:13%;">Deposit Account</th>
+              <th style="width:24%;">Particulars</th>
+              <th style="width:12%;">Bill No</th>
+              <th style="width:15%;">Payment Type</th>
               <th class="text-right" style="width:11%;">Debit (Dr)</th>
               <th class="text-right" style="width:11%;">Credit (Cr)</th>
               <th class="text-right" style="width:12%;">Balance (₹)</th>

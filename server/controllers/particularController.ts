@@ -498,7 +498,13 @@ export const updateParticular = async (req: Request, res: Response, next: NextFu
       $or: [
         { particularId: String(id) },
         { particularId: String(existing._id) },
-        ...(existing.billNo ? [{ billNo: String(existing.billNo).trim() }] : []),
+        ...(existing.billNo && existing.customerName
+          ? [{
+              billNo: String(existing.billNo).trim(),
+              customerName: { $regex: new RegExp(`^${escapeRegex(existing.customerName.trim())}$`, 'i') },
+              type: 'BILL',
+            }]
+          : []),
       ],
     });
 
@@ -586,8 +592,12 @@ export const deleteParticular = async (req: Request, res: Response, next: NextFu
       { particularId: String(req.params.id) },
       { particularId: String(particular._id) },
     ];
-    if (particular.billNo && String(particular.billNo).trim() !== '') {
-      orConditions.push({ billNo: String(particular.billNo).trim() });
+    if (particular.billNo && String(particular.billNo).trim() !== '' && particular.customerName) {
+      orConditions.push({
+        billNo: String(particular.billNo).trim(),
+        customerName: { $regex: new RegExp(`^${escapeRegex(particular.customerName.trim())}$`, 'i') },
+        type: 'BILL',
+      });
     }
     if (particular.customerName && particular.date) {
       const matchCond: any = {

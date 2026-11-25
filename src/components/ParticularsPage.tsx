@@ -130,26 +130,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     return initialCustomerName || '';
   });
 
-  const [accountCustomerInput, setAccountCustomerInput] = useState<string>(() => {
-    return initialCustomerName && initialCustomerName !== 'ALL' ? initialCustomerName : (isCustomer ? '' : 'All Customers');
-  });
-  const [particularCustomerInput, setParticularCustomerInput] = useState<string>(() => {
-    return initialCustomerName && initialCustomerName !== 'ALL' ? initialCustomerName : (isCustomer ? '' : 'All Customers');
-  });
-
-  useEffect(() => {
-    const name = filterCustomer && filterCustomer !== 'ALL'
-      ? filterCustomer
-      : (currentCustomerName && currentCustomerName !== 'ALL' ? currentCustomerName : 'All Customers');
-    setAccountCustomerInput(name);
-    setParticularCustomerInput(name);
-  }, [filterCustomer, currentCustomerName]);
-
   const activeSelectedCustomer = isCustomer
     ? (initialCustomerName || currentCustomerName || filterCustomer || 'Customer')
     : (filterCustomer && filterCustomer !== 'ALL' && filterCustomer !== 'All Customers'
       ? filterCustomer
-      : (currentCustomerName && currentCustomerName !== 'ALL' && currentCustomerName !== 'All Customers' ? currentCustomerName : ''));
+      : '');
+
+  const resolvedFilterName = activeSelectedCustomer;
 
   const isSingleCustomer = isCustomer || Boolean(activeSelectedCustomer);
 
@@ -299,15 +286,82 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   }, [filteredParticularRows]);
 
   // Subtab 5: Add Credit Form State
+  const DEFAULT_TRANSFER_ACCOUNTS = [
+    'GPK Main Current A/C',
+    'GPK Cash Counter',
+    'S. Nagaraj (GPay)',
+    'Axis Bank A/C',
+    'HDFC Bank A/C',
+  ];
+
+  const [transferAccountOptions, setTransferAccountOptions] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('gpk_transfer_account_names');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load transfer accounts:', e);
+    }
+    return DEFAULT_TRANSFER_ACCOUNTS;
+  });
+
   const [addCreditCustomerName, setAddCreditCustomerName] = useState<string>('');
   const [creditPaymentMode, setCreditPaymentMode] = useState<string>('Bank Transfer');
-  const [creditDepositAccount, setCreditDepositAccount] = useState<string>('');
+  const [creditDepositAccount, setCreditDepositAccount] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('gpk_transfer_account_names');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed[0];
+        }
+      }
+    } catch (e) {}
+    return 'GPK Main Current A/C';
+  });
   const [creditAmount, setCreditAmount] = useState<string>('');
   const [creditDate, setCreditDate] = useState<string>(() => {
     const today = new Date();
     return today.toLocaleDateString('en-GB').replace(/\//g, '-');
   });
   const [creditLoading, setCreditLoading] = useState(false);
+  const [openAddAccountDialog, setOpenAddAccountDialog] = useState(false);
+  const [newAccountNameInput, setNewAccountNameInput] = useState('');
+
+  const handleSaveNewAccount = () => {
+    const trimmed = newAccountNameInput.trim();
+    if (!trimmed) return;
+    setTransferAccountOptions((prev) => {
+      const updated = prev.includes(trimmed) ? prev : [...prev, trimmed];
+      try {
+        localStorage.setItem('gpk_transfer_account_names', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setCreditDepositAccount(trimmed);
+    setNewAccountNameInput('');
+  };
+
+  const handleDeleteAccountOption = (nameToDelete: string) => {
+    setTransferAccountOptions((prev) => {
+      const updated = prev.filter((name) => name !== nameToDelete);
+      try {
+        localStorage.setItem('gpk_transfer_account_names', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setCreditDepositAccount((prev) => {
+      if (prev === nameToDelete) {
+        const remaining = transferAccountOptions.filter((name) => name !== nameToDelete);
+        return remaining[0] || '';
+      }
+      return prev;
+    });
+  };
 
   // Bill Print Modal State
   const [selectedBillForPrint, setSelectedBillForPrint] = useState<BillPrintData | null>(null);
@@ -477,14 +531,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       setAccountLoading(true);
       const cust = isCustomer
         ? (initialCustomerName || currentCustomerName || filterCustomer)
-        : (targetCustomer !== undefined ? targetCustomer : (filterCustomer || currentCustomerName));
+        : (targetCustomer !== undefined ? targetCustomer : filterCustomer);
 
-      if (isCustomer && (!cust || cust === 'ALL')) {
+      if (isCustomer && (!cust || cust === 'ALL' || cust === 'All Customers')) {
         setAccountDetails([]);
         return;
       }
 
-      const data = await AccountsApi.getAll(cust && cust !== 'ALL' ? cust : undefined);
+      const data = await AccountsApi.getAll(cust && cust !== 'ALL' && cust !== 'All Customers' ? cust : undefined);
       setAccountDetails(data || []);
     } catch (err) {
       console.error('Failed to load accounts:', err);
@@ -499,14 +553,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       setParticularLoading(true);
       const cust = isCustomer
         ? (initialCustomerName || currentCustomerName || filterCustomer)
-        : (targetCustomer !== undefined ? targetCustomer : (filterCustomer || currentCustomerName));
+        : (targetCustomer !== undefined ? targetCustomer : filterCustomer);
 
-      if (isCustomer && (!cust || cust === 'ALL')) {
+      if (isCustomer && (!cust || cust === 'ALL' || cust === 'All Customers')) {
         setParticularDetails([]);
         return;
       }
 
-      const data = await ParticularsApi.getAll(cust && cust !== 'ALL' ? cust : undefined);
+      const data = await ParticularsApi.getAll(cust && cust !== 'ALL' && cust !== 'All Customers' ? cust : undefined);
       setParticularDetails(data || []);
     } catch (err) {
       console.error('Failed to load particulars:', err);
@@ -524,13 +578,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   useEffect(() => {
     const custToFetch = isCustomer
       ? (initialCustomerName || currentCustomerName || filterCustomer)
-      : (filterCustomer || currentCustomerName);
+      : filterCustomer;
     if (activeSubTab === 'Account Details') {
       fetchAccounts(custToFetch);
     } else if (activeSubTab === 'Particular Details') {
       fetchParticulars(custToFetch);
     }
-  }, [activeSubTab, filterCustomer, currentCustomerName, initialCustomerName, isCustomer]);
+  }, [activeSubTab, filterCustomer, initialCustomerName, isCustomer]);
 
   // Overall totals
   const overallTotals = useMemo(() => {
@@ -1046,8 +1100,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
 
       const createdCustomer = currentCustomerName || 'General';
       setFilterCustomer(createdCustomer);
-      setParticularCustomerInput(createdCustomer);
-      setAccountCustomerInput(createdCustomer);
       setFilterParticularCompany('ALL');
       fetchAccounts(createdCustomer);
       fetchParticulars(createdCustomer);
@@ -1085,14 +1137,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         creditAmount: creditAmount.trim(),
         date: creditDate,
         paymentMode: creditPaymentMode || 'Bank Transfer',
-        depositAccount: creditDepositAccount ? creditDepositAccount.trim() : '-',
+        depositAccount: creditDepositAccount ? creditDepositAccount.trim() : (transferAccountOptions[0] || 'GPK Main Current A/C'),
         reference: '',
-        notes: `Payment via ${creditPaymentMode || 'Bank Transfer'}${creditDepositAccount ? ` deposited to A/C: ${creditDepositAccount.trim()}` : ''}`,
+        notes: `Payment via ${creditPaymentMode || 'Bank Transfer'}${creditDepositAccount ? ` to A/C: ${creditDepositAccount.trim()}` : ''}`,
       });
 
       alert(res?.message || 'Credit added successfully!');
       setCreditAmount('');
-      setCreditDepositAccount('');
 
       // Refresh all financial states
       fetchAccounts(filterCustomer);
@@ -1237,7 +1288,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
 
   const handleShareParticularsListWhatsApp = async () => {
     try {
-      const cust = filterCustomer || currentCustomerName || 'All Customers';
+      const cust = resolvedFilterName || 'All Customers';
       await shareParticularsListOnWhatsApp(cust, particularDetails);
     } catch (err) {
       console.error('Failed to share particulars on WhatsApp:', err);
@@ -1246,7 +1297,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
 
   const handleShareLedgerWhatsApp = async () => {
     try {
-      const cust = filterCustomer || currentCustomerName || 'All Customers';
+      const cust = resolvedFilterName || 'All Customers';
       await shareLedgerOnWhatsApp(cust, accountDetails);
     } catch (err) {
       console.error('Failed to share ledger on WhatsApp:', err);
@@ -3342,73 +3393,42 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   letterSpacing: '-0.01em',
                 }}
               >
-                Account Details {isCustomer ? `- ${initialCustomerName || currentCustomerName || filterCustomer || 'My Account'}` : (filterCustomer && filterCustomer !== 'ALL' ? `- ${filterCustomer}` : (currentCustomerName ? `- ${currentCustomerName}` : '(All Customers)'))}
+                Account Details {isCustomer ? `- ${initialCustomerName || currentCustomerName || filterCustomer || 'My Account'}` : (filterCustomer && filterCustomer !== 'ALL' && filterCustomer !== 'All Customers' ? `- ${filterCustomer}` : '(All Customers)')}
               </Typography>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
                 {!isCustomer && (
                   <Autocomplete
                     size="small"
-                    openOnFocus
                     autoHighlight
                     options={[{ id: 'ALL', name: 'All Customers' }, ...customerOptions]}
                     getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
                     isOptionEqualToValue={(option, val) => option.name === val.name}
                     value={
-                      filterCustomer && filterCustomer !== 'ALL'
+                      filterCustomer && filterCustomer !== 'ALL' && filterCustomer !== 'All Customers'
                         ? customerOptions.find((c) => c.name === filterCustomer) || { id: filterCustomer, name: filterCustomer }
-                        : (currentCustomerName && currentCustomerName !== 'ALL' ? customerOptions.find((c) => c.name === currentCustomerName) || { id: 'ALL', name: 'All Customers' } : { id: 'ALL', name: 'All Customers' })
+                        : { id: 'ALL', name: 'All Customers' }
                     }
-                    inputValue={accountCustomerInput}
-                    onInputChange={(_, newInputValue, reason) => {
-                      if (reason === 'input') {
-                        setAccountCustomerInput(newInputValue);
-                      } else if (reason === 'reset') {
-                        const curName = filterCustomer && filterCustomer !== 'ALL'
-                          ? filterCustomer
-                          : (currentCustomerName && currentCustomerName !== 'ALL' ? currentCustomerName : 'All Customers');
-                        setAccountCustomerInput(newInputValue || curName);
-                      } else if (reason === 'clear') {
-                        setAccountCustomerInput('');
-                      }
-                    }}
-                    filterOptions={(options, state) => {
-                      if (!state.inputValue || state.inputValue === 'All Customers') {
-                        return options;
-                      }
-                      const query = state.inputValue.toLowerCase().trim();
-                      return options.filter((o) => {
-                        const name = typeof o === 'string' ? o : o.name;
-                        return name && name.toLowerCase().includes(query);
-                      });
-                    }}
                     onChange={(_, val) => {
-                      const selectedName = val ? (val.id === 'ALL' ? 'ALL' : val.name) : 'ALL';
+                      const selectedName = val ? (val.id === 'ALL' || val.name === 'All Customers' ? 'ALL' : val.name) : 'ALL';
                       setFilterCustomer(selectedName);
-                      if (val && val.id !== 'ALL') {
-                        setCurrentCustomerName(val.name);
-                        setSelectedCustomerId(val.id);
-                        localStorage.setItem('gpk_active_customer', val.name);
+                      if (selectedName === 'ALL') {
+                        setCurrentCustomerName('');
+                        setSelectedCustomerId('');
+                        localStorage.removeItem('gpk_active_customer');
+                        fetchAccounts('ALL');
+                      } else {
+                        setCurrentCustomerName(selectedName);
+                        setSelectedCustomerId(val ? val.id : '');
+                        localStorage.setItem('gpk_active_customer', selectedName);
+                        fetchAccounts(selectedName);
                       }
-                      fetchAccounts(selectedName);
                     }}
                     sx={{ width: 220 }}
                     renderInput={(params) => (
                       <TextField
                         {...params}
                         placeholder="Filter Customer..."
-                        onClick={() => {
-                          if (accountCustomerInput === 'All Customers') {
-                            setAccountCustomerInput('');
-                          }
-                        }}
-                        onFocus={(e) => {
-                          if (accountCustomerInput === 'All Customers') {
-                            setAccountCustomerInput('');
-                          } else {
-                            (e.target as HTMLInputElement)?.select?.();
-                          }
-                        }}
                         sx={{
                           backgroundColor: '#FFFFFF',
                           borderRadius: '6px',
@@ -3481,21 +3501,24 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
               <Table sx={{ width: '100%' }} aria-label="account details table">
                 <TableHead>
                   <TableRow sx={{ backgroundColor: '#F8FAFC' }}>
-                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '110px' }}>
+                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '105px' }}>
                       DATE
                     </TableCell>
-                    <TableCell sx={{ py: 1.5, px: { xs: 2, sm: 3 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '60px' }}>
+                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '55px' }}>
                       SL.NO
                     </TableCell>
+                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '85px' }}>
+                      BILL NO
+                    </TableCell>
                     {!isSingleCustomer && (
-                      <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '140px' }}>
+                      <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '135px' }}>
                         CUSTOMER
                       </TableCell>
                     )}
-                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '140px' }}>
+                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '130px' }}>
                       PAYMENT TYPE
                     </TableCell>
-                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '170px' }}>
+                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '160px' }}>
                       DEPOSIT ACCOUNT
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '110px' }}>
@@ -3517,13 +3540,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 <TableBody>
                   {accountLoading ? (
                     <TableRow>
-                      <TableCell colSpan={9 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6 }}>
+                      <TableCell colSpan={10 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6 }}>
                         <CircularProgress size={32} sx={{ color: '#1D4ED8' }} />
                       </TableCell>
                     </TableRow>
                   ) : accountDetails.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={9 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6, color: '#64748B' }}>
+                      <TableCell colSpan={10 - (isSingleCustomer ? 1 : 0) - (isCustomer ? 1 : 0)} align="center" sx={{ py: 6, color: '#64748B' }}>
                         No account details found {filterCustomer && filterCustomer !== 'ALL' ? `for ${filterCustomer}` : ''}.
                       </TableCell>
                     </TableRow>
@@ -3531,6 +3554,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     accountDetails.map((row: any, index: number) => {
                       const isLast = index === accountDetails.length - 1;
                       const rowId = row._id || row.id || '';
+                      const debitNum = parseFloat(String(row.debit || '0').replace(/,/g, '')) || 0;
                       return (
                         <TableRow
                           key={rowId || index}
@@ -3543,14 +3567,20 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                           <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 500, color: '#475569', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.date}
                           </TableCell>
-                          <TableCell sx={{ py: 1.6, px: { xs: 2, sm: 3 }, fontSize: '13.5px', fontWeight: 600, color: '#1E293B', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13.5px', fontWeight: 600, color: '#1E293B', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {index + 1}
+                          </TableCell>
+                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 700, color: '#0F172A', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            {row.billNo ? (String(row.billNo).startsWith('#') ? row.billNo : `#${row.billNo}`) : '-'}
                           </TableCell>
                           {!isSingleCustomer && (
                             <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 700, color: '#1D4ED8', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                               {row.customerName}
                             </TableCell>
                           )}
+                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 600, color: '#334155', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            {debitNum > 0 && row.billNo ? row.billNo : '-'}
+                          </TableCell>
                           <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.type === 'BILL' ? (
                               <Chip
@@ -3579,9 +3609,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                                 }}
                               />
                             )}
-                          </TableCell>
-                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 600, color: '#334155', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
-                            {row.type === 'BILL' ? '-' : (row.depositAccount || '-')}
                           </TableCell>
                           <TableCell align="right" sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 500, color: '#DC2626', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.debit}
@@ -3672,73 +3699,42 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 letterSpacing: '-0.01em',
               }}
             >
-              Particular Details {isCustomer ? `- ${initialCustomerName || currentCustomerName || filterCustomer || 'My Bills'}` : (filterCustomer && filterCustomer !== 'ALL' ? `- ${filterCustomer}` : (currentCustomerName ? `- ${currentCustomerName}` : '(All Bills)'))}
+              Particular Details {isCustomer ? `- ${initialCustomerName || currentCustomerName || filterCustomer || 'My Bills'}` : (resolvedFilterName ? `- ${resolvedFilterName}` : '(All Bills)')}
             </Typography>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
               {!isCustomer && (
                 <Autocomplete
                   size="small"
-                  openOnFocus
                   autoHighlight
                   options={[{ id: 'ALL', name: 'All Customers' }, ...customerOptions]}
                   getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
                   isOptionEqualToValue={(option, val) => option.name === val.name}
                   value={
-                    filterCustomer && filterCustomer !== 'ALL'
+                    filterCustomer && filterCustomer !== 'ALL' && filterCustomer !== 'All Customers'
                       ? customerOptions.find((c) => c.name === filterCustomer) || { id: filterCustomer, name: filterCustomer }
-                      : (currentCustomerName && currentCustomerName !== 'ALL' ? customerOptions.find((c) => c.name === currentCustomerName) || { id: 'ALL', name: 'All Customers' } : { id: 'ALL', name: 'All Customers' })
+                      : { id: 'ALL', name: 'All Customers' }
                   }
-                  inputValue={particularCustomerInput}
-                  onInputChange={(_, newInputValue, reason) => {
-                    if (reason === 'input') {
-                      setParticularCustomerInput(newInputValue);
-                    } else if (reason === 'reset') {
-                      const curName = filterCustomer && filterCustomer !== 'ALL'
-                        ? filterCustomer
-                        : (currentCustomerName && currentCustomerName !== 'ALL' ? currentCustomerName : 'All Customers');
-                      setParticularCustomerInput(newInputValue || curName);
-                    } else if (reason === 'clear') {
-                      setParticularCustomerInput('');
-                    }
-                  }}
-                  filterOptions={(options, state) => {
-                    if (!state.inputValue || state.inputValue === 'All Customers') {
-                      return options;
-                    }
-                    const query = state.inputValue.toLowerCase().trim();
-                    return options.filter((o) => {
-                      const name = typeof o === 'string' ? o : o.name;
-                      return name && name.toLowerCase().includes(query);
-                    });
-                  }}
                   onChange={(_, val) => {
-                    const selectedName = val ? (val.id === 'ALL' ? 'ALL' : val.name) : 'ALL';
+                    const selectedName = val ? (val.id === 'ALL' || val.name === 'All Customers' ? 'ALL' : val.name) : 'ALL';
                     setFilterCustomer(selectedName);
-                    if (val && val.id !== 'ALL') {
-                      setCurrentCustomerName(val.name);
-                      setSelectedCustomerId(val.id);
-                      localStorage.setItem('gpk_active_customer', val.name);
+                    if (selectedName === 'ALL') {
+                      setCurrentCustomerName('');
+                      setSelectedCustomerId('');
+                      localStorage.removeItem('gpk_active_customer');
+                      fetchParticulars('ALL');
+                    } else {
+                      setCurrentCustomerName(selectedName);
+                      setSelectedCustomerId(val ? val.id : '');
+                      localStorage.setItem('gpk_active_customer', selectedName);
+                      fetchParticulars(selectedName);
                     }
-                    fetchParticulars(selectedName);
                   }}
                   sx={{ width: 220 }}
                   renderInput={(params) => (
                     <TextField
                       {...params}
                       placeholder="Filter Customer..."
-                      onClick={() => {
-                        if (particularCustomerInput === 'All Customers') {
-                          setParticularCustomerInput('');
-                        }
-                      }}
-                      onFocus={(e) => {
-                        if (particularCustomerInput === 'All Customers') {
-                          setParticularCustomerInput('');
-                        } else {
-                          (e.target as HTMLInputElement)?.select?.();
-                        }
-                      }}
                       sx={{
                         backgroundColor: '#FFFFFF',
                         borderRadius: '6px',
@@ -3910,7 +3906,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
             </Box>
 
             <Typography sx={{ fontSize: '12px', color: '#64748B', fontWeight: 500 }}>
-              {filterCustomer && filterCustomer !== 'ALL'
+              {filterCustomer && filterCustomer !== 'ALL' && filterCustomer !== 'All Customers'
                 ? `Customer balance: ${particularCasesSummary.totalBooked} Booked - ${particularCasesSummary.totalOut} Out = ${particularCasesSummary.totalPending} Pending`
                 : `${particularCasesSummary.totalBills} bill(s) listed`}
             </Typography>
@@ -4398,108 +4394,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 />
               </Box>
 
-              {/* Payment Type */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  alignItems: { xs: 'flex-start', sm: 'center' },
-                  gap: { xs: 1, sm: 3.5 },
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#0F172A',
-                    minWidth: '150px',
-                    textAlign: { sm: 'right' },
-                  }}
-                >
-                  Payment Type
-                </Typography>
-                <FormControl fullWidth size="small">
-                  <Select
-                    value={creditPaymentMode}
-                    onChange={(e: any) => setCreditPaymentMode(e.target.value)}
-                    sx={{
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '6px',
-                      height: '42px',
-                      fontSize: '13.5px',
-                      fontWeight: 600,
-                      color: '#0F172A',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#CBD5E1',
-                      },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#94A3B8',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#1D4ED8',
-                        borderWidth: '1.5px',
-                      },
-                    }}
-                  >
-                    <MenuItem value="Bank Transfer">Bank Transfer (NEFT / RTGS / IMPS)</MenuItem>
-                    <MenuItem value="GPay / PhonePe / UPI">GPay / PhonePe / UPI</MenuItem>
-                    <MenuItem value="Cash">Cash Counter / In Hand</MenuItem>
-                    <MenuItem value="Cheque">Cheque</MenuItem>
-                    <MenuItem value="Net Banking">Net Banking</MenuItem>
-                  </Select>
-                </FormControl>
-              </Box>
-
-              {/* Deposit Account */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  alignItems: { xs: 'flex-start', sm: 'center' },
-                  gap: { xs: 1, sm: 3.5 },
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#0F172A',
-                    minWidth: '150px',
-                    textAlign: { sm: 'right' },
-                  }}
-                >
-                  Deposit Account
-                </Typography>
-                <TextField
-                  fullWidth
-                  size="small"
-                  placeholder="Enter Account Number (e.g. 1234567890 / Bank A/C)"
-                  value={creditDepositAccount}
-                  onChange={(e) => setCreditDepositAccount(e.target.value)}
-                  slotProps={{
-                    input: {
-                      sx: {
-                        fontSize: '13.5px',
-                        fontWeight: 600,
-                        height: '42px',
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '6px',
-                        '& .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#CBD5E1',
-                        },
-                        '&:hover .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#94A3B8',
-                        },
-                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                          borderColor: '#1D4ED8',
-                          borderWidth: '1.5px',
-                        },
-                      },
-                    },
-                  }}
-                />
-              </Box>
-
               {/* Credit Amount */}
               <Box
                 sx={{
@@ -4559,8 +4453,180 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 />
               </Box>
 
+              {/* Payment Type (placed below Credit Amount) */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  gap: { xs: 1, sm: 3.5 },
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#0F172A',
+                    minWidth: '150px',
+                    textAlign: { sm: 'right' },
+                  }}
+                >
+                  Payment Type
+                </Typography>
+                <FormControl fullWidth size="small">
+                  <Select
+                    value={creditPaymentMode}
+                    onChange={(e: any) => setCreditPaymentMode(e.target.value)}
+                    MenuProps={{
+                      anchorOrigin: {
+                        vertical: 'bottom',
+                        horizontal: 'left',
+                      },
+                      transformOrigin: {
+                        vertical: 'top',
+                        horizontal: 'left',
+                      },
+                      slotProps: {
+                        paper: {
+                          sx: {
+                            mt: 0.5,
+                            maxHeight: 280,
+                            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                            borderRadius: '8px',
+                            border: '1px solid #E2E8F0',
+                          },
+                        },
+                      },
+                    }}
+                    sx={{
+                      backgroundColor: '#FFFFFF',
+                      borderRadius: '6px',
+                      height: '42px',
+                      fontSize: '13.5px',
+                      fontWeight: 600,
+                      color: '#0F172A',
+                      '& .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#CBD5E1',
+                      },
+                      '&:hover .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#94A3B8',
+                      },
+                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                        borderColor: '#1D4ED8',
+                        borderWidth: '1.5px',
+                      },
+                    }}
+                  >
+                    <MenuItem value="Bank Transfer">Bank Transfer (NEFT / RTGS / IMPS)</MenuItem>
+                    <MenuItem value="GPay / PhonePe / UPI">GPay / PhonePe / UPI</MenuItem>
+                    <MenuItem value="Cash">Cash Counter / In Hand</MenuItem>
+                    <MenuItem value="Cheque">Cheque</MenuItem>
+                    <MenuItem value="Net Banking">Net Banking</MenuItem>
+                  </Select>
+                </FormControl>
+              </Box>
 
-
+              {/* Transferred To Account / Person Name (with dropdown and Add Name button on right) */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  gap: { xs: 1, sm: 3.5 },
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#0F172A',
+                    minWidth: '150px',
+                    textAlign: { sm: 'right' },
+                  }}
+                >
+                  Transferred To
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1.5, width: '100%', alignItems: 'center' }}>
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={creditDepositAccount}
+                      onChange={(e: any) => setCreditDepositAccount(e.target.value)}
+                      displayEmpty
+                      MenuProps={{
+                        anchorOrigin: {
+                          vertical: 'bottom',
+                          horizontal: 'left',
+                        },
+                        transformOrigin: {
+                          vertical: 'top',
+                          horizontal: 'left',
+                        },
+                        slotProps: {
+                          paper: {
+                            sx: {
+                              mt: 0.5,
+                              maxHeight: 280,
+                              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                              borderRadius: '8px',
+                              border: '1px solid #E2E8F0',
+                            },
+                          },
+                        },
+                      }}
+                      sx={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '6px',
+                        height: '42px',
+                        fontSize: '13.5px',
+                        fontWeight: 600,
+                        color: '#0F172A',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#CBD5E1',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#94A3B8',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#1D4ED8',
+                          borderWidth: '1.5px',
+                        },
+                      }}
+                    >
+                      {transferAccountOptions.map((accName) => (
+                        <MenuItem key={accName} value={accName}>
+                          {accName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      setNewAccountNameInput('');
+                      setOpenAddAccountDialog(true);
+                    }}
+                    sx={{
+                      minWidth: '135px',
+                      height: '42px',
+                      background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                      color: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      borderRadius: '6px',
+                      whiteSpace: 'nowrap',
+                      boxShadow: 'none',
+                      px: 2,
+                      '&:hover': {
+                        background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                      },
+                    }}
+                    startIcon={<AddRoundedIcon sx={{ fontSize: 18 }} />}
+                  >
+                    Manage / Add
+                  </Button>
+                </Box>
+              </Box>
 
               {/* Action Button */}
               <Box
@@ -4590,7 +4656,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     },
                   }}
                 >
-                  {creditLoading ? 'Saving...' : 'Click to create'}
+                  {creditLoading ? 'Saving...' : 'Submit'}
                 </Button>
               </Box>
             </Box>
@@ -4626,13 +4692,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       <DateRangePrintModal
         open={openAccountDateModal}
         onClose={() => setOpenAccountDateModal(false)}
-        title={`Print Account Statement - ${filterCustomer || currentCustomerName || 'All Customers'}`}
+        title={`Print Account Statement - ${resolvedFilterName || 'All Customers'}`}
         subtitle="Select transaction date range to filter ledger entries for A4 print."
         items={accountDetails}
         getDateFromItem={(a) => a.date || ''}
         onConfirmPrint={(itemsToPrint, rangeText) => {
           printLedgerStatementDirectly(
-            filterCustomer || currentCustomerName || 'All Customers',
+            resolvedFilterName || 'All Customers',
             itemsToPrint,
             rangeText
           );
@@ -5205,6 +5271,190 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
             {warningDialog.type === 'NEW_PRODUCT'
               ? 'Go to Performa to Add Product'
               : 'Go to Performa to Update Quantity'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog to Manage / Add Account / Person Name */}
+      <Dialog
+        open={openAddAccountDialog}
+        onClose={() => {
+          setOpenAddAccountDialog(false);
+          setNewAccountNameInput('');
+        }}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            borderRadius: '12px',
+            p: 1,
+            backgroundColor: '#FFFFFF',
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, fontSize: '16px', color: '#0F172A', pb: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>Manage / Add Account Names</span>
+          <IconButton
+            size="small"
+            onClick={() => {
+              setOpenAddAccountDialog(false);
+              setNewAccountNameInput('');
+            }}
+            sx={{ color: '#64748B' }}
+          >
+            <CloseRoundedIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Typography sx={{ fontSize: '13px', color: '#64748B', mb: 2 }}>
+            Add new person / bank account or delete unwanted names from the dropdown list.
+          </Typography>
+
+          {/* Add New Account Form */}
+          <Box sx={{ display: 'flex', gap: 1, mb: 2.5 }}>
+            <TextField
+              autoFocus
+              fullWidth
+              size="small"
+              placeholder="e.g. S. Nagaraj A/C, Murugan"
+              value={newAccountNameInput}
+              onChange={(e) => setNewAccountNameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSaveNewAccount();
+                }
+              }}
+              slotProps={{
+                input: {
+                  sx: {
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    height: '40px',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '6px',
+                  },
+                },
+              }}
+            />
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={handleSaveNewAccount}
+              disabled={!newAccountNameInput.trim()}
+              sx={{
+                background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                textTransform: 'none',
+                fontSize: '13px',
+                borderRadius: '6px',
+                px: 2.5,
+                whiteSpace: 'nowrap',
+                '&:hover': {
+                  background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                },
+              }}
+            >
+              Add
+            </Button>
+          </Box>
+
+          {/* Saved Accounts List with Delete Option */}
+          <Typography
+            sx={{
+              fontSize: '11.5px',
+              fontWeight: 700,
+              color: '#475569',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              mb: 1,
+            }}
+          >
+            Saved Account Names ({transferAccountOptions.length})
+          </Typography>
+
+          <Box
+            sx={{
+              maxHeight: '220px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.8,
+              pr: 0.5,
+            }}
+          >
+            {transferAccountOptions.length === 0 ? (
+              <Typography sx={{ fontSize: '13px', color: '#94A3B8', py: 1.5, textAlign: 'center', fontStyle: 'italic' }}>
+                No accounts saved. Add a name above.
+              </Typography>
+            ) : (
+              transferAccountOptions.map((accName) => (
+                <Box
+                  key={accName}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    px: 1.5,
+                    py: 1,
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    transition: 'all 0.15s ease',
+                    '&:hover': {
+                      backgroundColor: '#F1F5F9',
+                      borderColor: '#CBD5E1',
+                    },
+                  }}
+                >
+                  <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#1E293B', wordBreak: 'break-word' }}>
+                    {accName}
+                  </Typography>
+                  <Tooltip title="Delete account name">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteAccountOption(accName)}
+                      sx={{
+                        color: '#EF4444',
+                        p: 0.5,
+                        ml: 1,
+                        '&:hover': {
+                          backgroundColor: '#FEE2E2',
+                          color: '#DC2626',
+                        },
+                      }}
+                    >
+                      <DeleteOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              ))
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 1 }}>
+          <Button
+            onClick={() => {
+              setOpenAddAccountDialog(false);
+              setNewAccountNameInput('');
+            }}
+            variant="outlined"
+            sx={{
+              color: '#475569',
+              borderColor: '#CBD5E1',
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: '13px',
+              borderRadius: '6px',
+              px: 2.5,
+              '&:hover': {
+                borderColor: '#94A3B8',
+                backgroundColor: '#F8FAFC',
+              },
+            }}
+          >
+            Close
           </Button>
         </DialogActions>
       </Dialog>

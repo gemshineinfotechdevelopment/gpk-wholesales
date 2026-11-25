@@ -88,3 +88,57 @@ export const recalculateCustomerBalance = async (customerName: string): Promise<
   }
 };
 
+export const syncMissingBillLedgers = async (targetCustomerName?: string): Promise<void> => {
+  try {
+    const { Particular } = await import('../models/Particular');
+    const filter: any = {};
+    if (targetCustomerName && targetCustomerName.trim() !== '' && targetCustomerName.toLowerCase() !== 'all') {
+      filter.customerName = { $regex: new RegExp(`^${escapeRegex(targetCustomerName.trim())}$`, 'i') };
+    }
+
+    const particulars = await Particular.find(filter);
+    const affectedCustomers = new Set<string>();
+
+    for (const p of particulars) {
+      const total = getParticularNetTotal(p);
+      if (total <= 0) continue;
+
+      const existing = await AccountLedger.findOne({
+        $or: [
+          { particularId: String(p._id) },
+          {
+            billNo: String(p.billNo).trim(),
+            customerName: { $regex: new RegExp(`^${escapeRegex(p.customerName.trim())}$`, 'i') },
+            type: 'BILL',
+          },
+        ],
+      });
+
+      if (!existing) {
+        await AccountLedger.create({
+          particularId: String(p._id),
+          billNo: p.billNo || '',
+          customerName: p.customerName,
+          companyName: p.companyName || 'General',
+          date: p.date,
+          debit: total.toFixed(2),
+          credit: '0.00',
+          balance: '0.00',
+          type: 'BILL',
+          createdAt: (p as any).createdAt || new Date(),
+        });
+        affectedCustomers.add(p.customerName);
+      } else if (!existing.particularId) {
+        existing.particularId = String(p._id);
+        await existing.save();
+      }
+    }
+
+    for (const cName of affectedCustomers) {
+      await recalculateCustomerBalance(cName);
+    }
+  } catch (err) {
+    console.error('[syncMissingBillLedgers error]:', err);
+  }
+};
+
