@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type FC } from 'react';
+import { useState, useEffect, useMemo, useRef, type FC } from 'react';
 import {
   Box,
   Typography,
@@ -134,19 +134,25 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     return initialCustomerName && initialCustomerName !== 'ALL' ? initialCustomerName : (isCustomer ? '' : 'All Customers');
   });
 
+  const isClearingFilterRef = useRef(false);
+
+  const resolvedFilterName = filterCustomer === 'ALL'
+    ? ''
+    : (filterCustomer || (currentCustomerName && currentCustomerName !== 'ALL' ? currentCustomerName : ''));
+
   useEffect(() => {
-    const name = filterCustomer && filterCustomer !== 'ALL'
-      ? filterCustomer
-      : (currentCustomerName && currentCustomerName !== 'ALL' ? currentCustomerName : 'All Customers');
+    if (isClearingFilterRef.current) {
+      isClearingFilterRef.current = false;
+      return;
+    }
+    const name = resolvedFilterName || 'All Customers';
     setAccountCustomerInput(name);
     setParticularCustomerInput(name);
-  }, [filterCustomer, currentCustomerName]);
+  }, [resolvedFilterName]);
 
   const activeSelectedCustomer = isCustomer
     ? (initialCustomerName || currentCustomerName || filterCustomer || 'Customer')
-    : (filterCustomer && filterCustomer !== 'ALL' && filterCustomer !== 'All Customers'
-      ? filterCustomer
-      : (currentCustomerName && currentCustomerName !== 'ALL' && currentCustomerName !== 'All Customers' ? currentCustomerName : ''));
+    : (resolvedFilterName && resolvedFilterName !== 'All Customers' ? resolvedFilterName : '');
 
   const isSingleCustomer = isCustomer || Boolean(activeSelectedCustomer);
 
@@ -1194,7 +1200,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
 
   const handleShareParticularsListWhatsApp = async () => {
     try {
-      const cust = filterCustomer || currentCustomerName || 'All Customers';
+      const cust = resolvedFilterName || 'All Customers';
       await shareParticularsListOnWhatsApp(cust, particularDetails);
     } catch (err) {
       console.error('Failed to share particulars on WhatsApp:', err);
@@ -1203,7 +1209,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
 
   const handleShareLedgerWhatsApp = async () => {
     try {
-      const cust = filterCustomer || currentCustomerName || 'All Customers';
+      const cust = resolvedFilterName || 'All Customers';
       await shareLedgerOnWhatsApp(cust, accountDetails);
     } catch (err) {
       console.error('Failed to share ledger on WhatsApp:', err);
@@ -1357,6 +1363,92 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       setEditBillLoading(false);
     }
   };
+
+  const renderCustomerFilterAutocomplete = (
+    inputValue: string,
+    setInputValue: (val: string) => void,
+    onFetch: (targetCustomer?: string) => void
+  ) => (
+    <Autocomplete
+      size="small"
+      openOnFocus
+      autoHighlight
+      clearOnBlur={false}
+      options={[{ id: 'ALL', name: 'All Customers' }, ...customerOptions]}
+      getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
+      isOptionEqualToValue={(option, val) => option.name === val.name}
+      value={
+        resolvedFilterName
+          ? customerOptions.find((c) => c.name === resolvedFilterName) || { id: resolvedFilterName, name: resolvedFilterName }
+          : null
+      }
+      inputValue={inputValue}
+      onInputChange={(_, newInputValue, reason) => {
+        if (reason === 'input') {
+          setInputValue(newInputValue);
+        } else if (reason === 'clear') {
+          isClearingFilterRef.current = true;
+          setInputValue('');
+        } else if (reason === 'reset' && !isClearingFilterRef.current && newInputValue) {
+          setInputValue(newInputValue);
+        }
+      }}
+      filterOptions={(options, state) => {
+        const trimmed = state.inputValue.trim();
+        const query = trimmed.toLowerCase();
+        if (!query || query === 'all customers' || (resolvedFilterName && trimmed === resolvedFilterName)) {
+          return options;
+        }
+        return options.filter((o) => {
+          const name = typeof o === 'string' ? o : o.name;
+          return name && name.toLowerCase().includes(query);
+        });
+      }}
+      onChange={(_, val, reason) => {
+        if (reason === 'clear') {
+          isClearingFilterRef.current = true;
+          setFilterCustomer('ALL');
+          setInputValue('');
+          onFetch('ALL');
+          return;
+        }
+        const selectedName = val ? (val.id === 'ALL' ? 'ALL' : val.name) : 'ALL';
+        setFilterCustomer(selectedName);
+        if (val && val.id !== 'ALL') {
+          setCurrentCustomerName(val.name);
+          setSelectedCustomerId(val.id);
+          localStorage.setItem('gpk_active_customer', val.name);
+          setInputValue(val.name);
+        } else {
+          setInputValue('All Customers');
+        }
+        onFetch(selectedName);
+      }}
+      sx={{ width: 220 }}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          placeholder="All Customers"
+          onBlur={() => {
+            if (!inputValue.trim()) {
+              setInputValue(resolvedFilterName || 'All Customers');
+            }
+          }}
+          sx={{
+            backgroundColor: '#FFFFFF',
+            borderRadius: '6px',
+            '& .MuiOutlinedInput-root': {
+              height: '34px',
+              borderRadius: '6px',
+              fontSize: '12.5px',
+              fontWeight: 600,
+              py: 0,
+            },
+          }}
+        />
+      )}
+    />
+  );
 
   return (
     <Box
@@ -3034,88 +3126,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   letterSpacing: '-0.01em',
                 }}
               >
-                Account Details {isCustomer ? `- ${initialCustomerName || currentCustomerName || filterCustomer || 'My Account'}` : (filterCustomer && filterCustomer !== 'ALL' ? `- ${filterCustomer}` : (currentCustomerName ? `- ${currentCustomerName}` : '(All Customers)'))}
+                Account Details {isCustomer ? `- ${initialCustomerName || currentCustomerName || filterCustomer || 'My Account'}` : (resolvedFilterName ? `- ${resolvedFilterName}` : '(All Customers)')}
               </Typography>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                {!isCustomer && (
-                  <Autocomplete
-                    size="small"
-                    openOnFocus
-                    autoHighlight
-                    options={[{ id: 'ALL', name: 'All Customers' }, ...customerOptions]}
-                    getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
-                    isOptionEqualToValue={(option, val) => option.name === val.name}
-                    value={
-                      filterCustomer && filterCustomer !== 'ALL'
-                        ? customerOptions.find((c) => c.name === filterCustomer) || { id: filterCustomer, name: filterCustomer }
-                        : (currentCustomerName && currentCustomerName !== 'ALL' ? customerOptions.find((c) => c.name === currentCustomerName) || { id: 'ALL', name: 'All Customers' } : { id: 'ALL', name: 'All Customers' })
-                    }
-                    inputValue={accountCustomerInput}
-                    onInputChange={(_, newInputValue, reason) => {
-                      if (reason === 'input') {
-                        setAccountCustomerInput(newInputValue);
-                      } else if (reason === 'reset') {
-                        const curName = filterCustomer && filterCustomer !== 'ALL'
-                          ? filterCustomer
-                          : (currentCustomerName && currentCustomerName !== 'ALL' ? currentCustomerName : 'All Customers');
-                        setAccountCustomerInput(newInputValue || curName);
-                      } else if (reason === 'clear') {
-                        setAccountCustomerInput('');
-                      }
-                    }}
-                    filterOptions={(options, state) => {
-                      if (!state.inputValue || state.inputValue === 'All Customers') {
-                        return options;
-                      }
-                      const query = state.inputValue.toLowerCase().trim();
-                      return options.filter((o) => {
-                        const name = typeof o === 'string' ? o : o.name;
-                        return name && name.toLowerCase().includes(query);
-                      });
-                    }}
-                    onChange={(_, val) => {
-                      const selectedName = val ? (val.id === 'ALL' ? 'ALL' : val.name) : 'ALL';
-                      setFilterCustomer(selectedName);
-                      if (val && val.id !== 'ALL') {
-                        setCurrentCustomerName(val.name);
-                        setSelectedCustomerId(val.id);
-                        localStorage.setItem('gpk_active_customer', val.name);
-                      }
-                      fetchAccounts(selectedName);
-                    }}
-                    sx={{ width: 220 }}
-                    renderInput={(params) => (
-                      <TextField
-                        {...params}
-                        placeholder="Filter Customer..."
-                        onClick={() => {
-                          if (accountCustomerInput === 'All Customers') {
-                            setAccountCustomerInput('');
-                          }
-                        }}
-                        onFocus={(e) => {
-                          if (accountCustomerInput === 'All Customers') {
-                            setAccountCustomerInput('');
-                          } else {
-                            (e.target as HTMLInputElement)?.select?.();
-                          }
-                        }}
-                        sx={{
-                          backgroundColor: '#FFFFFF',
-                          borderRadius: '6px',
-                          '& .MuiOutlinedInput-root': {
-                            height: '34px',
-                            borderRadius: '6px',
-                            fontSize: '12.5px',
-                            fontWeight: 600,
-                            py: 0,
-                          },
-                        }}
-                      />
-                    )}
-                  />
-                )}
+                {!isCustomer && renderCustomerFilterAutocomplete(accountCustomerInput, setAccountCustomerInput, fetchAccounts)}
                 <Button
                   variant="contained"
                   disableElevation
@@ -3184,11 +3199,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                         CUSTOMER
                       </TableCell>
                     )}
+                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '110px' }}>
+                      BILL NO
+                    </TableCell>
                     <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '140px' }}>
                       PAYMENT TYPE
-                    </TableCell>
-                    <TableCell sx={{ py: 1.5, px: { xs: 1.5, sm: 2 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '170px' }}>
-                      DEPOSIT ACCOUNT
                     </TableCell>
                     <TableCell align="right" sx={{ py: 1.5, px: { xs: 1.5, sm: 2.5 }, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', width: '110px' }}>
                       DEBIT
@@ -3223,6 +3238,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     accountDetails.map((row: any, index: number) => {
                       const isLast = index === accountDetails.length - 1;
                       const rowId = row._id || row.id || '';
+                      const debitNum = parseFloat(String(row.debit || '0').replace(/,/g, '')) || 0;
                       return (
                         <TableRow
                           key={rowId || index}
@@ -3243,6 +3259,9 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                               {row.customerName}
                             </TableCell>
                           )}
+                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 600, color: '#334155', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            {debitNum > 0 && row.billNo ? row.billNo : '-'}
+                          </TableCell>
                           <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.type === 'BILL' ? (
                               <Chip
@@ -3271,9 +3290,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                                 }}
                               />
                             )}
-                          </TableCell>
-                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 600, color: '#334155', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
-                            {row.type === 'BILL' ? '-' : (row.depositAccount || '-')}
                           </TableCell>
                           <TableCell align="right" sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 500, color: '#DC2626', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.debit}
@@ -3364,88 +3380,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 letterSpacing: '-0.01em',
               }}
             >
-              Particular Details {isCustomer ? `- ${initialCustomerName || currentCustomerName || filterCustomer || 'My Bills'}` : (filterCustomer && filterCustomer !== 'ALL' ? `- ${filterCustomer}` : (currentCustomerName ? `- ${currentCustomerName}` : '(All Bills)'))}
+              Particular Details {isCustomer ? `- ${initialCustomerName || currentCustomerName || filterCustomer || 'My Bills'}` : (resolvedFilterName ? `- ${resolvedFilterName}` : '(All Bills)')}
             </Typography>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-              {!isCustomer && (
-                <Autocomplete
-                  size="small"
-                  openOnFocus
-                  autoHighlight
-                  options={[{ id: 'ALL', name: 'All Customers' }, ...customerOptions]}
-                  getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
-                  isOptionEqualToValue={(option, val) => option.name === val.name}
-                  value={
-                    filterCustomer && filterCustomer !== 'ALL'
-                      ? customerOptions.find((c) => c.name === filterCustomer) || { id: filterCustomer, name: filterCustomer }
-                      : (currentCustomerName && currentCustomerName !== 'ALL' ? customerOptions.find((c) => c.name === currentCustomerName) || { id: 'ALL', name: 'All Customers' } : { id: 'ALL', name: 'All Customers' })
-                  }
-                  inputValue={particularCustomerInput}
-                  onInputChange={(_, newInputValue, reason) => {
-                    if (reason === 'input') {
-                      setParticularCustomerInput(newInputValue);
-                    } else if (reason === 'reset') {
-                      const curName = filterCustomer && filterCustomer !== 'ALL'
-                        ? filterCustomer
-                        : (currentCustomerName && currentCustomerName !== 'ALL' ? currentCustomerName : 'All Customers');
-                      setParticularCustomerInput(newInputValue || curName);
-                    } else if (reason === 'clear') {
-                      setParticularCustomerInput('');
-                    }
-                  }}
-                  filterOptions={(options, state) => {
-                    if (!state.inputValue || state.inputValue === 'All Customers') {
-                      return options;
-                    }
-                    const query = state.inputValue.toLowerCase().trim();
-                    return options.filter((o) => {
-                      const name = typeof o === 'string' ? o : o.name;
-                      return name && name.toLowerCase().includes(query);
-                    });
-                  }}
-                  onChange={(_, val) => {
-                    const selectedName = val ? (val.id === 'ALL' ? 'ALL' : val.name) : 'ALL';
-                    setFilterCustomer(selectedName);
-                    if (val && val.id !== 'ALL') {
-                      setCurrentCustomerName(val.name);
-                      setSelectedCustomerId(val.id);
-                      localStorage.setItem('gpk_active_customer', val.name);
-                    }
-                    fetchParticulars(selectedName);
-                  }}
-                  sx={{ width: 220 }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder="Filter Customer..."
-                      onClick={() => {
-                        if (particularCustomerInput === 'All Customers') {
-                          setParticularCustomerInput('');
-                        }
-                      }}
-                      onFocus={(e) => {
-                        if (particularCustomerInput === 'All Customers') {
-                          setParticularCustomerInput('');
-                        } else {
-                          (e.target as HTMLInputElement)?.select?.();
-                        }
-                      }}
-                      sx={{
-                        backgroundColor: '#FFFFFF',
-                        borderRadius: '6px',
-                        '& .MuiOutlinedInput-root': {
-                          height: '34px',
-                          borderRadius: '6px',
-                          fontSize: '12.5px',
-                          fontWeight: 600,
-                          py: 0,
-                        },
-                      }}
-                    />
-                  )}
-                />
-              )}
+              {!isCustomer && renderCustomerFilterAutocomplete(particularCustomerInput, setParticularCustomerInput, fetchParticulars)}
 
               {!isCustomer && (
                 <Autocomplete
@@ -4296,13 +4235,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       <DateRangePrintModal
         open={openAccountDateModal}
         onClose={() => setOpenAccountDateModal(false)}
-        title={`Print Account Statement - ${filterCustomer || currentCustomerName || 'All Customers'}`}
+        title={`Print Account Statement - ${resolvedFilterName || 'All Customers'}`}
         subtitle="Select transaction date range to filter ledger entries for A4 print."
         items={accountDetails}
         getDateFromItem={(a) => a.date || ''}
         onConfirmPrint={(itemsToPrint, rangeText) => {
           printLedgerStatementDirectly(
-            filterCustomer || currentCustomerName || 'All Customers',
+            resolvedFilterName || 'All Customers',
             itemsToPrint,
             rangeText
           );

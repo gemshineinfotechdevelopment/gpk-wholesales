@@ -20,7 +20,25 @@ export const getAccountDetails = async (req: Request, res: Response, next: NextF
       filter.customerName = { $regex: new RegExp(`^${escapeRegex(targetName)}$`, 'i') };
     }
 
-    const accounts = await AccountLedger.find(filter).sort({ createdAt: -1, _id: -1 });
+    const accounts = await AccountLedger.find(filter).sort({ createdAt: -1, _id: -1 }).lean();
+
+    // Backfill billNo from Particular for any legacy debit entries missing billNo
+    const missingParticularIds = accounts
+      .filter((a) => (parseFloat(String(a.debit || '0').replace(/,/g, '')) || 0) > 0 && !a.billNo && a.particularId)
+      .map((a) => String(a.particularId));
+
+    if (missingParticularIds.length > 0) {
+      const { Particular } = await import('../models/Particular');
+      const particulars = await Particular.find({ _id: { $in: missingParticularIds } }, 'billNo').lean();
+      const billNoById = new Map(particulars.map((p) => [String(p._id), p.billNo]));
+      for (const acc of accounts) {
+        if (!acc.billNo && acc.particularId) {
+          const resolved = billNoById.get(String(acc.particularId));
+          if (resolved) acc.billNo = resolved;
+        }
+      }
+    }
+
     res.status(200).json({ success: true, count: accounts.length, data: accounts });
   } catch (error) {
     next(error);
