@@ -193,12 +193,6 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
             <span style={{ width: '120px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Customer Name:</span>
             <strong style={{ color: '#0F172A' }}>{bill.customerName || '-'}</strong>
           </div>
-          {bill.companyName && bill.companyName.trim() && (
-            <div style={{ display: 'flex', marginBottom: '4px' }}>
-              <span style={{ width: '120px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Company Name:</span>
-              <strong style={{ color: '#0F172A' }}>{bill.companyName.trim()}</strong>
-            </div>
-          )}
           <div style={{ display: 'flex', marginBottom: '4px' }}>
             <span style={{ width: '120px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Transport Name:</span>
             <strong style={{ color: '#0F172A' }}>{transportName}</strong>

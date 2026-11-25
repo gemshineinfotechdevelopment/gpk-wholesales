@@ -175,7 +175,7 @@ export const generateBillHtml = (bill: BillPrintData): string => {
     .bill-wrapper {
       width: 100% !important;
       max-width: 100% !important;
-      min-height: 272mm;
+      min-height: 258mm;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -460,41 +460,46 @@ export const generateBillHtml = (bill: BillPrintData): string => {
   </style>
 </head>
 <body>
-  <div class="bill-wrapper">
-    <div class="bill-content">
+  <div class="bill-wrapper" style="width: 100% !important; min-height: 258mm; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; margin: 0 auto;">
+    <div class="bill-content" style="flex: 1 0 auto; width: 100%;">
       <!-- Header -->
-      <div class="top-header">
-        ${preparedBy ? `<div class="signatory">Prepared By: <b>${preparedBy}</b></div>` : ''}
-        <div class="comp-name">GPK Crackers</div>
-        <div class="comp-sub">Wholesale & Retail Trading • Sivakasi</div>
-        <div><span class="doc-type-badge">ESTIMATE / PARTICULAR BILL</span></div>
-      </div>
+      <table style="width: 100%; border-collapse: collapse; border-bottom: 2px solid #0F172A; padding-bottom: 8px; margin-bottom: 12px;">
+        <tr>
+          <td style="text-align: center; vertical-align: middle; position: relative;">
+            ${preparedBy ? `<div style="position: absolute; right: 0; top: 0; font-size: 11px; font-weight: 700; color: #475569;">Prepared By: <b>${preparedBy}</b></div>` : ''}
+            <div style="font-size: 26px; font-weight: 900; color: #1D4ED8; margin-bottom: 2px; text-transform: uppercase; letter-spacing: -0.01em;">GPK Crackers</div>
+            <div style="font-size: 11px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px;">Wholesale & Retail Trading • Sivakasi</div>
+            <div><span style="display: inline-block; background-color: #0F172A; color: #FFFFFF; font-size: 11px; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; padding: 3px 14px; border-radius: 4px;">ESTIMATE / PARTICULAR BILL</span></div>
+          </td>
+        </tr>
+      </table>
 
-      <!-- Metadata Block -->
-      <div class="meta-box">
-        <div>
-          <div class="meta-row"><span class="meta-label">Bill No:</span><span class="meta-val" style="color:#1D4ED8; font-size:13.5px;">#${bill.billNo || '-'}</span></div>
-          <div class="meta-row"><span class="meta-label">Customer Name:</span><span class="meta-val">${bill.customerName || '-'}</span></div>
-          ${bill.companyName && bill.companyName.trim() ? `<div class="meta-row"><span class="meta-label">Company Name:</span><span class="meta-val">${bill.companyName.trim()}</span></div>` : ''}
-          <div class="meta-row"><span class="meta-label">Transport Name:</span><span class="meta-val">${transportName}</span></div>
-        </div>
-        <div>
-          <div class="meta-row"><span class="meta-label">Date:</span><span class="meta-val">${bill.date || '-'}</span></div>
-          <div class="meta-row"><span class="meta-label">Total Cases:</span><span class="meta-val" style="font-size:13px; color:#1D4ED8;">${computedCases}</span></div>
-          ${bill.phone && bill.phone.trim() && bill.phone !== '+91 98765 43210' ? `<div class="meta-row"><span class="meta-label">Phone:</span><span class="meta-val">${bill.phone.trim()}</span></div>` : ''}
-        </div>
-      </div>
+      <!-- Metadata Block (Table layout for 100% reliable rendering in html2canvas & print) -->
+      <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #CBD5E1; border-radius: 6px; background-color: #F8FAFC; margin-bottom: 14px; font-size: 12px; table-layout: fixed;">
+        <tr>
+          <td style="width: 54%; vertical-align: top; padding: 10px 14px; border-right: 1px solid #E2E8F0;">
+            <div style="display: flex; margin-bottom: 5px; line-height: 1.4;"><span style="width: 115px; color: #64748B; font-weight: 600; font-size: 12px;">Bill No:</span><span style="font-weight: 800; color: #1D4ED8; font-size: 13.5px; flex: 1;">#${bill.billNo || '-'}</span></div>
+            <div style="display: flex; margin-bottom: 5px; line-height: 1.4;"><span style="width: 115px; color: #64748B; font-weight: 600; font-size: 12px;">Customer Name:</span><span style="font-weight: 700; color: #0F172A; flex: 1;">${bill.customerName || '-'}</span></div>
+            <div style="display: flex; margin-bottom: 2px; line-height: 1.4;"><span style="width: 115px; color: #64748B; font-weight: 600; font-size: 12px;">Transport Name:</span><span style="font-weight: 700; color: #0F172A; flex: 1;">${transportName}</span></div>
+          </td>
+          <td style="width: 46%; vertical-align: top; padding: 10px 14px;">
+            <div style="display: flex; margin-bottom: 5px; line-height: 1.4;"><span style="width: 105px; color: #64748B; font-weight: 600; font-size: 12px;">Date:</span><span style="font-weight: 700; color: #0F172A; flex: 1;">${bill.date || '-'}</span></div>
+            <div style="display: flex; margin-bottom: 5px; line-height: 1.4;"><span style="width: 105px; color: #64748B; font-weight: 600; font-size: 12px;">Total Cases:</span><span style="font-weight: 800; font-size: 13px; color: #1D4ED8; flex: 1;">${computedCases}</span></div>
+            ${bill.phone && bill.phone.trim() && bill.phone !== '+91 98765 43210' ? `<div style="display: flex; margin-bottom: 2px; line-height: 1.4;"><span style="width: 105px; color: #64748B; font-weight: 600; font-size: 12px;">Phone:</span><span style="font-weight: 700; color: #0F172A; flex: 1;">${bill.phone.trim()}</span></div>` : ''}
+          </td>
+        </tr>
+      </table>
 
       <!-- Products Table -->
-      <table class="prod-table">
+      <table class="prod-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #0F172A; font-size: 12px; margin-bottom: 14px;">
         <thead>
-          <tr>
-            <th style="width: 5%; text-align: center;">#</th>
-            <th style="width: 45%; text-align: left;">Particular / Product Description</th>
-            <th style="width: 10%; text-align: center;">Cases</th>
-            <th style="width: 12%; text-align: right;">Rate (₹)</th>
-            <th style="width: 12%; text-align: center;">Pkt / Unit</th>
-            <th style="width: 16%; text-align: right;">Amount (₹)</th>
+          <tr style="background-color: #0F172A;">
+            <th style="width: 5%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 11px;">#</th>
+            <th style="width: 45%; text-align: left; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 10px; font-weight: 800; font-size: 11px;">Particular / Product Description</th>
+            <th style="width: 10%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 11px;">Cases</th>
+            <th style="width: 12%; text-align: right; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 8px; font-weight: 800; font-size: 11px;">Rate (₹)</th>
+            <th style="width: 12%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 11px;">Pkt / Unit</th>
+            <th style="width: 16%; text-align: right; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 10px; font-weight: 800; font-size: 11px;">Amount (₹)</th>
           </tr>
         </thead>
         <tbody>
@@ -502,63 +507,71 @@ export const generateBillHtml = (bill: BillPrintData): string => {
         </tbody>
       </table>
 
-      <!-- Bottom Split Section: Left Uploaded Receipt & Right Summary Box -->
-      <div class="split-bottom">
-        <!-- Left Column: Uploaded Godown / Transport Receipt -->
-        <div class="receipt-box">
-          ${
-            receiptSrc
-              ? `<img src="${receiptSrc}" class="receipt-img" alt="Transport Receipt" />`
-              : `<div style="text-align: center; color: #64748B; font-size: 11px; padding: 10px;">
-                   <div style="font-weight: 700; color: #0F172A; margin-bottom: 2px; font-size: 11.5px;">TRANSPORT / GODOWN RECEIPT</div>
-                   <div>(No physical receipt attached)</div>
-                 </div>`
-          }
-        </div>
-
-        <!-- Right Column: Summary Table -->
-        <div class="summary-box">
-          <table class="summary-table">
-            <tbody>
-              <tr>
-                <td class="summary-label-cell">Subtotal / Amount</td>
-                <td class="summary-val-cell">₹ ${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              </tr>
-              <tr>
-                <td class="summary-label-cell" style="color: ${discountAmt > 0 ? '#DC2626' : '#334155'};">${discountLabel}</td>
-                <td class="summary-val-cell" style="color: ${discountAmt > 0 ? '#DC2626' : '#64748B'};">- ₹ ${discountAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              </tr>
-              <tr>
-                <td class="summary-label-cell">${packingLabel}</td>
-                <td class="summary-val-cell" style="color: ${packingAmt > 0 ? '#0F172A' : '#64748B'};">+ ₹ ${packingAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              </tr>
-              <tr>
-                <td class="summary-label-cell">${taxLabel}</td>
-                <td class="summary-val-cell" style="color: ${taxAmt > 0 ? '#0F172A' : '#64748B'};">+ ₹ ${taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
-              </tr>
-              <tr class="summary-total-row">
-                <td class="summary-label-cell" style="background-color: #0F172A; color: #FFFFFF; font-weight: 800;">NET TOTAL AMOUNT</td>
-                <td class="summary-val-cell" style="font-size: 13px;">₹ ${formattedTotal}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <!-- Bottom Split Section: Left Uploaded Receipt & Right Summary Box (Table layout for 100% reliable rendering) -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 16px; table-layout: fixed;">
+        <tr>
+          <!-- Left Column: Uploaded Godown / Transport Receipt -->
+          <td style="width: 48%; vertical-align: top; padding: 0;">
+            <div style="border: 1px solid #CBD5E1; border-radius: 6px; min-height: 130px; max-height: 160px; display: flex; align-items: center; justify-content: center; background-color: #F8FAFC; padding: 6px; box-sizing: border-box; overflow: hidden; text-align: center;">
+              ${
+                receiptSrc
+                  ? `<img src="${receiptSrc}" style="max-width: 100%; max-height: 148px; object-fit: contain; border-radius: 4px; display: block; margin: 0 auto;" alt="Transport Receipt" />`
+                  : `<div style="text-align: center; color: #64748B; font-size: 11px; padding: 12px;">
+                       <div style="font-weight: 700; color: #0F172A; margin-bottom: 4px; font-size: 11.5px;">TRANSPORT / GODOWN RECEIPT</div>
+                       <div>(No physical receipt attached)</div>
+                     </div>`
+              }
+            </div>
+          </td>
+          <!-- Spacer Column -->
+          <td style="width: 4%;"></td>
+          <!-- Right Column: Summary Table -->
+          <td style="width: 48%; vertical-align: top; padding: 0;">
+            <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #0F172A; font-size: 11.5px;">
+              <tbody>
+                <tr>
+                  <td style="border: 1px solid #CBD5E1; padding: 6px 10px; font-weight: 600; color: #334155; background-color: #F8FAFC;">Subtotal / Amount</td>
+                  <td style="border: 1px solid #CBD5E1; padding: 6px 10px; text-align: right; font-weight: 700; color: #0F172A;">₹ ${subtotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid #CBD5E1; padding: 6px 10px; font-weight: 600; background-color: #F8FAFC; color: ${discountAmt > 0 ? '#DC2626' : '#334155'};">${discountLabel}</td>
+                  <td style="border: 1px solid #CBD5E1; padding: 6px 10px; text-align: right; font-weight: 700; color: ${discountAmt > 0 ? '#DC2626' : '#64748B'};">- ₹ ${discountAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid #CBD5E1; padding: 6px 10px; font-weight: 600; color: #334155; background-color: #F8FAFC;">${packingLabel}</td>
+                  <td style="border: 1px solid #CBD5E1; padding: 6px 10px; text-align: right; font-weight: 700; color: ${packingAmt > 0 ? '#0F172A' : '#64748B'};">+ ₹ ${packingAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+                <tr>
+                  <td style="border: 1px solid #CBD5E1; padding: 6px 10px; font-weight: 600; color: #334155; background-color: #F8FAFC;">${taxLabel}</td>
+                  <td style="border: 1px solid #CBD5E1; padding: 6px 10px; text-align: right; font-weight: 700; color: ${taxAmt > 0 ? '#0F172A' : '#64748B'};">+ ₹ ${taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                </tr>
+                <tr style="background-color: #0F172A;">
+                  <td style="border: 1px solid #0F172A; padding: 7px 10px; background-color: #0F172A; color: #FFFFFF; font-weight: 900; font-size: 12.5px;">NET TOTAL AMOUNT</td>
+                  <td style="border: 1px solid #0F172A; padding: 7px 10px; text-align: right; font-weight: 900; background-color: #0F172A; color: #FFFFFF; font-size: 13px;">₹ ${formattedTotal}</td>
+                </tr>
+              </tbody>
+            </table>
+          </td>
+        </tr>
+      </table>
     </div>
 
     <!-- Signatures Pinned at Bottom of Bill -->
-    <div class="sig-section">
-      <div class="sig-block">
-        <div class="sig-space"></div>
-        <div class="sig-line"></div>
-        <div class="sig-label">Customer Signature</div>
-      </div>
-      <div class="sig-block">
-        <div class="sig-space">For GPK Crackers</div>
-        <div class="sig-line"></div>
-        <div class="sig-label">Authorized Signatory</div>
-      </div>
-    </div>
+    <table style="width: 100%; border-collapse: collapse; margin-top: auto; padding-top: 18px; border-top: 1px dashed #CBD5E1;">
+      <tr>
+        <td style="width: 200px; text-align: center; vertical-align: bottom;">
+          <div style="height: 38px;"></div>
+          <div style="border-top: 1.5px solid #0F172A; margin-bottom: 5px;"></div>
+          <div style="font-size: 10px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.04em;">Customer Signature</div>
+        </td>
+        <td></td>
+        <td style="width: 200px; text-align: center; vertical-align: bottom;">
+          <div style="height: 38px; display: flex; align-items: flex-end; justify-content: center; font-size: 11px; font-weight: 800; color: #0F172A; padding-bottom: 4px;">For GPK Crackers</div>
+          <div style="border-top: 1.5px solid #0F172A; margin-bottom: 5px;"></div>
+          <div style="font-size: 10px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.04em;">Authorized Signatory</div>
+        </td>
+      </tr>
+    </table>
   </div>
 </body>
 </html>
@@ -585,6 +598,14 @@ export const generateCustomerListPrintHtml = (
   reportTitle = 'CUSTOMERS MASTER LEDGER & BALANCES REPORT',
   dateRangeText?: string
 ): string => {
+  // Sort customers by Customer ID (#0001, #0002, ...) in ascending order
+  const sortedCustomers = [...customers].sort((a, b) => {
+    const numA = parseInt(String(a.idCode || '').replace(/\D/g, ''), 10) || 999999;
+    const numB = parseInt(String(b.idCode || '').replace(/\D/g, ''), 10) || 999999;
+    if (numA !== numB) return numA - numB;
+    return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
+  });
+
   const currentDate = new Date().toLocaleDateString('en-GB', {
     day: '2-digit',
     month: '2-digit',
@@ -593,14 +614,14 @@ export const generateCustomerListPrintHtml = (
   const currentTime = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
   const PAGE_SIZE = 25;
-  const totalPages = Math.max(1, Math.ceil(customers.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(sortedCustomers.length / PAGE_SIZE));
 
   let overallDebit = 0;
   let overallCredit = 0;
   let overallPendingDue = 0;
   let overallAdvanceHeld = 0;
 
-  customers.forEach((c) => {
+  sortedCustomers.forEach((c) => {
     const deb = c.totalDebit || 0;
     const cred = c.totalCredit || 0;
     const due = c.pendingDue || 0;
@@ -614,7 +635,7 @@ export const generateCustomerListPrintHtml = (
 
   const pagesHtml = Array.from({ length: totalPages }).map((_, pageIdx) => {
     const startIndex = pageIdx * PAGE_SIZE;
-    const pageCustomers = customers.slice(startIndex, startIndex + PAGE_SIZE);
+    const pageCustomers = sortedCustomers.slice(startIndex, startIndex + PAGE_SIZE);
     const isFirstPage = pageIdx === 0;
     const isFinalPage = pageIdx === totalPages - 1;
 
@@ -841,7 +862,7 @@ export const generateCustomerListPrintHtml = (
     .print-page {
       width: 100% !important;
       max-width: 100% !important;
-      min-height: 272mm;
+      min-height: 258mm;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -882,7 +903,7 @@ export const generateCustomerListPrintHtml = (
         margin: 0 !important;
         border: none !important;
         padding: 0 !important;
-        min-height: 272mm;
+        min-height: 258mm;
         page-break-after: always;
         break-after: page;
       }
@@ -1300,7 +1321,7 @@ export const generateLedgerStatementHtml = (
     .print-page {
       width: 100% !important;
       max-width: 100% !important;
-      min-height: 272mm;
+      min-height: 258mm;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -1341,7 +1362,7 @@ export const generateLedgerStatementHtml = (
         margin: 0 !important;
         border: none !important;
         padding: 0 !important;
-        min-height: 272mm;
+        min-height: 258mm;
         page-break-after: always;
         break-after: page;
       }
@@ -1592,16 +1613,15 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
       return `
         <tr class="data-row" style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
           <td class="text-center" style="width:4%;">${globalIdx + 1}</td>
-          <td class="text-center" style="font-weight:800; color:#1D4ED8; width:8%;">#${p.billNo || '-'}</td>
-          <td class="text-center" style="width:10%; color:#334155;">${p.date || '-'}</td>
-          <td style="width:22%; font-weight:700; color:#0F172A; word-break: break-word;">${p.customerName || '-'}</td>
-          <td style="width:14%; color:#475569; font-size:9.5px; word-break: break-word;">${p.companyName || '-'}</td>
-          <td class="text-center" style="width:6%; font-weight:700;">${p.caseCount || '-'}</td>
-          <td class="text-right" style="width:11%; color:#334155;">₹ ${subAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-          <td class="text-center" style="width:5%; color:${discStr !== '-' ? '#DC2626' : '#94A3B8'}; font-weight:600;">${discStr}</td>
-          <td class="text-center" style="width:5%; color:${packStr !== '-' ? '#0F172A' : '#94A3B8'}; font-weight:600;">${packStr}</td>
-          <td class="text-center" style="width:5%; color:${taxStr !== '-' ? '#0F172A' : '#94A3B8'}; font-weight:600;">${taxStr}</td>
-          <td class="text-right" style="width:10%; font-weight:800; color:#0F172A;">₹ ${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+          <td class="text-center" style="width:11%; color:#334155;">${p.date || '-'}</td>
+          <td class="text-center" style="font-weight:800; color:#1D4ED8; width:9%;">#${p.billNo || '-'}</td>
+          <td style="width:26%; font-weight:700; color:#0F172A; word-break: break-word;">${p.customerName || '-'}</td>
+          <td class="text-center" style="width:7%; font-weight:700;">${p.caseCount || '-'}</td>
+          <td class="text-right" style="width:13%; color:#334155;">₹ ${subAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+          <td class="text-center" style="width:6%; color:${discStr !== '-' ? '#DC2626' : '#94A3B8'}; font-weight:600;">${discStr}</td>
+          <td class="text-center" style="width:6%; color:${packStr !== '-' ? '#0F172A' : '#94A3B8'}; font-weight:600;">${packStr}</td>
+          <td class="text-center" style="width:6%; color:${taxStr !== '-' ? '#0F172A' : '#94A3B8'}; font-weight:600;">${taxStr}</td>
+          <td class="text-right" style="width:12%; font-weight:800; color:#0F172A;">₹ ${amt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         </tr>
       `;
     }).join('');
@@ -1663,25 +1683,24 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
           <thead>
             <tr>
               <th class="text-center" style="width:4%;">#</th>
-              <th class="text-center" style="width:8%;">Bill No</th>
-              <th class="text-center" style="width:10%;">Date</th>
-              <th style="width:22%;">Customer Name</th>
-              <th style="width:14%;">Company</th>
-              <th class="text-center" style="width:6%;">Cases</th>
-              <th class="text-right" style="width:11%;">Subtotal</th>
-              <th class="text-center" style="width:5%;">Disc</th>
-              <th class="text-center" style="width:5%;">Pack</th>
-              <th class="text-center" style="width:5%;">Tax</th>
-              <th class="text-right" style="width:10%;">Net Total</th>
+              <th class="text-center" style="width:11%;">Date</th>
+              <th class="text-center" style="width:9%;">Bill No</th>
+              <th style="width:26%;">Customer Name</th>
+              <th class="text-center" style="width:7%;">Cases</th>
+              <th class="text-right" style="width:13%;">Subtotal</th>
+              <th class="text-center" style="width:6%;">Disc</th>
+              <th class="text-center" style="width:6%;">Pack</th>
+              <th class="text-center" style="width:6%;">Tax</th>
+              <th class="text-right" style="width:12%;">Net Total</th>
             </tr>
           </thead>
           <tbody>
-            ${pageRowsHtml || '<tr><td colspan="11" class="text-center" style="padding:18px; color:#64748B;">No bill records found for the selected period.</td></tr>'}
+            ${pageRowsHtml || '<tr><td colspan="10" class="text-center" style="padding:18px; color:#64748B;">No bill records found for the selected period.</td></tr>'}
           </tbody>
           <tfoot>
             <!-- Page Total Row (Bottom of EVERY page) -->
             <tr class="page-total-row">
-              <td colspan="5" class="text-right" style="padding-right:8px;">PAGE ${pageIdx + 1} TOTAL (${pageItems.length} Bills):</td>
+              <td colspan="4" class="text-right" style="padding-right:8px;">PAGE ${pageIdx + 1} TOTAL (${pageItems.length} Bills):</td>
               <td class="text-center">${pageCasesSum}</td>
               <td class="text-right">₹ ${pageSubtotalSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               <td colspan="3"></td>
@@ -1693,7 +1712,7 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
               isFinalPage
                 ? `
             <tr class="grand-total-row">
-              <td colspan="5" class="text-right" style="padding-right:8px;">OVERALL GRAND TOTAL (${particulars.length} Bills):</td>
+              <td colspan="4" class="text-right" style="padding-right:8px;">OVERALL GRAND TOTAL (${particulars.length} Bills):</td>
               <td class="text-center">${overallCasesSum}</td>
               <td class="text-right">₹ ${overallSubtotalSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               <td colspan="3"></td>
@@ -1761,7 +1780,7 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
     .print-page {
       width: 100% !important;
       max-width: 100% !important;
-      min-height: 272mm;
+      min-height: 258mm;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -1802,7 +1821,7 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
         margin: 0 !important;
         border: none !important;
         padding: 0 !important;
-        min-height: 272mm;
+        min-height: 258mm;
         page-break-after: always;
         break-after: page;
       }
@@ -2048,7 +2067,7 @@ export const generateCompaniesListPrintHtml = (companies: any[]): string => {
     .print-page {
       width: 100% !important;
       max-width: 100% !important;
-      min-height: 272mm;
+      min-height: 258mm;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -2181,7 +2200,7 @@ export const generateProductsListPrintHtml = (products: any[]): string => {
     .print-page {
       width: 100% !important;
       max-width: 100% !important;
-      min-height: 272mm;
+      min-height: 258mm;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -2397,7 +2416,9 @@ export const generatePerformaHtml = (performa: any): string => {
             print-color-adjust: exact !important;
           }
           .performa-wrapper {
-            min-height: 272mm;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-height: 258mm;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
@@ -2529,45 +2550,53 @@ export const generatePerformaHtml = (performa: any): string => {
         </style>
       </head>
       <body>
-        <div class="performa-wrapper">
-          <div class="performa-body">
-            <div class="top-header">
-              ${performa.preparedBy && performa.preparedBy !== 'S.Nagaraj' && performa.preparedBy !== 'Nagaraj' ? `<div class="signatory">Prepared By: <b>${performa.preparedBy.trim()}</b></div>` : ''}
-              <div class="comp-name">GPK Crackers</div>
-              <div class="comp-sub">Wholesale & Retail Trading • Sivakasi</div>
-            </div>
+        <div class="performa-wrapper" style="width: 100% !important; min-height: 258mm; display: flex; flex-direction: column; justify-content: space-between; box-sizing: border-box; padding: 0;">
+          <div class="performa-body" style="flex: 1 0 auto;">
+            <!-- Header -->
+            <table style="width: 100%; border-collapse: collapse; border-bottom: 2px solid #0F172A; padding-bottom: 6px; margin-bottom: 8px;">
+              <tr>
+                <td style="text-align: center; vertical-align: middle; position: relative;">
+                  ${performa.preparedBy && performa.preparedBy !== 'S.Nagaraj' && performa.preparedBy !== 'Nagaraj' ? `<div style="position: absolute; right: 0; top: 0; font-size: 11px; font-weight: 700; color: #475569;">Prepared By: <b>${performa.preparedBy.trim()}</b></div>` : ''}
+                  <div style="font-size: 24px; font-weight: 900; color: #1D4ED8; margin: 0 0 1px 0; text-transform: uppercase; letter-spacing: -0.01em;">GPK Crackers</div>
+                  <div style="font-size: 10.5px; font-weight: 700; color: #475569; text-transform: uppercase; letter-spacing: 0.05em;">Wholesale & Retail Trading • Sivakasi</div>
+                </td>
+              </tr>
+            </table>
 
-            <div class="banner">PERFORMA INVOICE / QUOTATION (NOT A TAX INVOICE)</div>
+            <div style="background-color: #0F172A; color: #FFFFFF; text-align: center; padding: 5px 12px; border-radius: 4px; font-weight: 800; font-size: 11.5px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 10px;">PERFORMA INVOICE / QUOTATION (NOT A TAX INVOICE)</div>
 
-            <div class="meta-card">
-              <div>
-                <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Performa No: </span><span style="font-weight: 900; color: #1D4ED8; font-size: 14px;">#${performa.performaNumber || '-'}</span></div>
-                <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Date: </span><span style="font-weight: 700;">${performa.date || '-'}</span></div>
-                <div>
-                  <span style="color: #64748B; font-weight: 600;">Status: </span>
-                  <span style="font-weight: 800; color: ${performa.status === 'ACTIVE' ? '#16A34A' : performa.status === 'PARTIALLY_USED' ? '#D97706' : '#1D4ED8'}; font-size: 11px;">
-                    ${performa.status || 'ACTIVE'}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Customer: </span><span style="font-weight: 800; font-size: 13px; color: #0F172A;">${customer.name || '-'}</span></div>
-                ${customer.phone ? `<div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Phone: </span><span style="font-weight: 600;">${customer.phone}</span></div>` : ''}
-                ${customer.companyName ? `<div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Company: </span><span>${customer.companyName}</span></div>` : ''}
-                ${customer.address ? `<div><span style="color: #64748B; font-weight: 600;">Address: </span><span>${customer.address}</span></div>` : ''}
-              </div>
-            </div>
+            <!-- Meta Card (Table layout for 100% reliable rendering) -->
+            <table style="width: 100%; border-collapse: collapse; border: 1.5px solid #CBD5E1; border-radius: 6px; background-color: #F8FAFC; margin-bottom: 10px; font-size: 12px; table-layout: fixed;">
+              <tr>
+                <td style="width: 50%; vertical-align: top; padding: 9px 14px; border-right: 1px solid #E2E8F0;">
+                  <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Performa No: </span><span style="font-weight: 900; color: #1D4ED8; font-size: 14px;">#${performa.performaNumber || '-'}</span></div>
+                  <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Date: </span><span style="font-weight: 700;">${performa.date || '-'}</span></div>
+                  <div>
+                    <span style="color: #64748B; font-weight: 600;">Status: </span>
+                    <span style="font-weight: 800; color: ${performa.status === 'ACTIVE' ? '#16A34A' : performa.status === 'PARTIALLY_USED' ? '#D97706' : '#1D4ED8'}; font-size: 11px;">
+                      ${performa.status || 'ACTIVE'}
+                    </span>
+                  </div>
+                </td>
+                <td style="width: 50%; vertical-align: top; padding: 9px 14px;">
+                  <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Customer: </span><span style="font-weight: 800; font-size: 13px; color: #0F172A;">${customer.name || '-'}</span></div>
+                  ${customer.phone ? `<div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Phone: </span><span style="font-weight: 600;">${customer.phone}</span></div>` : ''}
+                  ${customer.companyName ? `<div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Company: </span><span>${customer.companyName}</span></div>` : ''}
+                  ${customer.address ? `<div><span style="color: #64748B; font-weight: 600;">Address: </span><span>${customer.address}</span></div>` : ''}
+                </td>
+              </tr>
+            </table>
 
-            <table>
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11.5px; border: 1.5px solid #0F172A;">
               <thead>
-                <tr>
-                  <th style="width: 4%; text-align: center;">#</th>
-                  <th style="width: 38%; text-align: left;">Product Description</th>
-                  <th style="width: 18%; text-align: left;">Company</th>
-                  <th style="width: 9%; text-align: center;">Total Cases</th>
-                  <th style="width: 11%; text-align: right;">Rate (₹)</th>
-                  <th style="width: 7%; text-align: center;">Units</th>
-                  <th style="width: 13%; text-align: right;">Amount (₹)</th>
+                <tr style="background-color: #0F172A;">
+                  <th style="width: 4%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 10.5px;">#</th>
+                  <th style="width: 38%; text-align: left; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 10px; font-weight: 800; font-size: 10.5px;">Product Description</th>
+                  <th style="width: 18%; text-align: left; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 8px; font-weight: 800; font-size: 10.5px;">Company</th>
+                  <th style="width: 9%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 10.5px;">Total Cases</th>
+                  <th style="width: 11%; text-align: right; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 8px; font-weight: 800; font-size: 10.5px;">Rate (₹)</th>
+                  <th style="width: 7%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 10.5px;">Units</th>
+                  <th style="width: 13%; text-align: right; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 10px; font-weight: 800; font-size: 10.5px;">Amount (₹)</th>
                 </tr>
               </thead>
               <tbody>
@@ -2575,52 +2604,61 @@ export const generatePerformaHtml = (performa: any): string => {
               </tbody>
             </table>
 
-            <!-- Summary Section -->
-            <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 14px; page-break-inside: avoid;">
-              <div style="width: 52%; font-size: 11px; color: #64748B; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 14px; background-color: #FAFAFA;">
-                ${performa.notes ? `<div style="font-size: 11.5px; color: #1E293B; margin-bottom: 5px;"><strong>Notes / Terms:</strong> <em>${performa.notes}</em></div>` : ''}
-                <div style="line-height: 1.4;">• This quotation reserves product requirement allocation.</div>
-              </div>
-
-              <div class="summary-card">
-                <div class="summary-row">
-                  <span style="color:#475569;">Total Cases:</span><strong style="color:#0F172A;">${performa.totalRequiredCases || performa.totalCases || 0}</strong>
-                </div>
-                <div class="summary-row">
-                  <span style="color:#475569;">Subtotal:</span><strong style="color:#0F172A;">₹ ${formatCurrency(subtotalVal)}</strong>
-                </div>
-                ${discountAmt > 0 ? `
-                <div class="summary-row" style="color: #DC2626;">
-                  <span>Discount ${performa.discount ? `(${performa.discount}${String(performa.discount).includes('%') ? '' : '%'})` : ''}:</span><strong style="font-weight: 700;">- ₹ ${formatCurrency(discountAmt)}</strong>
-                </div>` : ''}
-                ${packingAmt > 0 ? `
-                <div class="summary-row" style="color: #475569;">
-                  <span>Packing ${performa.packing ? `(${performa.packing}${String(performa.packing).includes('%') ? '' : '%'})` : ''}:</span><strong style="font-weight: 700; color: #0F172A;">+ ₹ ${formatCurrency(packingAmt)}</strong>
-                </div>` : ''}
-                ${taxAmt > 0 ? `
-                <div class="summary-row" style="color: #475569;">
-                  <span>Tax (Amount):</span><strong style="font-weight: 700; color: #0F172A;">+ ₹ ${formatCurrency(taxAmt)}</strong>
-                </div>` : ''}
-                <div class="summary-row" style="padding-top: 6px; border-top: 2px solid #1D4ED8; margin-top: 4px; font-size: 12.5px; color: #1D4ED8;">
-                  <span style="font-weight: 800;">Total Allocated Value:</span><strong style="font-weight: 900; font-size: 13.5px;">₹ ${formatCurrency(totalAllocatedVal)}</strong>
-                </div>
-              </div>
-            </div>
+            <!-- Summary Section (Table layout for 100% reliable rendering) -->
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 14px; table-layout: fixed;">
+              <tr>
+                <td style="width: 52%; vertical-align: top; padding: 0;">
+                  <div style="font-size: 11px; color: #64748B; border: 1px solid #E2E8F0; border-radius: 6px; padding: 10px 14px; background-color: #FAFAFA;">
+                    ${performa.notes ? `<div style="font-size: 11.5px; color: #1E293B; margin-bottom: 5px;"><strong>Notes / Terms:</strong> <em>${performa.notes}</em></div>` : ''}
+                    <div style="line-height: 1.4;">• This quotation reserves product requirement allocation.</div>
+                  </div>
+                </td>
+                <td style="width: 4%;"></td>
+                <td style="width: 44%; vertical-align: top; padding: 0;">
+                  <div style="font-size: 12px; border: 1px solid #CBD5E1; border-radius: 6px; background-color: #F8FAFC; padding: 9px 12px;">
+                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                      <span style="color:#475569;">Total Cases:</span><strong style="color:#0F172A;">${performa.totalRequiredCases || performa.totalCases || 0}</strong>
+                    </div>
+                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                      <span style="color:#475569;">Subtotal:</span><strong style="color:#0F172A;">₹ ${formatCurrency(subtotalVal)}</strong>
+                    </div>
+                    ${discountAmt > 0 ? `
+                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #DC2626;">
+                      <span>Discount ${performa.discount ? `(${performa.discount}${String(performa.discount).includes('%') ? '' : '%'})` : ''}:</span><strong style="font-weight: 700;">- ₹ ${formatCurrency(discountAmt)}</strong>
+                    </div>` : ''}
+                    ${packingAmt > 0 ? `
+                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #475569;">
+                      <span>Packing ${performa.packing ? `(${performa.packing}${String(performa.packing).includes('%') ? '' : '%'})` : ''}:</span><strong style="font-weight: 700; color: #0F172A;">+ ₹ ${formatCurrency(packingAmt)}</strong>
+                    </div>` : ''}
+                    ${taxAmt > 0 ? `
+                    <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #475569;">
+                      <span>Tax (Amount):</span><strong style="font-weight: 700; color: #0F172A;">+ ₹ ${formatCurrency(taxAmt)}</strong>
+                    </div>` : ''}
+                    <div class="summary-row" style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 2px solid #1D4ED8; margin-top: 4px; font-size: 12.5px; color: #1D4ED8;">
+                      <span style="font-weight: 800;">Total Allocated Value:</span><strong style="font-weight: 900; font-size: 13.5px;">₹ ${formatCurrency(totalAllocatedVal)}</strong>
+                    </div>
+                  </div>
+                </td>
+              </tr>
+            </table>
           </div>
 
           <!-- Signatures Pinned at Bottom of Page -->
-          <div class="sig-section">
-            <div class="sig-block">
-              <div class="sig-space"></div>
-              <div class="sig-line"></div>
-              <div class="sig-label">Customer Signature</div>
-            </div>
-            <div class="sig-block">
-              <div class="sig-space">For GPK Crackers</div>
-              <div class="sig-line"></div>
-              <div class="sig-label">Authorized Signatory</div>
-            </div>
-          </div>
+          <table style="width: 100%; border-collapse: collapse; margin-top: auto; padding-top: 18px; border-top: 1px dashed #CBD5E1;">
+            <tr>
+              <td style="width: 200px; text-align: center; vertical-align: bottom;">
+                <div style="height: 38px;"></div>
+                <div style="border-top: 1.5px solid #0F172A; margin-bottom: 4px;"></div>
+                <div style="font-size: 9.5px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.04em;">Customer Signature</div>
+              </td>
+              <td></td>
+              <td style="width: 200px; text-align: center; vertical-align: bottom;">
+                <div style="height: 38px; display: flex; align-items: flex-end; justify-content: center; font-size: 11px; font-weight: 800; color: #0F172A; padding-bottom: 4px;">For GPK Crackers</div>
+                <div style="border-top: 1.5px solid #0F172A; margin-bottom: 4px;"></div>
+                <div style="font-size: 9.5px; font-weight: 800; color: #334155; text-transform: uppercase; letter-spacing: 0.04em;">Authorized Signatory</div>
+              </td>
+            </tr>
+          </table>
         </div>
       </body>
     </html>
@@ -2835,7 +2873,7 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
     .print-page {
       width: 100% !important;
       max-width: 100% !important;
-      min-height: 272mm;
+      min-height: 258mm;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
@@ -2876,7 +2914,7 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
         margin: 0 !important;
         border: none !important;
         padding: 0 !important;
-        min-height: 272mm;
+        min-height: 258mm;
         page-break-after: always;
         break-after: page;
       }

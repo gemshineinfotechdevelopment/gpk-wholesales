@@ -214,10 +214,19 @@ export const getCustomers = async (_req: Request, res: Response, next: NextFunct
       };
     });
 
-    // Sort customer records in ascending alphabetical order by name
-    enrichedCustomers.sort((a: any, b: any) =>
-      (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
-    );
+    // Helper to parse Customer ID number from idCode (e.g. "#0004" -> 4)
+    const extractIdNum = (item: any) => {
+      const code = String(item.idCode || '').replace(/\D/g, '');
+      const parsed = parseInt(code, 10);
+      return isNaN(parsed) ? 999999 : parsed;
+    };
+
+    // Sort customer records in ascending numerical order by Customer ID (#0001, #0002, ...)
+    enrichedCustomers.sort((a: any, b: any) => {
+      const diff = extractIdNum(a) - extractIdNum(b);
+      if (diff !== 0) return diff;
+      return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
+    });
 
     res.status(200).json({ success: true, count: enrichedCustomers.length, data: enrichedCustomers });
   } catch (error) {

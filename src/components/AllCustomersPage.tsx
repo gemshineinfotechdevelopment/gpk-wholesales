@@ -317,7 +317,12 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
         }
         return true;
       })
-      .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }));
+      .sort((a, b) => {
+        const numA = parseInt(String(a.idCode || '').replace(/\D/g, ''), 10) || 999999;
+        const numB = parseInt(String(b.idCode || '').replace(/\D/g, ''), 10) || 999999;
+        if (numA !== numB) return numA - numB;
+        return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' });
+      });
   }, [customers, searchTerm, statusFilter]);
 
   // Live preview for Payment Modal

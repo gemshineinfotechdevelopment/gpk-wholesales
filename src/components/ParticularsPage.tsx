@@ -986,8 +986,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         performaNumber: performaSummary?.masterPerforma?.performaNumber || created?.performaNumber,
       };
 
-      const successMsg = `Particular bill #${assignedBillNo}${company && company.trim() ? ` for ${company.trim()}` : ''} created successfully!`;
+      const targetCustName = currentCustomerName || 'Customer';
+      const successMsg = `Bill No #${assignedBillNo} for ${targetCustName} has created successfully!`;
       alert(successMsg);
+      setToast({ open: true, message: successMsg, severity: 'success' });
 
       setBillNo('');
       setCompany('');
@@ -3610,7 +3612,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
             <Table sx={{ width: '100%', borderCollapse: 'collapse' }} aria-label="particular details table">
               <TableHead>
                 <TableRow sx={{ backgroundColor: '#F8FAFC' }}>
-                  <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '80px' }}>
+                  <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '95px' }}>
+                    DATE
+                  </TableCell>
+                  <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '85px' }}>
                     BILL.NO
                   </TableCell>
                   {!isSingleCustomer && (
@@ -3618,12 +3623,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                       CUSTOMER
                     </TableCell>
                   )}
-                  <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '140px' }}>
-                    COMPANY NAME
-                  </TableCell>
-                  <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '95px' }}>
-                    DATE
-                  </TableCell>
                   <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '11.5px', fontWeight: 700, color: '#1D4ED8', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '105px' }}>
                     TOTAL CASES
                   </TableCell>
@@ -3660,13 +3659,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
               <TableBody>
                 {particularLoading ? (
                   <TableRow>
-                    <TableCell colSpan={isSingleCustomer ? 9 : 10} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={isSingleCustomer ? 8 : 9} align="center" sx={{ py: 6 }}>
                       <CircularProgress size={32} sx={{ color: '#1D4ED8' }} />
                     </TableCell>
                   </TableRow>
                 ) : filteredParticularRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isSingleCustomer ? 9 : 10} align="center" sx={{ py: 6, color: '#64748B' }}>
+                    <TableCell colSpan={isSingleCustomer ? 8 : 9} align="center" sx={{ py: 6, color: '#64748B' }}>
                       No particular bills found {filterCustomer !== 'ALL' ? `for ${filterCustomer}` : ''}{filterParticularCompany !== 'ALL' ? ` under ${filterParticularCompany}` : ''}.
                     </TableCell>
                   </TableRow>
@@ -3695,6 +3694,9 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                           },
                         }}
                       >
+                        <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '12.5px', fontWeight: 500, color: '#475569', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
+                          {row.date}
+                        </TableCell>
                         <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '13px', fontWeight: 700, color: '#0F172A', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           {row.billNo}
                         </TableCell>
@@ -3703,12 +3705,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                             {row.customerName}
                           </TableCell>
                         )}
-                        <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '13px', fontWeight: 600, color: '#0F172A', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
-                          {row.companyName && row.companyName !== 'General' ? row.companyName : '-'}
-                        </TableCell>
-                        <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '12.5px', fontWeight: 500, color: '#475569', borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
-                          {row.date}
-                        </TableCell>
                         <TableCell align="center" sx={{ py: 1.4, px: 1, borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           {totalCustCasesVal > 0 ? (
                             <Tooltip title={`Customer Total Booked Cases: ${totalCustCasesVal}`} arrow>
