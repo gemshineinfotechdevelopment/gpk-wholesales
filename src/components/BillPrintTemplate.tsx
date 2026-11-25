@@ -7,6 +7,7 @@ export interface BillPrintProduct {
   pktUnit: string | number;
   amount: string | number;
   isAdditional?: boolean;
+  companyName?: string;
 }
 
 export interface BillPrintData {
@@ -193,6 +194,12 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
             <span style={{ width: '120px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Customer Name:</span>
             <strong style={{ color: '#0F172A' }}>{bill.customerName || '-'}</strong>
           </div>
+          {bill.companyName && bill.companyName.trim() && (
+            <div style={{ display: 'flex', marginBottom: '4px' }}>
+              <span style={{ width: '120px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Company:</span>
+              <strong style={{ color: '#1D4ED8', fontSize: '13px' }}>{bill.companyName.trim()}</strong>
+            </div>
+          )}
           <div style={{ display: 'flex', marginBottom: '4px' }}>
             <span style={{ width: '120px', color: '#64748B', fontWeight: 600, fontSize: '12px' }}>Transport Name:</span>
             <strong style={{ color: '#0F172A' }}>{transportName}</strong>
@@ -262,7 +269,14 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
               return (
                 <tr key={idx} style={{ backgroundColor: isEven ? '#F8FAFC' : '#FFFFFF' }}>
                   <td style={{ border: '1px solid #CBD5E1', padding: '7px 6px', textAlign: 'center', color: '#475569', fontWeight: 600 }}>{idx + 1}</td>
-                  <td style={{ border: '1px solid #CBD5E1', padding: '7px 10px', fontWeight: 700, color: '#0F172A' }}>{item.particular || '-'}</td>
+                  <td style={{ border: '1px solid #CBD5E1', padding: '7px 10px', fontWeight: 700, color: '#0F172A' }}>
+                    {item.particular || '-'}
+                    {item.companyName && (
+                      <span style={{ display: 'block', fontSize: '10px', fontWeight: 600, color: '#2563EB', marginTop: '2px' }}>
+                        Brand: {item.companyName}
+                      </span>
+                    )}
+                  </td>
                   <td style={{ border: '1px solid #CBD5E1', padding: '7px 6px', textAlign: 'center', fontWeight: 700, color: '#0F172A' }}>{item.quantity || '-'}</td>
                   <td style={{ border: '1px solid #CBD5E1', padding: '7px 8px', textAlign: 'right', color: '#334155' }}>₹ {(parseFloat(String(item.rate)) || 0).toFixed(2)}</td>
                   <td style={{ border: '1px solid #CBD5E1', padding: '7px 6px', textAlign: 'center', color: '#64748B' }}>{item.pktUnit && item.pktUnit !== '-' ? item.pktUnit : '-'}</td>

@@ -7,6 +7,7 @@ export interface IParticularProductItem {
   pktUnit: string;
   amount: string;
   isAdditional?: boolean;
+  companyName?: string;
 }
 
 export interface IParticular extends Document {
@@ -43,6 +44,7 @@ const ParticularProductItemSchema: Schema = new Schema({
   pktUnit: { type: String, default: '' },
   amount: { type: String, default: '' },
   isAdditional: { type: Boolean, default: false },
+  companyName: { type: String, default: '', trim: true },
 });
 
 const ParticularSchema: Schema = new Schema(
