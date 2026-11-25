@@ -133,6 +133,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       ? filterCustomer
       : '');
 
+  const resolvedFilterName = activeSelectedCustomer;
+
   const isSingleCustomer = isCustomer || Boolean(activeSelectedCustomer);
 
   // Subtab 2: Create Particular Form State
@@ -1243,7 +1245,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
 
   const handleShareParticularsListWhatsApp = async () => {
     try {
-      const cust = filterCustomer || currentCustomerName || 'All Customers';
+      const cust = resolvedFilterName || 'All Customers';
       await shareParticularsListOnWhatsApp(cust, particularDetails);
     } catch (err) {
       console.error('Failed to share particulars on WhatsApp:', err);
@@ -1252,7 +1254,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
 
   const handleShareLedgerWhatsApp = async () => {
     try {
-      const cust = filterCustomer || currentCustomerName || 'All Customers';
+      const cust = resolvedFilterName || 'All Customers';
       await shareLedgerOnWhatsApp(cust, accountDetails);
     } catch (err) {
       console.error('Failed to share ledger on WhatsApp:', err);
@@ -3244,6 +3246,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     accountDetails.map((row: any, index: number) => {
                       const isLast = index === accountDetails.length - 1;
                       const rowId = row._id || row.id || '';
+                      const debitNum = parseFloat(String(row.debit || '0').replace(/,/g, '')) || 0;
                       return (
                         <TableRow
                           key={rowId || index}
@@ -3267,6 +3270,9 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                               {row.customerName}
                             </TableCell>
                           )}
+                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 600, color: '#334155', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            {debitNum > 0 && row.billNo ? row.billNo : '-'}
+                          </TableCell>
                           <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.type === 'BILL' ? (
                               <Chip
@@ -3295,9 +3301,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                                 }}
                               />
                             )}
-                          </TableCell>
-                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 600, color: '#334155', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
-                            {row.type === 'BILL' ? '-' : (row.depositAccount || '-')}
                           </TableCell>
                           <TableCell align="right" sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 500, color: '#DC2626', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.debit}
@@ -3388,7 +3391,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 letterSpacing: '-0.01em',
               }}
             >
-              Particular Details {isCustomer ? `- ${initialCustomerName || currentCustomerName || filterCustomer || 'My Bills'}` : (filterCustomer && filterCustomer !== 'ALL' && filterCustomer !== 'All Customers' ? `- ${filterCustomer}` : '(All Bills)')}
+              Particular Details {isCustomer ? `- ${initialCustomerName || currentCustomerName || filterCustomer || 'My Bills'}` : (resolvedFilterName ? `- ${resolvedFilterName}` : '(All Bills)')}
             </Typography>
 
             <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
@@ -4359,13 +4362,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       <DateRangePrintModal
         open={openAccountDateModal}
         onClose={() => setOpenAccountDateModal(false)}
-        title={`Print Account Statement - ${filterCustomer || currentCustomerName || 'All Customers'}`}
+        title={`Print Account Statement - ${resolvedFilterName || 'All Customers'}`}
         subtitle="Select transaction date range to filter ledger entries for A4 print."
         items={accountDetails}
         getDateFromItem={(a) => a.date || ''}
         onConfirmPrint={(itemsToPrint, rangeText) => {
           printLedgerStatementDirectly(
-            filterCustomer || currentCustomerName || 'All Customers',
+            resolvedFilterName || 'All Customers',
             itemsToPrint,
             rangeText
           );
