@@ -137,8 +137,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   const activeSelectedCustomer = isCustomer
     ? (initialCustomerName || currentCustomerName || filterCustomer || 'Customer')
     : (filterCustomer && filterCustomer !== 'ALL' && filterCustomer !== 'All Customers'
-        ? filterCustomer
-        : (currentCustomerName && currentCustomerName !== 'ALL' && currentCustomerName !== 'All Customers' ? currentCustomerName : ''));
+      ? filterCustomer
+      : (currentCustomerName && currentCustomerName !== 'ALL' && currentCustomerName !== 'All Customers' ? currentCustomerName : ''));
 
   const isSingleCustomer = isCustomer || Boolean(activeSelectedCustomer);
 
@@ -563,14 +563,14 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       prev.map((row) =>
         row.id === id
           ? {
-              ...row,
-              particular: prodName.trim(),
-              quantity: qty.trim(),
-              rate: rt.trim(),
-              pktUnit: pktUnitVal.trim() !== '' ? pktUnitVal.trim() : '-',
-              amount: lineAmt,
-              isAdditional,
-            }
+            ...row,
+            particular: prodName.trim(),
+            quantity: qty.trim(),
+            rate: rt.trim(),
+            pktUnit: pktUnitVal.trim() !== '' ? pktUnitVal.trim() : '-',
+            amount: lineAmt,
+            isAdditional,
+          }
           : row
       )
     );
@@ -996,7 +996,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       if (currentCustomerName) {
         PerformasApi.getCustomerSummary(currentCustomerName)
           .then((res) => setPerformaSummary(res))
-          .catch(() => {});
+          .catch(() => { });
       }
 
       setActiveSubTab('Particular Details');
@@ -1035,7 +1035,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       alert(res?.message || 'Credit added successfully!');
       setCreditAmount('');
       setCreditDepositAccount('');
-      
+
       // Refresh all financial states
       fetchAccounts(filterCustomer);
       fetchParticulars();
@@ -2528,10 +2528,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                       const isEditing = editingRowId === row.id;
                       const liveAmount = isEditing
                         ? (
-                            (parseFloat(editRowData.quantity) || 0) *
-                            (parseFloat(editRowData.pktUnit) || 1) *
-                            (parseFloat(editRowData.rate) || 0)
-                          ).toFixed(2)
+                          (parseFloat(editRowData.quantity) || 0) *
+                          (parseFloat(editRowData.pktUnit) || 1) *
+                          (parseFloat(editRowData.rate) || 0)
+                        ).toFixed(2)
                         : row.amount;
 
                       return (
@@ -3980,6 +3980,39 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 gap: 3,
               }}
             >
+
+              {/* Date */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  gap: { xs: 1, sm: 3.5 },
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#0F172A',
+                    minWidth: '150px',
+                    textAlign: { sm: 'right' },
+                  }}
+                >
+                  Date
+                </Typography>
+                <DatePickerField
+                  value={creditDate}
+                  onChange={setCreditDate}
+                  placeholder="dd-mm-yyyy"
+                  iconSize={18}
+                  inputSx={{
+                    fontSize: '13.5px',
+                    height: '42px',
+                  }}
+                />
+              </Box>
+
               {/* Customer Name */}
               <Box
                 sx={{
@@ -4201,37 +4234,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
               </Box>
 
 
-              {/* Date */}
-              <Box
-                sx={{
-                  display: 'flex',
-                  flexDirection: { xs: 'column', sm: 'row' },
-                  alignItems: { xs: 'flex-start', sm: 'center' },
-                  gap: { xs: 1, sm: 3.5 },
-                }}
-              >
-                <Typography
-                  sx={{
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    color: '#0F172A',
-                    minWidth: '150px',
-                    textAlign: { sm: 'right' },
-                  }}
-                >
-                  Date
-                </Typography>
-                <DatePickerField
-                  value={creditDate}
-                  onChange={setCreditDate}
-                  placeholder="dd-mm-yyyy"
-                  iconSize={18}
-                  inputSx={{
-                    fontSize: '13.5px',
-                    height: '42px',
-                  }}
-                />
-              </Box>
 
 
               {/* Action Button */}
