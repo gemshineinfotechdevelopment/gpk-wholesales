@@ -137,7 +137,10 @@ export const generateBillHtml = (bill: BillPrintData): string => {
     return `
       <tr style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
         <td style="border: 1px solid #CBD5E1; padding: 7px 8px; text-align: center; color: #475569; font-weight: 600;">${idx + 1}</td>
-        <td style="border: 1px solid #CBD5E1; padding: 7px 10px; text-align: left; font-weight: 700; color: #0F172A;">${item.particular || '-'}</td>
+        <td style="border: 1px solid #CBD5E1; padding: 7px 10px; text-align: left; font-weight: 700; color: #0F172A;">
+          ${item.particular || '-'}
+          ${item.companyName ? `<div style="font-size: 10px; color: #2563EB; font-weight: 600; margin-top: 2px;">Brand: ${item.companyName}</div>` : ''}
+        </td>
         <td style="border: 1px solid #CBD5E1; padding: 7px 8px; text-align: center; font-weight: 700; color: #0F172A;">${item.quantity || '-'}</td>
         <td style="border: 1px solid #CBD5E1; padding: 7px 8px; text-align: right; color: #334155;">₹ ${(parseFloat(String(item.rate)) || 0).toFixed(2)}</td>
         <td style="border: 1px solid #CBD5E1; padding: 7px 8px; text-align: center; color: #64748B;">${item.pktUnit && item.pktUnit !== '-' ? item.pktUnit : '-'}</td>
@@ -480,6 +483,7 @@ export const generateBillHtml = (bill: BillPrintData): string => {
           <td style="width: 54%; vertical-align: top; padding: 10px 14px; border-right: 1px solid #E2E8F0;">
             <div style="display: flex; margin-bottom: 5px; line-height: 1.4;"><span style="width: 115px; color: #64748B; font-weight: 600; font-size: 12px;">Bill No:</span><span style="font-weight: 800; color: #1D4ED8; font-size: 13.5px; flex: 1;">#${bill.billNo || '-'}</span></div>
             <div style="display: flex; margin-bottom: 5px; line-height: 1.4;"><span style="width: 115px; color: #64748B; font-weight: 600; font-size: 12px;">Customer Name:</span><span style="font-weight: 700; color: #0F172A; flex: 1;">${bill.customerName || '-'}</span></div>
+            ${bill.companyName && bill.companyName.trim() ? `<div style="display: flex; margin-bottom: 5px; line-height: 1.4;"><span style="width: 115px; color: #64748B; font-weight: 600; font-size: 12px;">Company:</span><span style="font-weight: 700; color: #1D4ED8; font-size: 12.5px; flex: 1;">${bill.companyName.trim()}</span></div>` : ''}
             <div style="display: flex; margin-bottom: 2px; line-height: 1.4;"><span style="width: 115px; color: #64748B; font-weight: 600; font-size: 12px;">Transport Name:</span><span style="font-weight: 700; color: #0F172A; flex: 1;">${transportName}</span></div>
           </td>
           <td style="width: 46%; vertical-align: top; padding: 10px 14px;">

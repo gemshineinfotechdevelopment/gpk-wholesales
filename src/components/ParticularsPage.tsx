@@ -26,6 +26,7 @@ import {
   Select,
   MenuItem,
   Menu,
+  InputAdornment,
 } from '@mui/material';
 import AddRoundedIcon from '@mui/icons-material/AddRounded';
 import RemoveRoundedIcon from '@mui/icons-material/RemoveRounded';
@@ -42,6 +43,7 @@ import WarningAmberRoundedIcon from '@mui/icons-material/WarningAmberRounded';
 import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded';
 import Inventory2RoundedIcon from '@mui/icons-material/Inventory2Rounded';
 import KeyboardArrowDownRoundedIcon from '@mui/icons-material/KeyboardArrowDownRounded';
+import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import {
   CustomersApi,
   CompaniesApi,
@@ -84,6 +86,7 @@ interface ProductRowItem {
   pktUnit: string;
   amount: string;
   isAdditional?: boolean;
+  companyName?: string;
 }
 
 interface ParticularsPageProps {
@@ -116,7 +119,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   // Live Dropdown options
   const [customerOptions, setCustomerOptions] = useState<{ id: string; name: string; mobile?: string }[]>([]);
   const [companyOptions, setCompanyOptions] = useState<{ id: string; name: string }[]>([]);
-  const [productOptions, setProductOptions] = useState<{ id: string; name: string }[]>([]);
+  const [productOptions, setProductOptions] = useState<{ id: string; name: string; rate?: number; pktUnit?: string; company?: string }[]>([]);
 
   // Persistent Selected Customer for Creation & Filter
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>('');
@@ -170,6 +173,28 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   const [_loadingPerforma, setLoadingPerforma] = useState<boolean>(false);
   const [quotationMenuAnchor, setQuotationMenuAnchor] = useState<null | HTMLElement>(null);
   const quotationMenuOpen = Boolean(quotationMenuAnchor);
+  const [quotationSearch, setQuotationSearch] = useState<string>('');
+
+  const filteredQuotationProducts = useMemo(() => {
+    const products = performaSummary?.masterPerforma?.products;
+    if (!products || !Array.isArray(products)) return [];
+    if (!quotationSearch.trim()) return products;
+    const q = quotationSearch.toLowerCase().trim();
+    return products.filter((p: any) =>
+      (p.productName || '').toLowerCase().includes(q)
+    );
+  }, [performaSummary, quotationSearch]);
+
+  const filteredProductOptions = useMemo(() => {
+    if (!company || !company.trim()) return productOptions;
+    const c = company.trim().toLowerCase();
+    const matching = productOptions.filter((p) => (p.company || '').trim().toLowerCase() === c);
+    if (matching.length > 0) {
+      const others = productOptions.filter((p) => (p.company || '').trim().toLowerCase() !== c);
+      return [...matching, ...others];
+    }
+    return productOptions;
+  }, [productOptions, company]);
 
   // Warning Dialog State for Additional Product / Exceeded Cases
   const [warningDialog, setWarningDialog] = useState<{
@@ -484,7 +509,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         }
 
         if (prodRes && prodRes.length > 0) {
-          const mapped = prodRes.map((p: any) => ({ id: p._id || p.id, name: p.name }));
+          const mapped = prodRes.map((p: any) => ({
+            id: p._id || p.id,
+            name: p.name,
+            rate: p.rate || 0,
+            pktUnit: p.pktUnit || '1',
+            company: (p.company || p.companyName || '').trim(),
+          }));
           setProductOptions(mapped);
         }
       } catch (err) {
@@ -590,6 +621,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     const piecesPerCase = parseFloat(pktUnitVal) || 1;
     const totalPieces = caseVal * (piecesPerCase > 0 ? piecesPerCase : 1);
     const lineAmt = (totalPieces * (parseFloat(rt) || 0)).toFixed(2);
+    const matchedProd = productOptions.find((p) => p.name.toLowerCase() === prodName.trim().toLowerCase());
+    const rowCompany = (company || matchedProd?.company || '').trim();
 
     const newRow: ProductRowItem = {
       id: Date.now().toString(),
@@ -599,7 +632,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       pktUnit: pktUnitVal && pktUnitVal !== '' ? pktUnitVal : '-',
       amount: lineAmt,
       isAdditional,
+      companyName: rowCompany,
     };
+    if (!company && rowCompany) {
+      setCompany(rowCompany);
+    }
     setProductRows((prev) => [...prev, newRow]);
     setSelectedProduct('');
     setQuantity('');
@@ -679,6 +716,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         pktUnit: String(p.pktPerUnit || '-'),
         amount: lineAmt,
         isAdditional: false,
+        companyName: p.companyName || performaSummary?.masterPerforma?.companyName || company || '',
       };
     });
 
@@ -993,10 +1031,11 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
 
     try {
       setCreateLoading(true);
+      const finalBillCompany = company ? company.trim() : (productRows.find((p) => p.companyName)?.companyName || '');
       const created = await ParticularsApi.create({
         customerName: currentCustomerName || 'General',
         caseCount: caseCount || '0',
-        companyName: company ? company.trim() : '',
+        companyName: finalBillCompany,
         discount: discount || '0',
         transport: transport || '-',
         packing: packing || '0',
@@ -1005,7 +1044,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         amount: subtotalAmount.toFixed(2),
         total: finalTotalAmount,
         date: date,
-        products: productRows,
+        products: productRows.map((p) => ({
+          ...p,
+          companyName: p.companyName || finalBillCompany,
+        })),
         performaId: performaSummary?.masterPerforma?._id,
         performaNumber: performaSummary?.masterPerforma?.performaNumber,
       });
@@ -1016,7 +1058,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       const createdBillData: BillPrintData = {
         billNo: assignedBillNo,
         customerName: currentCustomerName || 'General',
-        companyName: company ? company.trim() : '',
+        companyName: finalBillCompany,
         preparedBy: '',
         phone: customerMobile,
         email: 'info@gpkcrackers.com',
@@ -1031,6 +1073,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
           pktUnit: p.pktUnit,
           amount: p.amount,
           isAdditional: p.isAdditional,
+          companyName: p.companyName || finalBillCompany,
         })),
         amount: subtotalAmount.toFixed(2),
         discount: discount || '0',
@@ -1747,6 +1790,106 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 />
               </Box>
 
+              {/* Company Selection */}
+              <Box>
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                    Company / Brand
+                  </Typography>
+                  {company && (
+                    <Chip
+                      label={company}
+                      size="small"
+                      onDelete={() => setCompany('')}
+                      sx={{
+                        height: 20,
+                        fontSize: '10.5px',
+                        fontWeight: 700,
+                        backgroundColor: '#EFF6FF',
+                        color: '#1D4ED8',
+                      }}
+                    />
+                  )}
+                </Box>
+                <Autocomplete
+                  fullWidth
+                  size="small"
+                  autoHighlight
+                  freeSolo
+                  options={companyOptions.map((c) => c.name).filter(Boolean)}
+                  value={company}
+                  onChange={(_e, val) => setCompany(val || '')}
+                  onInputChange={(_e, val, reason) => {
+                    if (reason === 'input' || reason === 'clear') {
+                      setCompany(val || '');
+                    }
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="Select or Type Company (e.g. AJANTA, SONY)..."
+                      sx={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '6px',
+                        '& .MuiOutlinedInput-root': {
+                          height: '36px',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                          color: '#0F172A',
+                          '& fieldset': {
+                            borderColor: '#CBD5E1',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: '#94A3B8',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#1D4ED8',
+                            borderWidth: '1.5px',
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                />
+
+                {/* Quick Selection Chips from Active Linked Performas if available */}
+                {performaSummary?.activePerformas && performaSummary.activePerformas.length > 0 && (
+                  <Box sx={{ mt: 0.8, display: 'flex', alignItems: 'center', gap: 0.6, flexWrap: 'wrap' }}>
+                    <Typography sx={{ fontSize: '11px', color: '#64748B', fontWeight: 600 }}>
+                      Performa Brands:
+                    </Typography>
+                    {Array.from(new Set(
+                      performaSummary.activePerformas
+                        .map((ap: any) => ap.companyName)
+                        .filter((cn: any) => cn && typeof cn === 'string' && cn.trim().length > 0)
+                    )).map((cn: any, i: number) => {
+                      const isSelected = company.toLowerCase() === String(cn).toLowerCase();
+                      return (
+                        <Chip
+                          key={i}
+                          label={cn}
+                          size="small"
+                          onClick={() => setCompany(cn)}
+                          sx={{
+                            cursor: 'pointer',
+                            height: 20,
+                            fontSize: '10.5px',
+                            fontWeight: 700,
+                            backgroundColor: isSelected ? '#1D4ED8' : '#F1F5F9',
+                            color: isSelected ? '#FFFFFF' : '#334155',
+                            border: isSelected ? '1px solid #1D4ED8' : '1px solid #E2E8F0',
+                            '&:hover': {
+                              backgroundColor: isSelected ? '#1E40AF' : '#E2E8F0',
+                            },
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                )}
+              </Box>
+
               {/* Bill No */}
               <Box>
                 <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
@@ -1967,126 +2110,256 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
               <Menu
                 anchorEl={quotationMenuAnchor}
                 open={quotationMenuOpen}
-                onClose={() => setQuotationMenuAnchor(null)}
+                onClose={() => {
+                  setQuotationMenuAnchor(null);
+                  setQuotationSearch('');
+                }}
                 slotProps={{
+                  list: {
+                    sx: {
+                      p: 0,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      maxHeight: '100%',
+                      overflow: 'hidden',
+                    },
+                  },
                   paper: {
                     sx: {
-                      width: { xs: 320, sm: 420 },
-                      maxHeight: 460,
-                      borderRadius: '10px',
-                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                      width: { xs: 330, sm: 460 },
+                      maxHeight: { xs: '80vh', sm: 540 },
+                      display: 'flex',
+                      flexDirection: 'column',
+                      borderRadius: '12px',
+                      boxShadow: '0 12px 32px -4px rgba(0, 0, 0, 0.18), 0 6px 12px -4px rgba(0, 0, 0, 0.08)',
                       border: '1px solid #E2E8F0',
                       p: 0,
+                      overflow: 'hidden',
                     },
                   },
                 }}
                 transformOrigin={{ horizontal: 'right', vertical: 'top' }}
                 anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
               >
+                {/* Header (Sticky / Fixed at top) */}
                 <Box
                   sx={{
                     p: 1.5,
-                    pb: 1,
                     backgroundColor: '#F8FAFC',
                     borderBottom: '1px solid #E2E8F0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'space-between',
+                    flexShrink: 0,
                   }}
                 >
-                  <Box>
-                    <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
-                      Quotation Items
-                    </Typography>
-                    <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
-                      Click any item to load into entry form
-                    </Typography>
-                  </Box>
-                  <Button
-                    size="small"
-                    variant="outlined"
-                    onClick={() => {
-                      handleImportAllPerformaProducts();
-                      setQuotationMenuAnchor(null);
-                    }}
-                    startIcon={<AddRoundedIcon sx={{ fontSize: 14 }} />}
+                  <Box
                     sx={{
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      textTransform: 'none',
-                      py: 0.3,
-                      px: 1,
-                      borderRadius: '5px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      mb: performaSummary.masterPerforma.products.length > 4 ? 1.2 : 0,
                     }}
                   >
-                    Import All
-                  </Button>
+                    <Box>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                        <Typography sx={{ fontSize: '13px', fontWeight: 700, color: '#0F172A' }}>
+                          Quotation Items
+                        </Typography>
+                        <Chip
+                          label={`${performaSummary.masterPerforma.products.length} Items`}
+                          size="small"
+                          sx={{
+                            height: 18,
+                            fontSize: '10px',
+                            fontWeight: 700,
+                            backgroundColor: '#E2E8F0',
+                            color: '#334155',
+                            borderRadius: '4px',
+                          }}
+                        />
+                      </Box>
+                      <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
+                        Click any item to load into entry form
+                      </Typography>
+                    </Box>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => {
+                        handleImportAllPerformaProducts();
+                        setQuotationMenuAnchor(null);
+                        setQuotationSearch('');
+                      }}
+                      startIcon={<AddRoundedIcon sx={{ fontSize: 14 }} />}
+                      sx={{
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        textTransform: 'none',
+                        py: 0.3,
+                        px: 1,
+                        borderRadius: '5px',
+                        borderColor: '#CBD5E1',
+                        color: '#1E293B',
+                        '&:hover': {
+                          borderColor: '#94A3B8',
+                          backgroundColor: '#F1F5F9',
+                        },
+                      }}
+                    >
+                      Import All
+                    </Button>
+                  </Box>
+
+                  {/* Search Bar when items count > 4 */}
+                  {performaSummary.masterPerforma.products.length > 4 && (
+                    <TextField
+                      size="small"
+                      fullWidth
+                      placeholder="Search quotation items..."
+                      value={quotationSearch}
+                      onChange={(e) => setQuotationSearch(e.target.value)}
+                      slotProps={{
+                        input: {
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <SearchRoundedIcon sx={{ fontSize: 16, color: '#94A3B8' }} />
+                            </InputAdornment>
+                          ),
+                          endAdornment: quotationSearch ? (
+                            <InputAdornment position="end">
+                              <IconButton
+                                size="small"
+                                onClick={() => setQuotationSearch('')}
+                                sx={{ p: 0.3 }}
+                              >
+                                <CloseRoundedIcon sx={{ fontSize: 14, color: '#64748B' }} />
+                              </IconButton>
+                            </InputAdornment>
+                          ) : null,
+                          sx: {
+                            fontSize: '12px',
+                            height: '32px',
+                            backgroundColor: '#FFFFFF',
+                            borderRadius: '6px',
+                            '& .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#E2E8F0',
+                            },
+                            '&:hover .MuiOutlinedInput-notchedOutline': {
+                              borderColor: '#94A3B8',
+                            },
+                          },
+                        },
+                      }}
+                    />
+                  )}
                 </Box>
 
-                <Box sx={{ py: 0.5, maxHeight: 360, overflowY: 'auto' }}>
-                  {performaSummary.masterPerforma.products.map((p: any, idx: number) => {
-                    const remaining = p.remainingCases || 0;
-                    const isFulfilled = remaining <= 0;
-                    return (
-                      <MenuItem
-                        key={idx}
-                        disabled={isFulfilled}
-                        onClick={() => {
-                          handleQuickSelectPerformaProduct(p);
-                          setQuotationMenuAnchor(null);
-                        }}
-                        sx={{
-                          py: 1,
-                          px: 1.8,
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          borderBottom: '1px solid #F1F5F9',
-                          '&:hover': {
-                            backgroundColor: '#EFF6FF',
-                          },
-                        }}
-                      >
-                        <Box sx={{ flex: 1, mr: 1 }}>
-                          <Typography sx={{ fontSize: '13px', fontWeight: 600, color: isFulfilled ? '#94A3B8' : '#0F172A' }}>
-                            {p.productName}
-                          </Typography>
-                          <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
-                            ₹{p.rate} / pkt • {p.pktPerUnit || 1} pkts/case {p.performaNumber ? `• ${p.performaNumber}` : ''}
-                          </Typography>
-                        </Box>
-                        <Box sx={{ textAlign: 'right' }}>
-                          {isFulfilled ? (
-                            <Chip
-                              label="Fulfilled"
-                              size="small"
+                {/* Scrollable Products List Container */}
+                <Box
+                  sx={{
+                    py: 0.5,
+                    flex: 1,
+                    maxHeight: { xs: 340, sm: 400 },
+                    overflowY: 'auto',
+                    overflowX: 'hidden',
+                    scrollbarWidth: 'thin',
+                    scrollbarColor: '#94A3B8 #F1F5F9',
+                    '&::-webkit-scrollbar': {
+                      width: '6px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      backgroundColor: '#F8FAFC',
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      backgroundColor: '#94A3B8',
+                      borderRadius: '4px',
+                      '&:hover': {
+                        backgroundColor: '#64748B',
+                      },
+                    },
+                  }}
+                >
+                  {filteredQuotationProducts.length === 0 ? (
+                    <Box sx={{ py: 3, textAlign: 'center' }}>
+                      <Typography sx={{ fontSize: '12px', color: '#64748B' }}>
+                        No quotation items match &quot;{quotationSearch}&quot;
+                      </Typography>
+                    </Box>
+                  ) : (
+                    filteredQuotationProducts.map((p: any, idx: number) => {
+                      const remaining = p.remainingCases || 0;
+                      const isFulfilled = remaining <= 0;
+                      return (
+                        <MenuItem
+                          key={idx}
+                          disabled={isFulfilled}
+                          onClick={() => {
+                            handleQuickSelectPerformaProduct(p);
+                            setQuotationMenuAnchor(null);
+                            setQuotationSearch('');
+                          }}
+                          sx={{
+                            py: 1.1,
+                            px: 1.8,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            borderBottom: '1px solid #F1F5F9',
+                            transition: 'background-color 0.15s',
+                            '&:hover': {
+                              backgroundColor: '#EFF6FF',
+                            },
+                          }}
+                        >
+                          <Box sx={{ flex: 1, mr: 1.5, minWidth: 0 }}>
+                            <Typography
                               sx={{
-                                height: 20,
-                                fontSize: '10px',
-                                fontWeight: 700,
-                                backgroundColor: '#F1F5F9',
-                                color: '#64748B',
-                                borderRadius: '4px',
+                                fontSize: '13px',
+                                fontWeight: 600,
+                                color: isFulfilled ? '#94A3B8' : '#0F172A',
+                                whiteSpace: 'nowrap',
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
                               }}
-                            />
-                          ) : (
-                            <Chip
-                              label={`${remaining} Rem`}
-                              size="small"
-                              sx={{
-                                height: 20,
-                                fontSize: '10.5px',
-                                fontWeight: 700,
-                                backgroundColor: '#EFF6FF',
-                                color: '#1D4ED8',
-                                borderRadius: '4px',
-                              }}
-                            />
-                          )}
-                        </Box>
-                      </MenuItem>
-                    );
-                  })}
+                              title={p.productName}
+                            >
+                              {p.productName}
+                            </Typography>
+                            <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
+                              ₹{p.rate} / pkt • {p.pktPerUnit || 1} pkts/case {p.companyName ? `• ${p.companyName}` : ''} {p.performaNumber ? `• ${p.performaNumber}` : ''}
+                            </Typography>
+                          </Box>
+                          <Box sx={{ textAlign: 'right', flexShrink: 0 }}>
+                            {isFulfilled ? (
+                              <Chip
+                                label="Fulfilled"
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: '10px',
+                                  fontWeight: 700,
+                                  backgroundColor: '#F1F5F9',
+                                  color: '#64748B',
+                                  borderRadius: '4px',
+                                }}
+                              />
+                            ) : (
+                              <Chip
+                                label={`${remaining} Rem`}
+                                size="small"
+                                sx={{
+                                  height: 20,
+                                  fontSize: '10.5px',
+                                  fontWeight: 700,
+                                  backgroundColor: '#EFF6FF',
+                                  color: '#1D4ED8',
+                                  borderRadius: '4px',
+                                }}
+                              />
+                            )}
+                          </Box>
+                        </MenuItem>
+                      );
+                    })
+                  )}
                 </Box>
               </Menu>
             )}
@@ -2105,15 +2378,41 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 size="small"
                 autoHighlight
                 sx={{ flex: { xs: '1 1 100%', sm: 2.5 }, minWidth: '160px' }}
-                options={productOptions}
+                options={filteredProductOptions}
                 getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
                 isOptionEqualToValue={(option, val) => option.id === val.id || option.name === val.name}
                 value={productOptions.find((p) => p.name === selectedProduct) || null}
-                onChange={(_, val) => setSelectedProduct(val ? val.name : '')}
+                onChange={(_, val) => {
+                  if (val) {
+                    setSelectedProduct(val.name);
+                    if (val.rate) setRate(String(val.rate));
+                    if (val.pktUnit) setPkt(String(val.pktUnit));
+                    if (!company && val.company) {
+                      setCompany(val.company);
+                    }
+                  } else {
+                    setSelectedProduct('');
+                  }
+                }}
+                renderOption={(props, option) => {
+                  const { key, ...optionProps } = props as any;
+                  return (
+                    <li key={key || option.id} {...optionProps} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 12px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>{option.name}</span>
+                      {option.company && (
+                        <Chip
+                          label={option.company}
+                          size="small"
+                          sx={{ height: 18, fontSize: '10px', fontWeight: 700, backgroundColor: '#EFF6FF', color: '#1D4ED8', ml: 1 }}
+                        />
+                      )}
+                    </li>
+                  );
+                }}
                 renderInput={(params) => (
                   <TextField
                     {...params}
-                    placeholder="Search Product..."
+                    placeholder={company ? `Search ${company} product...` : 'Search Product...'}
                     sx={{
                       backgroundColor: '#FFFFFF',
                       borderRadius: '6px',
@@ -2433,37 +2732,46 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                                 sx={{ minWidth: '140px' }}
                               />
                             ) : (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
-                                <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>
-                                  {row.particular}
-                                </Typography>
-                                {row.isAdditional ? (
-                                  <Chip
-                                    label="Additional"
-                                    size="small"
-                                    sx={{
-                                      fontSize: '10px',
-                                      fontWeight: 700,
-                                      backgroundColor: '#FEF3C7',
-                                      color: '#92400E',
-                                      border: '1px solid #FDE68A',
-                                      height: '20px',
-                                    }}
-                                  />
-                                ) : performaSummary?.masterPerforma ? (
-                                  <Chip
-                                    label="Performa"
-                                    size="small"
-                                    sx={{
-                                      fontSize: '10px',
-                                      fontWeight: 700,
-                                      backgroundColor: '#F0F9FF',
-                                      color: '#1D4ED8',
-                                      border: '1px solid #BFDBFE',
-                                      height: '20px',
-                                    }}
-                                  />
-                                ) : null}
+                              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 1, flexWrap: 'wrap' }}>
+                                <Box>
+                                  <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#0F172A' }}>
+                                    {row.particular}
+                                  </Typography>
+                                  {(row.companyName || company) && (
+                                    <Typography sx={{ fontSize: '10.5px', color: '#2563EB', fontWeight: 600 }}>
+                                      Brand: {row.companyName || company}
+                                    </Typography>
+                                  )}
+                                </Box>
+                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                                  {row.isAdditional ? (
+                                    <Chip
+                                      label="Additional"
+                                      size="small"
+                                      sx={{
+                                        fontSize: '10px',
+                                        fontWeight: 700,
+                                        backgroundColor: '#FEF3C7',
+                                        color: '#92400E',
+                                        border: '1px solid #FDE68A',
+                                        height: '20px',
+                                      }}
+                                    />
+                                  ) : performaSummary?.masterPerforma ? (
+                                    <Chip
+                                      label="Performa"
+                                      size="small"
+                                      sx={{
+                                        fontSize: '10px',
+                                        fontWeight: 700,
+                                        backgroundColor: '#F0F9FF',
+                                        color: '#1D4ED8',
+                                        border: '1px solid #BFDBFE',
+                                        height: '20px',
+                                      }}
+                                    />
+                                  ) : null}
+                                </Box>
                               </Box>
                             )}
                           </TableCell>
@@ -3618,6 +3926,9 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                       CUSTOMER
                     </TableCell>
                   )}
+                  <TableCell align="center" sx={{ py: 1.4, px: 1.5, fontSize: '11.5px', fontWeight: 700, color: '#1E293B', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '115px' }}>
+                    COMPANY
+                  </TableCell>
                   <TableCell align="center" sx={{ py: 1.4, px: 1, fontSize: '11.5px', fontWeight: 700, color: '#1D4ED8', letterSpacing: '0.04em', borderBottom: '1px solid #E2E8F0', borderRight: '1px solid #E2E8F0', width: '105px' }}>
                     TOTAL CASES
                   </TableCell>
@@ -3654,13 +3965,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
               <TableBody>
                 {particularLoading ? (
                   <TableRow>
-                    <TableCell colSpan={isSingleCustomer ? 8 : 9} align="center" sx={{ py: 6 }}>
+                    <TableCell colSpan={isSingleCustomer ? 9 : 10} align="center" sx={{ py: 6 }}>
                       <CircularProgress size={32} sx={{ color: '#1D4ED8' }} />
                     </TableCell>
                   </TableRow>
                 ) : filteredParticularRows.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={isSingleCustomer ? 8 : 9} align="center" sx={{ py: 6, color: '#64748B' }}>
+                    <TableCell colSpan={isSingleCustomer ? 9 : 10} align="center" sx={{ py: 6, color: '#64748B' }}>
                       No particular bills found {filterCustomer !== 'ALL' ? `for ${filterCustomer}` : ''}{filterParticularCompany !== 'ALL' ? ` under ${filterParticularCompany}` : ''}.
                     </TableCell>
                   </TableRow>
@@ -3700,6 +4011,25 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                             {row.customerName}
                           </TableCell>
                         )}
+                        <TableCell align="center" sx={{ py: 1.4, px: 1.5, borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
+                          {row.companyName && row.companyName.trim() && row.companyName !== '-' ? (
+                            <Chip
+                              size="small"
+                              label={row.companyName}
+                              sx={{
+                                backgroundColor: '#EFF6FF',
+                                color: '#1D4ED8',
+                                fontWeight: 700,
+                                fontSize: '11px',
+                                height: '22px',
+                                borderRadius: '5px',
+                                border: '1px solid #BFDBFE',
+                              }}
+                            />
+                          ) : (
+                            <Typography sx={{ fontSize: '12px', color: '#94A3B8' }}>-</Typography>
+                          )}
+                        </TableCell>
                         <TableCell align="center" sx={{ py: 1.4, px: 1, borderBottom: isLast ? 'none' : '1px solid #EEF2F6', borderRight: '1px solid #EEF2F6' }}>
                           {totalCustCasesVal > 0 ? (
                             <Tooltip title={`Customer Total Booked Cases: ${totalCustCasesVal}`} arrow>
