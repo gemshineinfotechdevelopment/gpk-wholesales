@@ -254,7 +254,7 @@ export const PerformaPrintModal: React.FC<PerformaPrintModalProps> = ({ open, on
               onClick={handleTriggerPrint}
               startIcon={<PrintOutlinedIcon sx={{ fontSize: '18px !important' }} />}
               sx={{
-                background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                backgroundColor: '#1D4ED8',
                 color: '#FFFFFF',
                 fontSize: '13px',
                 fontWeight: 700,
@@ -263,7 +263,7 @@ export const PerformaPrintModal: React.FC<PerformaPrintModalProps> = ({ open, on
                 py: 0.8,
                 borderRadius: '6px',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                  backgroundColor: '#1E40AF',
                 },
               }}
             >

@@ -1748,7 +1748,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   onClick={handleAddProductRow}
                   startIcon={<AddRoundedIcon />}
                   sx={{
-                    background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                    backgroundColor: '#1D4ED8',
                     color: '#FFFFFF',
                     fontWeight: 800,
                     fontSize: '13px',
@@ -1757,7 +1757,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                     height: '40px',
                     px: 3,
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                      backgroundColor: '#1E40AF',
                     },
                   }}
                 >
@@ -2223,7 +2223,6 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                     startIcon={<CheckCircleOutlineRoundedIcon sx={{ fontSize: 20 }} />}
                     sx={{
                       backgroundColor: '#1D4ED8',
-                      background: 'linear-gradient(135deg, #1E3A8A 0%, #1D4ED8 100%)',
                       color: '#FFFFFF !important',
                       fontWeight: 800,
                       fontSize: '14.5px',
@@ -2237,7 +2236,6 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                       transition: 'all 0.15s ease-in-out',
                       '&:hover': {
                         backgroundColor: '#1E40AF',
-                        background: 'linear-gradient(135deg, #172554 0%, #1E40AF 100%)',
                         boxShadow: '0 4px 8px rgba(29, 78, 216, 0.35)',
                       },
                       '&.Mui-disabled': {
@@ -2325,7 +2323,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                 onClick={() => setActiveSubTab('Create Performa')}
                 startIcon={<AddRoundedIcon />}
                 sx={{
-                  background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                  backgroundColor: '#1D4ED8',
                   color: '#FFFFFF',
                   fontWeight: 700,
                   fontSize: '13px',
@@ -2333,7 +2331,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   borderRadius: '8px',
                   px: 2,
                   '&:hover': {
-                    background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                    backgroundColor: '#1E40AF',
                   },
                 }}
               >
@@ -2455,7 +2453,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                           onClick={() => setActiveSubTab('Create Performa')}
                           startIcon={<AddRoundedIcon />}
                           sx={{
-                            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                            backgroundColor: '#1D4ED8',
                             textTransform: 'none',
                             fontWeight: 700,
                             borderRadius: '8px',
@@ -2761,7 +2759,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   handleOpenPrintModal(selectedPerformaForView);
                 }}
                 startIcon={<PrintOutlinedIcon sx={{ fontSize: 18 }} />}
-                sx={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)', textTransform: 'none', fontWeight: 700 }}
+                sx={{ backgroundColor: '#1D4ED8', '&:hover': { backgroundColor: '#1E40AF' }, textTransform: 'none', fontWeight: 700 }}
               >
                 Print Performa
               </Button>
@@ -2780,7 +2778,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                     color: '#FFFFFF',
                     textTransform: 'none',
                     fontWeight: 700,
-                    '&:hover': { background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)' },
+                    '&:hover': { backgroundColor: '#1D4ED8' },
                   }}
                 >
                   Create Bill / Particular
@@ -3031,7 +3029,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                     disableElevation
                     onClick={handleAddProductToEditList}
                     startIcon={<AddRoundedIcon />}
-                    sx={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)', textTransform: 'none', fontWeight: 700, height: '40px', px: 2 }}
+                    sx={{ backgroundColor: '#1D4ED8', '&:hover': { backgroundColor: '#1E40AF' }, textTransform: 'none', fontWeight: 700, height: '40px', px: 2 }}
                   >
                     + Add
                   </Button>
@@ -3147,7 +3145,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
             disableElevation
             onClick={handleSaveEditPerforma}
             disabled={editLoading}
-            sx={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)', textTransform: 'none', fontWeight: 700, px: 3 }}
+            sx={{ backgroundColor: '#1D4ED8', '&:hover': { backgroundColor: '#1E40AF' }, textTransform: 'none', fontWeight: 700, px: 3 }}
           >
             {editLoading ? 'Saving...' : 'Save Changes'}
           </Button>

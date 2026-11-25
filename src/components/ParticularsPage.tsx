@@ -1607,7 +1607,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     disableElevation
                     onClick={handleSelectCustomerClick}
                     sx={{
-                      background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                      backgroundColor: '#1D4ED8',
                       color: '#FFFFFF',
                       fontSize: '13.5px',
                       fontWeight: 700,
@@ -1617,7 +1617,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                       borderRadius: '6px',
                       lineHeight: 1.3,
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                        backgroundColor: '#1E40AF',
                       },
                     }}
                   >
@@ -2223,7 +2223,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   disableElevation
                   onClick={handleAddProductRow}
                   sx={{
-                    background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                    backgroundColor: '#1D4ED8',
                     color: '#FFFFFF',
                     minWidth: '36px',
                     width: '36px',
@@ -2231,7 +2231,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     p: 0,
                     borderRadius: '6px',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                      backgroundColor: '#1E40AF',
                     },
                   }}
                 >
@@ -2245,7 +2245,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   disableElevation
                   onClick={handleClearProductEntry}
                   sx={{
-                    background: 'linear-gradient(135deg, #DC2626 0%, #EF4444 100%)',
+                    backgroundColor: '#DC2626',
                     color: '#FFFFFF',
                     minWidth: '36px',
                     width: '36px',
@@ -2253,7 +2253,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     p: 0,
                     borderRadius: '6px',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #B91C1C 0%, #DC2626 100%)',
+                      backgroundColor: '#B91C1C',
                     },
                   }}
                 >
@@ -2905,7 +2905,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   disabled={createLoading}
                   sx={{
                     mt: 1,
-                    background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                    backgroundColor: '#1D4ED8',
                     color: '#FFFFFF !important',
                     height: '38px',
                     fontSize: '13.5px',
@@ -2913,7 +2913,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     textTransform: 'none',
                     borderRadius: '6px',
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                      backgroundColor: '#1E40AF',
                     },
                   }}
                 >
@@ -3246,7 +3246,6 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     accountDetails.map((row: any, index: number) => {
                       const isLast = index === accountDetails.length - 1;
                       const rowId = row._id || row.id || '';
-                      const debitNum = parseFloat(String(row.debit || '0').replace(/,/g, '')) || 0;
                       return (
                         <TableRow
                           key={rowId || index}
@@ -3270,13 +3269,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                               {row.customerName}
                             </TableCell>
                           )}
-                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 600, color: '#334155', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
-                            {debitNum > 0 && row.billNo ? row.billNo : '-'}
-                          </TableCell>
                           <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.type === 'BILL' ? (
                               <Chip
-                                label="Bill Debit"
+                                label="Bill / Particular"
                                 size="small"
                                 sx={{
                                   height: 22,
@@ -3301,6 +3297,9 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                                 }}
                               />
                             )}
+                          </TableCell>
+                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 600, color: '#334155', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            {row.type === 'BILL' ? '-' : (row.depositAccount || (row.notes && row.notes.includes('to A/C:') ? row.notes.split('to A/C:')[1].trim() : '-'))}
                           </TableCell>
                           <TableCell align="right" sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 500, color: '#DC2626', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.debit}
@@ -3799,13 +3798,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                                   size="small"
                                   onClick={() => handleOpenBillPrint(row, false)}
                                   sx={{
-                                    background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                                    backgroundColor: '#1D4ED8',
                                     color: '#FFFFFF',
                                     borderRadius: '6px',
                                     width: '32px',
                                     height: '28px',
                                     p: 0,
-                                    '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
+                                    '&:hover': { backgroundColor: '#1E40AF' },
                                   }}
                                 >
                                   <VisibilityRoundedIcon sx={{ fontSize: 16 }} />
@@ -3836,13 +3835,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                                     size="small"
                                     onClick={() => handleOpenBillPrint(row, false)}
                                     sx={{
-                                      background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                                      backgroundColor: '#1D4ED8',
                                       color: '#FFFFFF',
                                       borderRadius: '4px',
                                       width: '24px',
                                       height: '22px',
                                       p: 0,
-                                      '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
+                                      '&:hover': { backgroundColor: '#1E40AF' },
                                     }}
                                   >
                                     <VisibilityRoundedIcon sx={{ fontSize: 14 }} />
@@ -4278,7 +4277,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     sx={{
                       minWidth: '135px',
                       height: '42px',
-                      background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                      backgroundColor: '#1D4ED8',
                       color: '#FFFFFF',
                       fontSize: '13px',
                       fontWeight: 700,
@@ -4288,7 +4287,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                       boxShadow: 'none',
                       px: 2,
                       '&:hover': {
-                        background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                        backgroundColor: '#1E40AF',
                       },
                     }}
                     startIcon={<AddRoundedIcon sx={{ fontSize: 18 }} />}
@@ -4313,7 +4312,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   onClick={handleAddCreditSubmit}
                   disabled={creditLoading}
                   sx={{
-                    background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                    backgroundColor: '#1D4ED8',
                     color: '#FFFFFF',
                     height: '42px',
                     fontSize: '14px',
@@ -4322,7 +4321,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     borderRadius: '6px',
                     px: 3.5,
                     '&:hover': {
-                      background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                      backgroundColor: '#1E40AF',
                     },
                   }}
                 >
@@ -4742,13 +4741,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
             onClick={handleSaveEditParticular}
             disabled={editBillLoading}
             sx={{
-              background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+              backgroundColor: '#1D4ED8',
               color: '#FFFFFF',
               fontWeight: 700,
               textTransform: 'none',
               px: 3,
               borderRadius: '6px',
-              '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
+              '&:hover': { backgroundColor: '#1E40AF' },
             }}
           >
             {editBillLoading ? 'Saving...' : 'Save Bill Changes'}
@@ -4929,13 +4928,13 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
             onClick={handleGoToCustomerPerforma}
             startIcon={<ReceiptLongRoundedIcon sx={{ fontSize: 18 }} />}
             sx={{
-              background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+              backgroundColor: '#1D4ED8',
               color: '#FFFFFF',
               textTransform: 'none',
               fontWeight: 700,
               px: 2.5,
               borderRadius: '6px',
-              '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
+              '&:hover': { backgroundColor: '#1E40AF' },
             }}
           >
             {warningDialog.type === 'NEW_PRODUCT'
@@ -5013,7 +5012,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
               onClick={handleSaveNewAccount}
               disabled={!newAccountNameInput.trim()}
               sx={{
-                background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                backgroundColor: '#1D4ED8',
                 color: '#FFFFFF',
                 fontWeight: 700,
                 textTransform: 'none',
@@ -5022,7 +5021,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 px: 2.5,
                 whiteSpace: 'nowrap',
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                  backgroundColor: '#1E40AF',
                 },
               }}
             >

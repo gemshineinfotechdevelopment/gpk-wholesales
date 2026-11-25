@@ -940,7 +940,7 @@ export const ProductsPage: FC = () => {
                           endIcon={<ArrowForwardRoundedIcon sx={{ fontSize: 16 }} />}
                           sx={{
                             height: '34px',
-                            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%)',
+                            backgroundColor: '#1D4ED8',
                             color: '#FFFFFF !important',
                             fontSize: '12px',
                             fontWeight: 700,
@@ -1143,7 +1143,7 @@ export const ProductsPage: FC = () => {
                               sx={{
                                 textTransform: 'none',
                                 fontWeight: 700,
-                                background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 100%)',
+                                backgroundColor: '#1D4ED8',
                               }}
                             >
                               Add Product
@@ -1501,13 +1501,13 @@ export const ProductsPage: FC = () => {
             onClick={handleSaveProduct}
             disabled={modalLoading}
             sx={{
-              background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+              backgroundColor: '#1D4ED8',
               color: '#FFFFFF !important',
               fontWeight: 700,
               textTransform: 'none',
               px: 2.5,
               borderRadius: '6px',
-              '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
+              '&:hover': { backgroundColor: '#1E40AF' },
             }}
           >
             {modalLoading ? 'Saving...' : 'Save Product'}

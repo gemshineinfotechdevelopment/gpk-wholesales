@@ -795,7 +795,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
               onClick={onAddNewPerforma}
               startIcon={<AddRoundedIcon />}
               sx={{
-                background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                backgroundColor: '#1D4ED8',
                 color: '#FFFFFF',
                 fontWeight: 700,
                 fontSize: '13.5px',
@@ -803,7 +803,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                 borderRadius: '8px',
                 px: 2.5,
                 '&:hover': {
-                  background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
+                  backgroundColor: '#1E40AF',
                 },
               }}
             >
@@ -1035,7 +1035,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
             disableElevation
             startIcon={<SearchRoundedIcon sx={{ fontSize: 18 }} />}
             sx={{
-              background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+              backgroundColor: '#1D4ED8',
               color: '#FFFFFF',
               fontWeight: 700,
               textTransform: 'none',
@@ -1472,7 +1472,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                   handleOpenPrintModal(selectedPerformaForView);
                 }}
                 startIcon={<PrintOutlinedIcon sx={{ fontSize: 18 }} />}
-                sx={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)', textTransform: 'none', fontWeight: 700 }}
+                sx={{ backgroundColor: '#1D4ED8', '&:hover': { backgroundColor: '#1E40AF' }, textTransform: 'none', fontWeight: 700 }}
               >
                 Print Performa
               </Button>
@@ -1491,7 +1491,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     color: '#FFFFFF',
                     textTransform: 'none',
                     fontWeight: 700,
-                    '&:hover': { background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)' },
+                    '&:hover': { backgroundColor: '#1D4ED8' },
                   }}
                 >
                   Create Bill / Particular
@@ -1765,7 +1765,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     disableElevation
                     onClick={handleAddProductToEditList}
                     startIcon={<AddRoundedIcon />}
-                    sx={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)', textTransform: 'none', fontWeight: 700, height: '40px' }}
+                    sx={{ backgroundColor: '#1D4ED8', '&:hover': { backgroundColor: '#1E40AF' }, textTransform: 'none', fontWeight: 700, height: '40px' }}
                   >
                     Add
                   </Button>
@@ -1890,7 +1890,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
             disableElevation
             onClick={handleSaveEditPerforma}
             disabled={editLoading}
-            sx={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)', textTransform: 'none', fontWeight: 700, px: 3 }}
+            sx={{ backgroundColor: '#1D4ED8', '&:hover': { backgroundColor: '#1E40AF' }, textTransform: 'none', fontWeight: 700, px: 3 }}
           >
             {editLoading ? 'Saving...' : 'Save Changes'}
           </Button>

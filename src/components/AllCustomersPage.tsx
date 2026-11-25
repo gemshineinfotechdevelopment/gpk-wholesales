@@ -479,7 +479,7 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
               onClick={onAddNewCustomer}
               startIcon={<AddRoundedIcon sx={{ fontSize: 20 }} />}
               sx={{
-                background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                backgroundColor: '#1D4ED8',
                 color: '#FFFFFF',
                 height: '40px',
                 px: 2.4,
@@ -1758,13 +1758,13 @@ export const AllCustomersPage: FC<AllCustomersPageProps> = ({
             onClick={handleSaveEdit}
             disabled={editLoading}
             sx={{
-              background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+              backgroundColor: '#1D4ED8',
               color: '#FFFFFF',
               fontWeight: 700,
               textTransform: 'none',
               px: 2.5,
               borderRadius: '6px',
-              '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
+              '&:hover': { backgroundColor: '#1E40AF' },
             }}
           >
             {editLoading ? 'Saving...' : 'Save Changes'}

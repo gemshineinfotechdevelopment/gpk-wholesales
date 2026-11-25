@@ -343,13 +343,13 @@ export const DateRangePrintModal: FC<DateRangePrintModalProps> = ({
           disabled={filteredItems.length === 0}
           startIcon={<PrintOutlinedIcon sx={{ fontSize: 18 }} />}
           sx={{
-            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+            backgroundColor: '#1D4ED8',
             color: '#FFFFFF',
             fontWeight: 700,
             textTransform: 'none',
             px: 2.5,
             borderRadius: '6px',
-            '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
+            '&:hover': { backgroundColor: '#1E40AF' },
           }}
         >
           Print A4 Report ({filteredItems.length})

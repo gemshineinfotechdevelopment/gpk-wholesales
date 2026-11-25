@@ -507,7 +507,7 @@ export const SettingsPage: FC<SettingsPageProps> = ({ currentUser, onSettingsUpd
                   startIcon={adminLoading ? <CircularProgress size={16} color="inherit" /> : <SaveRoundedIcon />}
                   sx={{
                     mt: 1,
-                    background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                    backgroundColor: '#1D4ED8',
                     '&:hover': { backgroundColor: '#093E94' },
                     fontWeight: 700,
                     borderRadius: '8px',

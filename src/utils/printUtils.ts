@@ -1158,7 +1158,7 @@ export const generateLedgerStatementHtml = (
           <td class="text-center" style="width:4%;">${globalIdx + 1}</td>
           <td style="width:24%; font-weight:700; color:#0F172A; word-break: break-word;">${desc}</td>
           <td style="width:12%; font-weight:700; color:#334155; word-break: break-word;">${billNoText}</td>
-          <td style="width:15%; color:#475569; font-size:9.5px; word-break: break-word;">${entry.type === 'BILL' ? 'Bill Debit' : (entry.paymentMode || 'Credit')}</td>
+          <td style="width:15%; color:#475569; font-size:9.5px; word-break: break-word;">${entry.type === 'BILL' ? 'Bill Debit' : ((entry.paymentMode || 'Credit') + (entry.depositAccount ? ` (${entry.depositAccount})` : ''))}</td>
           <td class="text-right" style="width:11%; color:#1E293B; font-weight:700;">${deb > 0 ? `₹ ${deb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
           <td class="text-right" style="width:11%; color:#16A34A; font-weight:700;">${cred > 0 ? `₹ ${cred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : '-'}</td>
           <td class="text-right" style="width:12%; font-weight:800; color:#1D4ED8;">₹ ${entry.balance || '0.00'}</td>

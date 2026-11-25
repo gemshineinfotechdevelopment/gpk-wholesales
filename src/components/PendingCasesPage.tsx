@@ -1509,11 +1509,11 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                   onSelectCustomerForBill(cust);
                 }}
                 sx={{
-                  background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                  backgroundColor: '#1D4ED8',
                   textTransform: 'none',
                   fontWeight: 700,
                   fontSize: '12.5px',
-                  '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
+                  '&:hover': { backgroundColor: '#1E40AF' },
                 }}
               >
                 Create Particular Bill
@@ -2367,7 +2367,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
             disableElevation
             disabled={editModal.saving || editModal.loading}
             onClick={handleSaveEditModal}
-            sx={{ background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)', textTransform: 'none', fontWeight: 700, px: 2.5 }}
+            sx={{ backgroundColor: '#1D4ED8', '&:hover': { backgroundColor: '#1E40AF' }, textTransform: 'none', fontWeight: 700, px: 2.5 }}
           >
             {editModal.saving ? 'Saving...' : 'Save Changes'}
           </Button>

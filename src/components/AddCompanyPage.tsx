@@ -380,7 +380,7 @@ export const AddCompanyPage: FC<AddCompanyPageProps> = ({
                 borderRadius: '8px',
                 fontSize: '13.5px',
                 fontWeight: 700,
-                background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                backgroundColor: '#1D4ED8',
                 color: '#FFFFFF',
                 textTransform: 'none',
                 '&:hover': {

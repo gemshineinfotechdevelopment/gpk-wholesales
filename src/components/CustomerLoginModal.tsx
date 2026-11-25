@@ -314,13 +314,13 @@ _You can view your bills, ledger statement, and balance status._
             onClick={handleSave}
             disabled={loading || fetching}
             sx={{
-              background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+              backgroundColor: '#1D4ED8',
               color: '#FFFFFF',
               fontWeight: 700,
               textTransform: 'none',
               borderRadius: '8px',
               px: 2.2,
-              '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
+              '&:hover': { backgroundColor: '#1E40AF' },
             }}
           >
             {loading ? <CircularProgress size={20} sx={{ color: '#FFFFFF' }} /> : 'Save Login'}

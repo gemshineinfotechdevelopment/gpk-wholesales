@@ -81,12 +81,12 @@ export const theme = createTheme({
           },
         },
         contained: {
-          background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+          backgroundColor: '#1D4ED8',
           color: '#FFFFFF',
-          boxShadow: '0 2px 8px rgba(37, 99, 235, 0.28)',
+          boxShadow: 'none',
           '&:hover': {
-            background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)',
-            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.38)',
+            backgroundColor: '#1E40AF',
+            boxShadow: 'none',
           },
         },
       },

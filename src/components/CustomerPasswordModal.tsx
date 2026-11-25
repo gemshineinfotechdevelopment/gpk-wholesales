@@ -246,8 +246,8 @@ export const CustomerPasswordModal: FC<CustomerPasswordModalProps> = ({
             borderRadius: '8px',
             textTransform: 'none',
             fontWeight: 700,
-            background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
-            '&:hover': { background: 'linear-gradient(135deg, #172554 0%, #1D4ED8 55%, #0284C7 100%)' },
+            backgroundColor: '#1D4ED8',
+            '&:hover': { backgroundColor: '#1E40AF' },
           }}
         >
           {loading ? 'Saving...' : 'Save Password'}
