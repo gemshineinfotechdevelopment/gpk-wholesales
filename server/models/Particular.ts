@@ -29,6 +29,9 @@ export interface IParticular extends Document {
   products: IParticularProductItem[];
   performaId?: mongoose.Types.ObjectId | string;
   performaNumber?: string;
+  totalCustomerCases?: number;
+  deliveredCaseCount?: number;
+  pendingCaseCount?: number;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -62,6 +65,9 @@ const ParticularSchema: Schema = new Schema(
     pdfPublicId: { type: String, default: '' },
     performaId: { type: Schema.Types.ObjectId, ref: 'Performa', default: null },
     performaNumber: { type: String, default: '', trim: true },
+    totalCustomerCases: { type: Number, default: 0 },
+    deliveredCaseCount: { type: Number, default: 0 },
+    pendingCaseCount: { type: Number, default: 0 },
     products: [ParticularProductItemSchema],
   },
   { timestamps: true }

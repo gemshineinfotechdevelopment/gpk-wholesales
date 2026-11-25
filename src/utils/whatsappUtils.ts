@@ -120,13 +120,13 @@ export const generatePdfBlobFromHtml = async (html: string, fileName: string): P
 };
 
 /**
- * Base dispatcher: tries Web Share API with attached PDF File;
- * falls back to direct WhatsApp Web/App URL with pre-filled message
- * AND automatically downloads the exact same generated PDF file on Desktop browsers.
+ * Base dispatcher: shares the generated PDF File directly via Web Share API
+ * without sending text or words.
+ * Falls back to downloading the PDF and opening direct WhatsApp chat for desktop browsers.
  */
 export const shareToWhatsApp = async (options: {
   title: string;
-  text: string;
+  text?: string;
   fileName: string;
   html?: string;
   phone?: string;
@@ -141,12 +141,12 @@ export const shareToWhatsApp = async (options: {
   }
 
   // 1. Try Native Web Share API if device/browser supports file sharing (Mobile, Tablets, Mac/Windows Edge)
+  // Shares ONLY the PDF Document without any text/words attached
   if (pdfFile && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
     try {
       await navigator.share({
         files: [pdfFile],
-        title,
-        text,
+        title: title || cleanFileName,
       });
       return;
     } catch (err: any) {
@@ -176,63 +176,31 @@ export const shareToWhatsApp = async (options: {
   }
 
   // 3. WhatsApp URL fallback (Desktop Web / Mobile App deep link)
-  const encodedText = encodeURIComponent(text);
+  // When sharing a PDF, open the chat cleanly without filling the input box with text words
+  if (pdfFile) {
+    const waUrl = cleanPhone
+      ? `https://api.whatsapp.com/send?phone=${cleanPhone}`
+      : `https://api.whatsapp.com/send`;
+    window.open(waUrl, '_blank');
+    return;
+  }
+
+  // 4. Text-only fallback (only if no PDF was generated)
+  const encodedText = text ? encodeURIComponent(text) : '';
   const waUrl = cleanPhone
-    ? `https://api.whatsapp.com/send?phone=${cleanPhone}&text=${encodedText}`
-    : `https://api.whatsapp.com/send?text=${encodedText}`;
+    ? `https://api.whatsapp.com/send?phone=${cleanPhone}${encodedText ? `&text=${encodedText}` : ''}`
+    : `https://api.whatsapp.com/send${encodedText ? `?text=${encodedText}` : ''}`;
 
   window.open(waUrl, '_blank');
 };
 
 /**
- * 1. Share Particular Bill on WhatsApp
+ * 1. Share Particular Bill on WhatsApp (PDF Only)
  */
 export const shareBillOnWhatsApp = async (bill: BillPrintData, phone?: string) => {
-  const itemsText = (bill.products || [])
-    .map(
-      (p, i) =>
-        `${i + 1}. *${p.particular}* - ${p.quantity} Cases @ ₹${p.rate}${p.pktUnit && p.pktUnit !== '-' ? ` (${p.pktUnit}/pkt)` : ''} = *₹${p.amount}*`
-    )
-    .join('\n');
-
-  const rawDisc = parseFloat(String(bill.discount || '0').replace(/[^0-9.]/g, '')) || 0;
-  const rawPack = parseFloat(String(bill.packing || '0').replace(/[^0-9.]/g, '')) || 0;
-  const rawTaxStr = String(bill.tax || '0').trim();
-  const taxNum = parseFloat(rawTaxStr.replace(/[^0-9.]/g, '')) || 0;
-  let taxAmt = 0;
-  if (taxNum > 0) {
-    if (rawTaxStr.includes('%') || taxNum <= 100) {
-      const casesVal = parseFloat(String(bill.caseCount || '0')) || (Array.isArray(bill.products) ? bill.products.reduce((acc: number, p: any) => acc + (parseFloat(p.quantity) || 0), 0) : 0);
-      taxAmt = (2500 * casesVal * taxNum) / 100;
-    } else {
-      taxAmt = taxNum;
-    }
-  }
-
-  const text = `*GPK CRACKERS - INVOICE BILL* 🧾
-----------------------------------------
-*Bill No:* #${bill.billNo}
-*Customer:* ${bill.customerName}
-${bill.companyName && bill.companyName !== 'General' ? `*Company:* ${bill.companyName}\n` : ''}*Date:* ${bill.date}
-*Transport:* ${bill.transport || '-'}
-*Cases:* ${bill.caseCount || '-'}
-----------------------------------------
-*ITEMS:*
-${itemsText || '-'}
-----------------------------------------
-*Subtotal:* ₹${bill.amount || '0.00'}
-*Discount:* ${rawDisc > 0 ? `${bill.discount}${String(bill.discount).includes('%') ? '' : '%'}` : '0%'}
-*Packing:* ${rawPack > 0 ? `${bill.packing}${String(bill.packing).includes('%') ? '' : '%'}` : '0%'}
-*Tax:* ₹${taxAmt > 0 ? taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '0.00'}
-*NET TOTAL:* ₹${bill.total || '0.00'}
-----------------------------------------
-_Thank you for your business!_
-*GPK Crackers*`;
-
   const html = generateBillHtml(bill);
   await shareToWhatsApp({
     title: `Bill #${bill.billNo} - ${bill.customerName}`,
-    text,
     fileName: `Bill-${bill.billNo}-${bill.customerName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
     html,
     phone: phone || bill.phone,
@@ -240,7 +208,7 @@ _Thank you for your business!_
 };
 
 /**
- * 2. Share Account Ledger Statement on WhatsApp
+ * 2. Share Account Ledger Statement on WhatsApp (PDF Only)
  */
 export const shareLedgerOnWhatsApp = async (
   customerName: string,
@@ -249,29 +217,10 @@ export const shareLedgerOnWhatsApp = async (
   toDate?: string,
   phone?: string
 ) => {
-  const totalDebit = accountDetails.reduce((sum, r) => sum + (parseFloat(String(r.debit).replace(/,/g, '')) || 0), 0);
-  const totalCredit = accountDetails.reduce((sum, r) => sum + (parseFloat(String(r.credit).replace(/,/g, '')) || 0), 0);
-  const netBalance = totalDebit - totalCredit;
-
-  const dateRangeStr = fromDate || toDate ? ` (${fromDate || 'Start'} to ${toDate || 'Present'})` : '';
-
-  const text = `*GPK CRACKERS - ACCOUNT STATEMENT* 📊
-----------------------------------------
-*Customer:* ${customerName}${dateRangeStr}
-*Total Transactions:* ${accountDetails.length}
-----------------------------------------
-*Total Debit (Bills):* ₹${totalDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-*Total Credit (Received):* ₹${totalCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-*NET BALANCE:* ₹${netBalance.toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${netBalance > 0 ? '(Due)' : netBalance < 0 ? '(Advance)' : '(Settled)'}
-----------------------------------------
-_Generated on ${new Date().toLocaleDateString('en-GB')}_
-*GPK Crackers*`;
-
   const rangeLabel = fromDate || toDate ? `${fromDate || ''} - ${toDate || ''}` : undefined;
   const html = generateLedgerStatementHtml(customerName, accountDetails, rangeLabel);
   await shareToWhatsApp({
     title: `Account Statement - ${customerName}`,
-    text,
     fileName: `Ledger-${customerName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
     html,
     phone,
@@ -279,7 +228,7 @@ _Generated on ${new Date().toLocaleDateString('en-GB')}_
 };
 
 /**
- * 3. Share Particulars Statement / List on WhatsApp
+ * 3. Share Particulars Statement / List on WhatsApp (PDF Only)
  */
 export const shareParticularsListOnWhatsApp = async (
   customerName: string,
@@ -288,30 +237,10 @@ export const shareParticularsListOnWhatsApp = async (
   toDate?: string,
   phone?: string
 ) => {
-  const totalAmount = particularDetails.reduce(
-    (sum, r) => sum + (parseFloat(String(r.total || r.amount).replace(/,/g, '')) || 0),
-    0
-  );
-  const totalCases = particularDetails.reduce(
-    (sum, r) => sum + (parseFloat(String(r.caseCount).replace(/,/g, '')) || 0),
-    0
-  );
-
-  const text = `*GPK CRACKERS - PARTICULAR BILLS STATEMENT* 📋
-----------------------------------------
-*Customer:* ${customerName}
-*Total Bills:* ${particularDetails.length}
-*Total Cases:* ${totalCases}
-*Total Billed Amount:* ₹${totalAmount.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-----------------------------------------
-_Generated on ${new Date().toLocaleDateString('en-GB')}_
-*GPK Crackers*`;
-
   const rangeLabel = fromDate || toDate ? `${fromDate || ''} - ${toDate || ''}` : undefined;
   const html = generateParticularsListPrintHtml(particularDetails, rangeLabel);
   await shareToWhatsApp({
     title: `Particulars List - ${customerName}`,
-    text,
     fileName: `Particulars-${customerName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
     html,
     phone,
@@ -319,94 +248,22 @@ _Generated on ${new Date().toLocaleDateString('en-GB')}_
 };
 
 /**
- * 4. Share Performa Quotation on WhatsApp
+ * 4. Share Performa Quotation on WhatsApp (PDF Only)
  */
 export const sharePerformaOnWhatsApp = async (performa: any, phone?: string) => {
   const custName = performa.customerSnapshot?.name || performa.customerName || 'Customer';
   const pfNum = performa.performaNumber || 'PF';
-  const totalCases = performa.totalCases || performa.products?.reduce((s: number, p: any) => s + (Number(p.requiredCases) || 0), 0) || 0;
-  const rawSubtotal = (performa.products || []).reduce((s: number, p: any) => s + (Number(p.allocatedAmount) || ((Number(p.requiredCases) || 0) * (Number(p.rate) || 0) * (Number(p.pktPerUnit) || 1)) || 0), 0);
-  const subtotalVal = performa.subtotal !== undefined ? Number(performa.subtotal) : rawSubtotal;
-  const cleanDisc = String(performa.discount || '0').trim();
-  const discNum = parseFloat(cleanDisc) || 0;
-  let discountAmt = performa.discountAmount !== undefined ? Number(performa.discountAmount) : 0;
-  if (!discountAmt && discNum > 0) {
-    if (cleanDisc.endsWith('%') || discNum <= 100) {
-      discountAmt = (subtotalVal * discNum) / 100;
-    } else {
-      discountAmt = discNum;
-    }
-  }
-  const baseAfterDiscount = Math.max(0, subtotalVal - discountAmt);
-  const cleanPack = String(performa.packing || '0').trim();
-  const packNum = parseFloat(cleanPack) || 0;
-  let packingAmt = performa.packingAmount !== undefined ? Number(performa.packingAmount) : 0;
-  if (!packingAmt && packNum > 0) {
-    if (cleanPack.endsWith('%') || packNum <= 100) {
-      packingAmt = (baseAfterDiscount * packNum) / 100;
-    } else {
-      packingAmt = packNum;
-    }
-  }
-  const rawTax = String(performa.tax || '0').trim();
-  const taxNum = parseFloat(rawTax.replace(/[^0-9.]/g, '')) || 0;
-  let taxAmt = 0;
-  if (performa.taxAmount !== undefined && Number(performa.taxAmount) > 0) {
-    taxAmt = Number(performa.taxAmount);
-  } else if (taxNum > 0) {
-    if (rawTax.includes('%') || taxNum <= 100) {
-      const casesVal = Number(performa.totalRequiredCases) || (performa.products || []).reduce((acc: number, p: any) => acc + (Number(p.requiredCases) || 0), 0);
-      taxAmt = (2500 * casesVal * taxNum) / 100;
-    } else {
-      taxAmt = taxNum;
-    }
-  }
-
-  const totalAmount =
-    performa.totalAllocatedAmount !== undefined
-      ? performa.totalAllocatedAmount
-      : performa.totalAmount || Math.max(0, subtotalVal - discountAmt + packingAmt + taxAmt);
-
-  const itemsText = (performa.products || [])
-    .map((p: any, i: number) => {
-      const pName = p.productSnapshot?.productName || p.productName || 'Product';
-      const compName = p.productSnapshot?.companyName || p.companyName || '';
-      const compLabel = compName ? ` [${compName}]` : '';
-      const pCases = p.requiredCases || 0;
-      const pRate = p.rate || 0;
-      const pAlloc = p.allocatedAmount || (Number(pCases) * Number(pRate) * (Number(p.pktPerUnit) || 1));
-      return `${i + 1}. *${pName}*${compLabel} - ${pCases} Cases @ ₹${pRate} = *₹${Number(pAlloc).toLocaleString('en-IN', { minimumFractionDigits: 2 })}*`;
-    })
-    .join('\n');
-
-  const text = `*GPK CRACKERS - PERFORMA INVOICE / QUOTATION* 📝
-----------------------------------------
-*Performa No:* #${pfNum}
-*Customer:* ${custName}
-*Date:* ${performa.date || '-'}
-*Status:* ${performa.status || 'Active'}
-----------------------------------------
-*PRODUCTS ALLOCATION:*
-${itemsText || '-'}
-----------------------------------------
-*Total Cases:* ${totalCases}
-*Subtotal:* ₹${subtotalVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-${discountAmt > 0 ? `*Discount:* ${performa.discount ? `${performa.discount}${String(performa.discount).includes('%') ? '' : '%'}` : ''} (-₹${discountAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })})\n` : ''}${packingAmt > 0 ? `*Packing:* ${performa.packing ? `${performa.packing}${String(performa.packing).includes('%') ? '' : '%'}` : ''} (+₹${packingAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })})\n` : ''}${taxAmt > 0 ? `*Tax:* ₹${taxAmt.toLocaleString('en-IN', { minimumFractionDigits: 2 })}\n` : ''}*TOTAL ALLOCATED VALUE:* ₹${Number(totalAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-----------------------------------------
-*GPK Crackers*`;
-
   const html = generatePerformaHtml(performa);
   await shareToWhatsApp({
     title: `Performa #${pfNum} - ${custName}`,
-    text,
     fileName: `Performa-${pfNum}-${custName.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
     html,
-    phone: phone || performa.customerSnapshot?.phone,
+    phone: phone || performa.customerSnapshot?.phone || performa.phone,
   });
 };
 
 /**
- * 5. Share All Performas List / Summary on WhatsApp
+ * 5. Share All Performas List / Summary on WhatsApp (PDF Only)
  */
 export const shareAllPerformasOnWhatsApp = async (
   performas: any[],
@@ -415,25 +272,10 @@ export const shareAllPerformasOnWhatsApp = async (
   toDate?: string,
   phone?: string
 ) => {
-  const totalPerformas = performas.length;
-  const totalCases = performas.reduce((acc, p) => acc + (parseFloat(p.totalCases || p.totalRequiredCases) || 0), 0);
-  const totalValue = performas.reduce((acc, p) => acc + (parseFloat(p.totalAmount || p.totalAllocatedAmount) || 0), 0);
-
-  const text = `*GPK CRACKERS - PERFORMA SUMMARY* 📊
-----------------------------------------
-*Title:* ${summaryTitle}
-*Total Performas:* ${totalPerformas}
-*Total Cases:* ${totalCases}
-*Total Value:* ₹${totalValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-----------------------------------------
-_Generated on ${new Date().toLocaleDateString('en-GB')}_
-*GPK Crackers*`;
-
   const rangeLabel = fromDate || toDate ? `${fromDate || ''} - ${toDate || ''}` : undefined;
   const html = generateAllPerformasPrintHtml(performas, summaryTitle, rangeLabel);
   await shareToWhatsApp({
     title: `Performa Summary - ${summaryTitle}`,
-    text,
     fileName: `Performas-Summary-${summaryTitle.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
     html,
     phone,
@@ -441,7 +283,7 @@ _Generated on ${new Date().toLocaleDateString('en-GB')}_
 };
 
 /**
- * 6. Share Customer List / Master Report on WhatsApp
+ * 6. Share Customer List / Master Report on WhatsApp (PDF Only)
  */
 export const shareCustomerListOnWhatsApp = async (
   customers: any[],
@@ -450,27 +292,10 @@ export const shareCustomerListOnWhatsApp = async (
   toDate?: string,
   phone?: string
 ) => {
-  const totalCustomers = customers.length;
-  const totalDebit = customers.reduce((acc, c) => acc + (parseFloat(c.totalDebit) || 0), 0);
-  const totalCredit = customers.reduce((acc, c) => acc + (parseFloat(c.totalCredit) || 0), 0);
-  const totalDue = customers.reduce((acc, c) => acc + (parseFloat(c.pendingDue) || 0), 0);
-
-  const text = `*GPK CRACKERS - CUSTOMERS MASTER REPORT* 👥
-----------------------------------------
-*Title:* ${reportTitle}
-*Total Customers:* ${totalCustomers}
-*Total Purchases (Debit):* ₹${totalDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-*Total Received (Credit):* ₹${totalCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-*Total Pending Due:* ₹${totalDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-----------------------------------------
-_Generated on ${new Date().toLocaleDateString('en-GB')}_
-*GPK Crackers*`;
-
   const rangeLabel = fromDate || toDate ? `${fromDate || ''} - ${toDate || ''}` : undefined;
   const html = generateCustomerListPrintHtml(customers, reportTitle, rangeLabel);
   await shareToWhatsApp({
     title: reportTitle,
-    text,
     fileName: `Customers-Report-${reportTitle.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`,
     html,
     phone,
