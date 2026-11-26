@@ -57,41 +57,53 @@ function App() {
     return validTabs.includes(saved) ? saved : 'Customers';
   });
 
-  const [companySubView, setCompanySubView] = useState<'list' | 'add'>(() => {
-    return (localStorage.getItem('gpk_company_subview') as 'list' | 'add') || 'list';
-  });
+  const [companySubView, setCompanySubView] = useState<'list' | 'add'>('list');
 
-  const [customerSubView, setCustomerSubView] = useState<'list' | 'add'>(() => {
-    return (localStorage.getItem('gpk_customer_subview') as 'list' | 'add') || 'list';
-  });
+  const [customerSubView, setCustomerSubView] = useState<'list' | 'add'>('list');
 
   const [selectedCustomerName, setSelectedCustomerName] = useState<string>(() => {
     if (currentUser?.role === 'user' && currentUser.customerName) {
       return currentUser.customerName;
     }
-    return localStorage.getItem('gpk_active_customer') || localStorage.getItem('dheeksha_active_customer') || '';
+    return '';
   });
 
   const [particularInitialSubTab, setParticularInitialSubTab] = useState<ParticularSubTab>(() => {
     if (currentUser?.role === 'user') {
       return 'Account Details';
     }
-    return (localStorage.getItem('gpk_particular_subtab') as ParticularSubTab) || 'Select Customer';
+    return 'Select Customer';
   });
+
+  const [performaInitialSubTab, setPerformaInitialSubTab] = useState<'Create Performa' | 'Customer Performa List'>('Create Performa');
+  const [particularNavKey, setParticularNavKey] = useState(0);
+  const [performaNavKey, setPerformaNavKey] = useState(0);
+  const [visitedTabs, setVisitedTabs] = useState<Record<string, boolean>>(() => ({
+    [activeTab]: true,
+  }));
+
+  const activateTab = (tab: NavTab) => {
+    setActiveTab(tab);
+    localStorage.setItem('gpk_active_tab', tab);
+    setVisitedTabs((prev) => (prev[tab] ? prev : { ...prev, [tab]: true }));
+  };
 
   const handleLoginSuccess = (user: AuthUser) => {
     setCurrentUser(user);
     setIsAuthenticated(true);
+    setCompanySubView('list');
+    setCustomerSubView('list');
     if (user.role === 'user') {
       const custName = user.customerName || user.username;
       setSelectedCustomerName(custName);
-      localStorage.setItem('gpk_active_customer', custName);
-      setActiveTab('Particulars');
-      localStorage.setItem('gpk_active_tab', 'Particulars');
       setParticularInitialSubTab('Account Details');
+      setVisitedTabs({ Particulars: true });
+      activateTab('Particulars');
     } else {
-      setActiveTab('Customers');
-      localStorage.setItem('gpk_active_tab', 'Customers');
+      setSelectedCustomerName('');
+      setParticularInitialSubTab('Select Customer');
+      setVisitedTabs({ Customers: true });
+      activateTab('Customers');
     }
   };
 
@@ -102,11 +114,16 @@ function App() {
     localStorage.removeItem('gpk_company_subview');
     localStorage.removeItem('gpk_customer_subview');
     localStorage.removeItem('gpk_particular_subtab');
+    localStorage.removeItem('gpk_performa_subtab');
     localStorage.removeItem('gpk_active_customer');
     localStorage.removeItem('dheeksha_auth_token');
     localStorage.removeItem('dheeksha_auth_user');
     localStorage.removeItem('dheeksha_active_tab');
     localStorage.removeItem('dheeksha_active_customer');
+    setVisitedTabs({});
+    setSelectedCustomerName('');
+    setCompanySubView('list');
+    setCustomerSubView('list');
     setCurrentUser(null);
     setIsAuthenticated(false);
   };
@@ -118,52 +135,23 @@ function App() {
     if (tab === 'Settings' && currentUser?.role !== 'superadmin') {
       return;
     }
-    setActiveTab(tab);
-    localStorage.setItem('gpk_active_tab', tab);
-    if (tab === 'Performa' && currentUser?.role !== 'user') {
-      setSelectedCustomerName('');
-      localStorage.removeItem('gpk_active_customer');
-    }
-    if (tab === 'Particulars') {
-      if (currentUser?.role === 'user') {
-        const custName = currentUser.customerName || currentUser.username;
-        setSelectedCustomerName(custName);
-        setParticularInitialSubTab('Account Details');
-      } else {
-        setSelectedCustomerName('');
-        localStorage.removeItem('gpk_active_customer');
-        setParticularInitialSubTab('Select Customer');
-        localStorage.setItem('gpk_particular_subtab', 'Select Customer');
-      }
-    }
-    if (tab === 'Company') {
-      setCompanySubView('list');
-      localStorage.setItem('gpk_company_subview', 'list');
-    }
-    if (tab === 'Customers') {
-      setCustomerSubView('list');
-      localStorage.setItem('gpk_customer_subview', 'list');
-    }
+    activateTab(tab);
   };
 
   const handleSetCompanySubView = (view: 'list' | 'add') => {
     setCompanySubView(view);
-    localStorage.setItem('gpk_company_subview', view);
   };
 
   const handleSetCustomerSubView = (view: 'list' | 'add') => {
     setCustomerSubView(view);
-    localStorage.setItem('gpk_customer_subview', view);
   };
 
   const handleCustomerSelectedForParticular = (customerName: string, subTab?: ParticularSubTab) => {
     setSelectedCustomerName(customerName);
-    localStorage.setItem('gpk_active_customer', customerName);
     const targetSubTab = subTab || 'Account Details';
     setParticularInitialSubTab(targetSubTab);
-    localStorage.setItem('gpk_particular_subtab', targetSubTab);
-    setActiveTab('Particulars');
-    localStorage.setItem('gpk_active_tab', 'Particulars');
+    setParticularNavKey((k) => k + 1);
+    activateTab('Particulars');
   };
 
   if (!isAuthenticated) {
@@ -204,59 +192,82 @@ function App() {
 
         <Box component="main" sx={{ flexGrow: 1, width: '100%' }}>
           {/* Performa Tab (Admin & Super Admin only) */}
-          {activeTab === 'Performa' && currentUser?.role !== 'user' && (
-            <PerformaPage
-              initialCustomerName={effectiveCustomerName}
-              onNavigateAllPerforma={() => handleSelectTab('All Performa')}
-              onSelectCustomerForBill={handleCustomerSelectedForParticular}
-            />
+          {visitedTabs['Performa'] && currentUser?.role !== 'user' && (
+            <Box sx={{ display: activeTab === 'Performa' ? 'block' : 'none' }}>
+              <PerformaPage
+                initialCustomerName={effectiveCustomerName}
+                initialSubTab={performaInitialSubTab}
+                navigationKey={performaNavKey}
+                isActive={activeTab === 'Performa'}
+                onNavigateAllPerforma={() => handleSelectTab('All Performa')}
+                onSelectCustomerForBill={handleCustomerSelectedForParticular}
+              />
+            </Box>
           )}
 
           {/* All Performa Tab (Customers see only their own performas) */}
-          {activeTab === 'All Performa' && (
-            <AllPerformaPage
-              onAddNewPerforma={() => handleSelectTab('Performa')}
-              onSelectCustomerForBill={handleCustomerSelectedForParticular}
-              customerFilter={currentUser?.role === 'user' ? effectiveCustomerName : undefined}
-              userRole={currentUser?.role}
-            />
+          {visitedTabs['All Performa'] && (
+            <Box sx={{ display: activeTab === 'All Performa' ? 'block' : 'none' }}>
+              <AllPerformaPage
+                onAddNewPerforma={() => {
+                  setPerformaInitialSubTab('Create Performa');
+                  setPerformaNavKey((k) => k + 1);
+                  activateTab('Performa');
+                }}
+                onSelectCustomerForBill={handleCustomerSelectedForParticular}
+                customerFilter={currentUser?.role === 'user' ? effectiveCustomerName : undefined}
+                userRole={currentUser?.role}
+              />
+            </Box>
           )}
 
           {/* Pending Cases Tab (Admin & Super Admin only) */}
-          {activeTab === 'Pending Cases' && currentUser?.role !== 'user' && (
-            <PendingCasesPage
-              onSelectCustomerForBill={handleCustomerSelectedForParticular}
-              onNavigateToCustomerPerforma={(custName) => {
-                setSelectedCustomerName(custName);
-                setActiveTab('Performa');
-              }}
-              userRole={currentUser?.role}
-            />
+          {visitedTabs['Pending Cases'] && currentUser?.role !== 'user' && (
+            <Box sx={{ display: activeTab === 'Pending Cases' ? 'block' : 'none' }}>
+              <PendingCasesPage
+                onSelectCustomerForBill={handleCustomerSelectedForParticular}
+                onNavigateToCustomerPerforma={(custName) => {
+                  setSelectedCustomerName(custName);
+                  setPerformaInitialSubTab('Customer Performa List');
+                  setPerformaNavKey((k) => k + 1);
+                  activateTab('Performa');
+                }}
+                userRole={currentUser?.role}
+              />
+            </Box>
           )}
 
           {/* Particulars Tab (Customer views only their own ledger) */}
-          {activeTab === 'Particulars' && (
-            <ParticularsPage
-              initialCustomerName={effectiveCustomerName}
-              initialSubTab={currentUser?.role === 'user' ? 'Account Details' : particularInitialSubTab}
-              userRole={currentUser?.role}
-              onNavigateToPerforma={(custName) => {
-                if (custName) {
-                  setSelectedCustomerName(custName);
-                  localStorage.setItem('gpk_active_customer', custName);
-                }
-                setActiveTab('Performa');
-                localStorage.setItem('gpk_active_tab', 'Performa');
-              }}
-            />
+          {visitedTabs['Particulars'] && (
+            <Box sx={{ display: activeTab === 'Particulars' ? 'block' : 'none' }}>
+              <ParticularsPage
+                initialCustomerName={effectiveCustomerName}
+                initialSubTab={currentUser?.role === 'user' ? 'Account Details' : particularInitialSubTab}
+                navigationKey={particularNavKey}
+                isActive={activeTab === 'Particulars'}
+                userRole={currentUser?.role}
+                onNavigateToPerforma={(custName) => {
+                  if (custName) {
+                    setSelectedCustomerName(custName);
+                  }
+                  setPerformaInitialSubTab('Customer Performa List');
+                  setPerformaNavKey((k) => k + 1);
+                  activateTab('Performa');
+                }}
+              />
+            </Box>
           )}
 
           {/* Product Tab (Admin & Superadmin only) */}
-          {activeTab === 'Product' && currentUser?.role !== 'user' && <ProductsPage />}
+          {visitedTabs['Product'] && currentUser?.role !== 'user' && (
+            <Box sx={{ display: activeTab === 'Product' ? 'block' : 'none' }}>
+              <ProductsPage />
+            </Box>
+          )}
 
           {/* Company Tab (Admin & Superadmin only) */}
-          {activeTab === 'Company' && currentUser?.role !== 'user' && (
-            <>
+          {visitedTabs['Company'] && currentUser?.role !== 'user' && (
+            <Box sx={{ display: activeTab === 'Company' ? 'block' : 'none' }}>
               {companySubView === 'add' ? (
                 <AddCompanyPage
                   onCancel={() => handleSetCompanySubView('list')}
@@ -266,24 +277,26 @@ function App() {
               ) : (
                 <CompaniesPage onAddCompany={() => handleSetCompanySubView('add')} />
               )}
-            </>
+            </Box>
           )}
 
           {/* All Customers Tab (Super Admin sees all metrics, Admin has revenue cards hidden) */}
-          {activeTab === 'All Customers' && currentUser?.role !== 'user' && (
-            <AllCustomersPage
-              onAddNewCustomer={() => {
-                handleSelectTab('Customers');
-                handleSetCustomerSubView('add');
-              }}
-              onSelectCustomerForParticular={handleCustomerSelectedForParticular}
-              userRole={currentUser?.role}
-            />
+          {visitedTabs['All Customers'] && currentUser?.role !== 'user' && (
+            <Box sx={{ display: activeTab === 'All Customers' ? 'block' : 'none' }}>
+              <AllCustomersPage
+                onAddNewCustomer={() => {
+                  handleSetCustomerSubView('add');
+                  activateTab('Customers');
+                }}
+                onSelectCustomerForParticular={handleCustomerSelectedForParticular}
+                userRole={currentUser?.role}
+              />
+            </Box>
           )}
 
           {/* Customers Tab (Admin & Super Admin only) */}
-          {activeTab === 'Customers' && currentUser?.role !== 'user' && (
-            <>
+          {visitedTabs['Customers'] && currentUser?.role !== 'user' && (
+            <Box sx={{ display: activeTab === 'Customers' ? 'block' : 'none' }}>
               {customerSubView === 'add' ? (
                 <AddCustomerPage
                   onCancel={() => handleSetCustomerSubView('list')}
@@ -296,12 +309,14 @@ function App() {
                   userRole={currentUser?.role}
                 />
               )}
-            </>
+            </Box>
           )}
 
           {/* Settings Tab (Super Admin only) */}
-          {activeTab === 'Settings' && currentUser?.role === 'superadmin' && (
-            <SettingsPage currentUser={currentUser} />
+          {visitedTabs['Settings'] && currentUser?.role === 'superadmin' && (
+            <Box sx={{ display: activeTab === 'Settings' ? 'block' : 'none' }}>
+              <SettingsPage currentUser={currentUser} />
+            </Box>
           )}
 
           {/* Other Tabs */}
