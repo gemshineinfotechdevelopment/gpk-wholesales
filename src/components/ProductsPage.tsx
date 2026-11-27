@@ -24,7 +24,6 @@ import {
   Alert,
   Card,
   CardContent,
-  Badge,
 } from '@mui/material';
 import SearchRoundedIcon from '@mui/icons-material/SearchRounded';
 import ClearRoundedIcon from '@mui/icons-material/ClearRounded';
@@ -41,10 +40,8 @@ import ArrowForwardRoundedIcon from '@mui/icons-material/ArrowForwardRounded';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import PhoneOutlinedIcon from '@mui/icons-material/PhoneOutlined';
 import TableRowsRoundedIcon from '@mui/icons-material/TableRowsRounded';
-import ShoppingBagRoundedIcon from '@mui/icons-material/ShoppingBagRounded';
-import { ProductsApi, CompaniesApi, OrdersApi, type AuthUser } from '../services/api';
+import { ProductsApi, CompaniesApi, type AuthUser } from '../services/api';
 import { CustomerOrderView } from './CustomerOrderView';
-import { SuperadminOrdersModal } from './SuperadminOrdersModal';
 import { printProductsListDirectly } from '../utils/printUtils';
 import {
   parseProductsExcel,
@@ -92,10 +89,6 @@ export const ProductsPage: FC<ProductsPageProps> = ({ user }) => {
   const [companies, setCompanies] = useState<CompanyItem[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // Superadmin Customer Orders Modal & Counter
-  const [customerOrdersOpen, setCustomerOrdersOpen] = useState(false);
-  const [pendingOrdersCount, setPendingOrdersCount] = useState(0);
-
   // Active Company drill-down (null = show companies list, non-null = inside company view)
   const [activeCompany, setActiveCompany] = useState<CompanyItem | null>(null);
 
@@ -137,16 +130,6 @@ export const ProductsPage: FC<ProductsPageProps> = ({ user }) => {
       ]);
       setProducts(prodsData || []);
       setCompanies(compsData || []);
-
-      // Check customer orders count (only for Superadmin)
-      if (user?.role === 'superadmin') {
-        OrdersApi.getAll().then((orders) => {
-          const pending = (orders || []).filter((o) => o.status === 'PENDING').length;
-          setPendingOrdersCount(pending);
-        }).catch(() => {});
-      } else {
-        setPendingOrdersCount(0);
-      }
     } catch (err) {
       console.error('Failed to fetch products/companies:', err);
     } finally {
@@ -518,31 +501,6 @@ export const ProductsPage: FC<ProductsPageProps> = ({ user }) => {
               flexWrap: { xs: 'wrap', sm: 'nowrap' },
             }}
           >
-            {/* Customer Orders View Button for Superadmin */}
-            <Badge badgeContent={pendingOrdersCount} color="error">
-              <Button
-                variant="contained"
-                disableElevation
-                onClick={() => setCustomerOrdersOpen(true)}
-                startIcon={<ShoppingBagRoundedIcon sx={{ fontSize: 18 }} />}
-                sx={{
-                  backgroundColor: '#FEF08A',
-                  color: '#854D0E !important',
-                  fontSize: '12.5px',
-                  fontWeight: 800,
-                  textTransform: 'none',
-                  px: 1.6,
-                  height: '36px',
-                  borderRadius: '6px',
-                  whiteSpace: 'nowrap',
-                  border: '1px solid #FDE047',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.08)',
-                  '&:hover': { backgroundColor: '#FDE047' },
-                }}
-              >
-                Customer Orders
-              </Button>
-            </Badge>
             {/* When viewing a company's products */}
             {activeCompany && (
               <>
@@ -1805,16 +1763,6 @@ export const ProductsPage: FC<ProductsPageProps> = ({ user }) => {
           </Button>
         </DialogActions>
       </Dialog>
-
-      {/* Superadmin Customer Orders Management Modal */}
-      <SuperadminOrdersModal
-        open={customerOrdersOpen}
-        onClose={() => {
-          setCustomerOrdersOpen(false);
-          fetchInitialData();
-        }}
-        userRole={user?.role}
-      />
     </Box>
   );
 };
