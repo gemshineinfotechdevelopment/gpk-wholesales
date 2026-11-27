@@ -37,7 +37,6 @@ import AddCircleOutlineRoundedIcon from '@mui/icons-material/AddCircleOutlineRou
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import DeleteOutlineRoundedIcon from '@mui/icons-material/DeleteOutlineRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
-import CancelOutlinedIcon from '@mui/icons-material/CancelOutlined';
 import AccountBalanceWalletRoundedIcon from '@mui/icons-material/AccountBalanceWalletRounded';
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
@@ -89,6 +88,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
   const [selectedCustomerFilter, setSelectedCustomerFilter] = useState<string>(() => customerFilter || 'ALL');
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('ALL');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState<string>('ALL');
+  const [selectedSourceFilter, setSelectedSourceFilter] = useState<string>('ALL');
   const [startDate, setStartDate] = useState<string>('');
   const [endDate, setEndDate] = useState<string>('');
 
@@ -178,6 +178,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
         customerName: effectiveCustomer,
         companyName: selectedCompanyFilter,
         status: selectedStatusFilter,
+        source: selectedSourceFilter !== 'ALL' ? selectedSourceFilter : undefined,
         search: currentSearch.trim() || undefined,
         startDate: startDate || undefined,
         endDate: endDate || undefined,
@@ -223,7 +224,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
       fetchPerformas();
     }, 350);
     return () => clearTimeout(timer);
-  }, [searchQuery, selectedCustomerFilter, selectedCompanyFilter, selectedStatusFilter, startDate, endDate, sortBy, sortOrder]);
+  }, [searchQuery, selectedCustomerFilter, selectedCompanyFilter, selectedStatusFilter, selectedSourceFilter, startDate, endDate, sortBy, sortOrder]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -235,6 +236,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
     setSelectedCustomerFilter(customerFilter || 'ALL');
     setSelectedCompanyFilter('ALL');
     setSelectedStatusFilter('ALL');
+    setSelectedSourceFilter('ALL');
     setStartDate('');
     setEndDate('');
     setSortBy('date');
@@ -343,6 +345,17 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
   // Open Edit Performa Modal
   const handleOpenEditModal = async (performa: any) => {
     if (userRole === 'user') return;
+    const isCustomerOrder =
+      performa.createdBy === 'Customer Order' ||
+      (performa.notes && /Customer Online Order/i.test(performa.notes));
+    if (userRole === 'admin' && isCustomerOrder) {
+      setToast({
+        open: true,
+        message: 'Customer Online Order performas can only be edited by Superadmin.',
+        severity: 'info',
+      });
+      return;
+    }
     try {
       setEditLoading(true);
       setEditModalOpen(true);
@@ -674,19 +687,6 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
     }
   };
 
-  // Cancel Performa
-  const handleCancelPerforma = async (id: string, num: string) => {
-    if (userRole === 'user') return;
-    if (!window.confirm(`Are you sure you want to cancel Performa ${num}?`)) return;
-    try {
-      await PerformasApi.cancel(id);
-      setToast({ open: true, message: `Performa ${num} cancelled successfully`, severity: 'success' });
-      fetchPerformas();
-    } catch (err: any) {
-      setToast({ open: true, message: err?.message || 'Failed to cancel', severity: 'error' });
-    }
-  };
-
   // Delete Performa
   const handleDeletePerforma = async (id: string, num: string) => {
     if (userRole === 'user') return;
@@ -881,7 +881,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
             gridTemplateColumns: {
               xs: '1fr',
               sm: '1fr 1fr',
-              md: '1.4fr 1fr 1fr 1fr 1.1fr 0.9fr 0.9fr auto auto',
+              md: '1.3fr 1fr 1fr 1fr 1fr 1.1fr 0.9fr 0.9fr auto auto',
             },
             gap: 1.5,
             alignItems: 'center',
@@ -979,6 +979,20 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
             </Select>
           </FormControl>
 
+          {/* Order Source Filter Dropdown */}
+          <FormControl size="small" fullWidth>
+            <InputLabel>Order Source</InputLabel>
+            <Select
+              value={selectedSourceFilter}
+              label="Order Source"
+              onChange={(e) => setSelectedSourceFilter(e.target.value)}
+            >
+              <MenuItem value="ALL">All Sources</MenuItem>
+              <MenuItem value="ADMIN">Admin Created</MenuItem>
+              <MenuItem value="CUSTOMER">Customer Online Orders</MenuItem>
+            </Select>
+          </FormControl>
+
           {/* Sort By Dropdown */}
           <FormControl size="small" fullWidth>
             <InputLabel>Sort By</InputLabel>
@@ -995,8 +1009,6 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
               <MenuItem value="date-asc">Date (Oldest First)</MenuItem>
               <MenuItem value="company-asc">Company (A to Z)</MenuItem>
               <MenuItem value="company-desc">Company (Z to A)</MenuItem>
-              <MenuItem value="customer-asc">Customer (A to Z)</MenuItem>
-              <MenuItem value="customer-desc">Customer (Z to A)</MenuItem>
               <MenuItem value="value-desc">Performa Value (High to Low)</MenuItem>
               <MenuItem value="value-asc">Performa Value (Low to High)</MenuItem>
               <MenuItem value="advance-desc">Advance (High to Low)</MenuItem>
@@ -1109,13 +1121,7 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                   </TableSortLabel>
                 </TableCell>
                 <TableCell sx={{ fontWeight: 800, color: '#475569' }}>
-                  <TableSortLabel
-                    active={sortBy === 'customer'}
-                    direction={sortBy === 'customer' ? sortOrder : 'asc'}
-                    onClick={() => handleSortRequest('customer')}
-                  >
-                    {userRole === 'user' ? 'Brand / Company' : 'Customer'}
-                  </TableSortLabel>
+                  {userRole === 'user' ? 'Brand / Company' : 'Customer'}
                 </TableCell>
                 <TableCell sx={{ fontWeight: 800, textAlign: 'right', color: '#475569' }}>
                   <TableSortLabel
@@ -1171,9 +1177,40 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                   return (
                     <TableRow key={p._id} hover sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
                       <TableCell>
-                        <Typography sx={{ fontWeight: 800, color: '#1D4ED8', fontSize: '13.5px' }}>
-                          {p.performaNumber}
-                        </Typography>
+                        <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 0.4 }}>
+                          <Typography sx={{ fontWeight: 800, color: '#1D4ED8', fontSize: '13.5px' }}>
+                            {p.performaNumber}
+                          </Typography>
+                          {p.createdBy === 'Customer Order' || (p.notes && /Customer Online Order/i.test(p.notes)) ? (
+                            <Chip
+                              label="ONLINE ORDER"
+                              size="small"
+                              sx={{
+                                height: '18px',
+                                fontSize: '9px',
+                                fontWeight: 800,
+                                backgroundColor: '#EFF6FF',
+                                color: '#1D4ED8',
+                                border: '1px solid #BFDBFE',
+                                px: 0.2,
+                              }}
+                            />
+                          ) : (
+                            <Chip
+                              label="ADMIN"
+                              size="small"
+                              sx={{
+                                height: '18px',
+                                fontSize: '9px',
+                                fontWeight: 700,
+                                backgroundColor: '#F1F5F9',
+                                color: '#475569',
+                                border: '1px solid #E2E8F0',
+                                px: 0.2,
+                              }}
+                            />
+                          )}
+                        </Box>
                       </TableCell>
                       <TableCell sx={{ color: '#475569', fontSize: '13px', whiteSpace: 'nowrap' }}>{p.date}</TableCell>
                       <TableCell>
@@ -1248,19 +1285,46 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                                 </IconButton>
                               </Tooltip>
 
-                              <Tooltip title="Edit Performa">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleOpenEditModal(p)}
-                                  sx={{
-                                    color: '#2563EB',
-                                    backgroundColor: '#F0F9FF',
-                                    '&:hover': { backgroundColor: '#BAE6FD' },
-                                  }}
-                                >
-                                  <ModeEditOutlineRoundedIcon sx={{ fontSize: 18 }} />
-                                </IconButton>
-                              </Tooltip>
+                              {(() => {
+                                const isCustomerOrder =
+                                  p.createdBy === 'Customer Order' ||
+                                  (p.notes && /Customer Online Order/i.test(p.notes));
+                                const canEdit = userRole === 'superadmin' || !isCustomerOrder;
+                                if (!canEdit) {
+                                  return (
+                                    <Tooltip title="Customer Online Orders can only be edited by Superadmin">
+                                      <span>
+                                        <IconButton
+                                          size="small"
+                                          disabled
+                                          sx={{
+                                            color: '#94A3B8 !important',
+                                            backgroundColor: '#F1F5F9',
+                                            cursor: 'not-allowed',
+                                          }}
+                                        >
+                                          <ModeEditOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                                        </IconButton>
+                                      </span>
+                                    </Tooltip>
+                                  );
+                                }
+                                return (
+                                  <Tooltip title="Edit Performa">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleOpenEditModal(p)}
+                                      sx={{
+                                        color: '#2563EB',
+                                        backgroundColor: '#F0F9FF',
+                                        '&:hover': { backgroundColor: '#BAE6FD' },
+                                      }}
+                                    >
+                                      <ModeEditOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                                    </IconButton>
+                                  </Tooltip>
+                                );
+                              })()}
 
                               <Tooltip title="Share on WhatsApp">
                                 <IconButton
@@ -1281,14 +1345,6 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                                   <PrintOutlinedIcon sx={{ fontSize: 18 }} />
                                 </IconButton>
                               </Tooltip>
-
-                              {p.status !== 'CANCELLED' && p.status !== 'COMPLETED' && (
-                                <Tooltip title="Cancel Performa">
-                                  <IconButton size="small" onClick={() => handleCancelPerforma(p._id, p.performaNumber)} sx={{ color: '#D97706' }}>
-                                    <CancelOutlinedIcon sx={{ fontSize: 18 }} />
-                                  </IconButton>
-                                </Tooltip>
-                              )}
 
                               <Tooltip title="Delete Performa">
                                 <IconButton size="small" onClick={() => handleDeletePerforma(p._id, p.performaNumber)} sx={{ color: '#DC2626', '&:hover': { backgroundColor: '#FEE2E2' } }}>
@@ -1651,14 +1707,14 @@ export const AllPerformaPage: FC<AllPerformaPageProps> = ({
                     }}
                   />
                   <TextField
-                    label="Tax (18% on ₹2500/case)"
+                    label="Tax"
                     size="small"
                     value={editTax}
                     onChange={(e) => setEditTax(e.target.value)}
                     placeholder="e.g. 18%"
-                    helperText={editTaxVal > 0 ? `+ ₹${editTaxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (2,500 × ${editTotalCases} cases × ${editTax.includes('%') ? editTax : `${editTax}%`})` : 'Formula: 2500 × Cases × 18%'}
+                    helperText={editTaxVal > 0 ? `+ ₹${editTaxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}` : undefined}
                     slotProps={{
-                      formHelperText: { sx: { color: editTaxVal > 0 ? '#166534' : '#64748B', fontWeight: 600 } },
+                      formHelperText: { sx: { color: editTaxVal > 0 ? '#166534' : undefined, fontWeight: 600 } },
                     }}
                   />
                 </Box>

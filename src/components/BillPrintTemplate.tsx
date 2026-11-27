@@ -94,7 +94,7 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
     if (rawTaxStr.includes('%') || taxNum <= 100) {
       const casesVal = parseFloat(String(bill.caseCount || '0')) || (Array.isArray(bill.products) ? bill.products.reduce((acc: number, p: any) => acc + (parseFloat(p.quantity) || 0), 0) : 0);
       taxAmt = (2500 * casesVal * taxNum) / 100;
-      taxLabel = `Tax Amount (${taxNum}% on ₹2500/case)`;
+      taxLabel = `Tax Amount (${taxNum}%)`;
     } else {
       taxAmt = taxNum;
       taxLabel = `Tax Amount (₹${taxNum.toLocaleString('en-IN')})`;
@@ -235,8 +235,8 @@ export const BillPrintTemplate: React.FC<BillPrintTemplateProps> = ({ bill }) =>
       >
         <thead>
           <tr style={{ backgroundColor: '#0F172A', color: '#FFFFFF' }}>
-            <th style={{ border: '1px solid #0F172A', padding: '8px 6px', textAlign: 'center', width: '40px', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase' }}>
-              #
+            <th style={{ border: '1px solid #0F172A', padding: '8px 6px', textAlign: 'center', width: '45px', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase' }}>
+              S.No
             </th>
             <th style={{ border: '1px solid #0F172A', padding: '8px 10px', textAlign: 'left', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase' }}>
               Particular / Product Description

@@ -294,6 +294,19 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     'HDFC Bank A/C',
   ];
 
+  const DEFAULT_BANK_NAMES = [
+    'State Bank of India',
+    'HDFC Bank',
+    'ICICI Bank',
+    'Axis Bank',
+    'Canara Bank',
+    'Indian Bank',
+    'Kotak Mahindra Bank',
+    'Punjab National Bank',
+    'Bank of Baroda',
+    'Union Bank of India',
+  ];
+
   const [transferAccountOptions, setTransferAccountOptions] = useState<string[]>(() => {
     try {
       const saved = localStorage.getItem('gpk_transfer_account_names');
@@ -307,6 +320,21 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
       console.error('Failed to load transfer accounts:', e);
     }
     return DEFAULT_TRANSFER_ACCOUNTS;
+  });
+
+  const [bankNameOptions, setBankNameOptions] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('gpk_bank_names');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load bank names:', e);
+    }
+    return DEFAULT_BANK_NAMES;
   });
 
   const [addCreditCustomerName, setAddCreditCustomerName] = useState<string>('');
@@ -323,6 +351,18 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     } catch (e) {}
     return 'GPK Main Current A/C';
   });
+  const [creditBankName, setCreditBankName] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('gpk_bank_names');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed[0];
+        }
+      }
+    } catch (e) {}
+    return 'State Bank of India';
+  });
   const [creditAmount, setCreditAmount] = useState<string>('');
   const [creditDate, setCreditDate] = useState<string>(() => {
     const today = new Date();
@@ -331,6 +371,8 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   const [creditLoading, setCreditLoading] = useState(false);
   const [openAddAccountDialog, setOpenAddAccountDialog] = useState(false);
   const [newAccountNameInput, setNewAccountNameInput] = useState('');
+  const [openAddBankDialog, setOpenAddBankDialog] = useState(false);
+  const [newBankNameInput, setNewBankNameInput] = useState('');
 
   const handleSaveNewAccount = () => {
     const trimmed = newAccountNameInput.trim();
@@ -363,15 +405,47 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     });
   };
 
+  const handleSaveNewBank = () => {
+    const trimmed = newBankNameInput.trim();
+    if (!trimmed) return;
+    setBankNameOptions((prev) => {
+      const updated = prev.includes(trimmed) ? prev : [...prev, trimmed];
+      try {
+        localStorage.setItem('gpk_bank_names', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setCreditBankName(trimmed);
+    setNewBankNameInput('');
+  };
+
+  const handleDeleteBankOption = (nameToDelete: string) => {
+    setBankNameOptions((prev) => {
+      const updated = prev.filter((name) => name !== nameToDelete);
+      try {
+        localStorage.setItem('gpk_bank_names', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
+    setCreditBankName((prev) => {
+      if (prev === nameToDelete) {
+        const remaining = bankNameOptions.filter((name) => name !== nameToDelete);
+        return remaining[0] || '';
+      }
+      return prev;
+    });
+  };
+
   // Bill Print Modal State
   const [selectedBillForPrint, setSelectedBillForPrint] = useState<BillPrintData | null>(null);
   const [printModalOpen, setPrintModalOpen] = useState(false);
   const [openAccountDateModal, setOpenAccountDateModal] = useState(false);
   const [openParticularDateModal, setOpenParticularDateModal] = useState(false);
 
-  // Edit Particular Modal State
+  // Edit Particular Modal State & Direct Tab Edit State
+  const [editingBillId, setEditingBillId] = useState<string | null>(null);
+  const [editingBillNumber, setEditingBillNumber] = useState<string>('');
   const [openEditParticularModal, setOpenEditParticularModal] = useState(false);
-  const [editingParticularId, setEditingParticularId] = useState<string | null>(null);
   const [editBillForm, setEditBillForm] = useState<{
     billNo: string;
     date: string;
@@ -1013,7 +1087,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     return net.toFixed(2);
   }, [subtotalAmount, discountVal, packingVal, taxVal]);
 
-  // Subtab 2: Submit Particular Bill
+  // Subtab 2: Submit Particular Bill (Create or Update)
   const handleCreateParticular = async () => {
     if (createLoading) return;
     if (!billNo || !billNo.trim()) {
@@ -1026,6 +1100,68 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     }
     if (productRows.length === 0) {
       alert('Please add at least one Product Item');
+      return;
+    }
+
+    // If editing existing bill from "Create Particular" tab:
+    if (editingBillId) {
+      try {
+        setCreateLoading(true);
+        const finalBillCompany = company ? company.trim() : (productRows.find((p) => p.companyName)?.companyName || '');
+        await ParticularsApi.update(editingBillId, {
+          customerName: currentCustomerName || 'General',
+          caseCount: caseCount || '0',
+          companyName: finalBillCompany,
+          discount: discount || '0',
+          transport: transport || '-',
+          packing: packing || '0',
+          billNo: billNo.trim(),
+          tax: tax || '0',
+          amount: subtotalAmount.toFixed(2),
+          total: finalTotalAmount,
+          date: date,
+          products: productRows.map((p) => ({
+            ...p,
+            companyName: p.companyName || finalBillCompany,
+          })),
+        });
+
+        const assignedBillNo = billNo.trim();
+        const targetCustName = currentCustomerName || 'Customer';
+        const successMsg = `Bill #${assignedBillNo} for ${targetCustName} updated successfully!`;
+        alert(successMsg);
+        setToast({ open: true, message: successMsg, severity: 'success' });
+
+        setEditingBillId(null);
+        setEditingBillNumber('');
+        setBillNo('');
+        setCompany('');
+        setSelectedProduct('');
+        setProductRows([]);
+        setCaseCount('0');
+        setDiscount('');
+        setTransport('');
+        setPacking('');
+        setTax('');
+
+        const createdCustomer = currentCustomerName || 'General';
+        setFilterCustomer(createdCustomer);
+        setFilterParticularCompany('ALL');
+        fetchAccounts(createdCustomer);
+        fetchParticulars(createdCustomer);
+        if (currentCustomerName) {
+          PerformasApi.getCustomerSummary(currentCustomerName)
+            .then((res) => setPerformaSummary(res))
+            .catch(() => {});
+        }
+
+        setActiveSubTab('Particular Details');
+      } catch (err) {
+        console.error('Failed to update particular bill:', err);
+        alert('Error updating particular bill');
+      } finally {
+        setCreateLoading(false);
+      }
       return;
     }
 
@@ -1138,8 +1274,9 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
         date: creditDate,
         paymentMode: creditPaymentMode || 'Bank Transfer',
         depositAccount: creditDepositAccount ? creditDepositAccount.trim() : (transferAccountOptions[0] || 'GPK Main Current A/C'),
+        bankName: creditBankName ? creditBankName.trim() : '',
         reference: '',
-        notes: `Payment via ${creditPaymentMode || 'Bank Transfer'}${creditDepositAccount ? ` to A/C: ${creditDepositAccount.trim()}` : ''}`,
+        notes: `Payment via ${creditPaymentMode || 'Bank Transfer'}${creditBankName ? ` (${creditBankName.trim()})` : ''}${creditDepositAccount ? ` to A/C: ${creditDepositAccount.trim()}` : ''}`,
       });
 
       alert(res?.message || 'Credit added successfully!');
@@ -1304,31 +1441,77 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     }
   };
 
-  // Edit Particular Handlers
+  // Edit Particular Handlers - Direct In-Tab Editing in "Create Particular"
   const handleOpenEditParticular = (row: any) => {
     if (isCustomer) return;
     const rowId = row._id || row.id || '';
-    setEditingParticularId(rowId);
-    setEditBillForm({
-      billNo: row.billNo || '',
-      date: row.date || '',
-      customerName: row.customerName || '',
-      companyName: row.companyName || '',
-      transport: row.transport && row.transport !== '-' ? row.transport : '',
-      caseCount: String(row.caseCount || '0'),
-      discount: String(row.discount || '0'),
-      packing: String(row.packing || '0'),
-      tax: String(row.tax || '0'),
-      products: (row.products || []).map((p: any, idx: number) => ({
-        id: p._id || p.id || `edit-prod-${idx}`,
-        particular: p.particular || p.particularName || p.name || '',
-        quantity: String(p.quantity || '0'),
-        rate: String(p.rate || '0'),
-        pktUnit: p.pktUnit || p.pkt || '-',
-        amount: String(p.amount || '0'),
-      })),
+    const bNo = row.billNo || '';
+    setEditingBillId(rowId);
+    setEditingBillNumber(bNo);
+    setBillNo(bNo);
+    setDate(row.date || '');
+
+    const custName = row.customerName || '';
+    setCurrentCustomerName(custName);
+    try {
+      localStorage.setItem('gpk_active_customer', custName);
+    } catch {}
+
+    const matchedCustomer = customerOptions.find(
+      (c) => c.name.toLowerCase() === custName.toLowerCase()
+    );
+    if (matchedCustomer) {
+      setSelectedCustomerId(matchedCustomer.id);
+      setFilterCustomer(matchedCustomer.name);
+      setAddCreditCustomerName(matchedCustomer.name);
+    }
+
+    setCompany(row.companyName || '');
+    setTransport(row.transport && row.transport !== '-' ? row.transport : '');
+    setCaseCount(String(row.caseCount || '0'));
+    setDiscount(String(row.discount || '0'));
+    setPacking(String(row.packing || '0'));
+    setTax(String(row.tax || '0'));
+
+    const mappedProducts: ProductRowItem[] = (row.products || []).map((p: any, idx: number) => ({
+      id: p._id || p.id || `prod-${idx}-${Date.now()}`,
+      particular: p.particular || p.particularName || p.name || '',
+      quantity: String(p.quantity || '0'),
+      rate: String(p.rate || '0'),
+      pktUnit: p.pktUnit || p.pkt || '-',
+      amount: String(p.amount || '0'),
+      isAdditional: p.isAdditional || false,
+      companyName: p.companyName || row.companyName || '',
+    }));
+    setProductRows(mappedProducts);
+
+    if (custName) {
+      PerformasApi.getCustomerSummary(custName)
+        .then((res) => setPerformaSummary(res))
+        .catch(() => {});
+    }
+
+    setActiveSubTab('Create Particular');
+    setToast({
+      open: true,
+      message: `Bill #${bNo} loaded into Create Particular for editing.`,
+      severity: 'info',
     });
-    setOpenEditParticularModal(true);
+  };
+
+  const handleCancelEditParticular = () => {
+    setEditingBillId(null);
+    setEditingBillNumber('');
+    setBillNo('');
+    setCompany('');
+    setSelectedProduct('');
+    setProductRows([]);
+    setCaseCount('0');
+    setDiscount('');
+    setTransport('');
+    setPacking('');
+    setTax('');
+    setActiveSubTab('Particular Details');
   };
 
   const handleAddEditProductRow = () => {
@@ -1418,10 +1601,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   }, [editSubtotal, editDiscountVal, editPackingVal, editTaxVal]);
 
   const handleSaveEditParticular = async () => {
-    if (isCustomer || !editingParticularId) return;
+    if (isCustomer || !editingBillId) return;
     try {
       setEditBillLoading(true);
-      await ParticularsApi.update(editingParticularId, {
+      await ParticularsApi.update(editingBillId, {
         customerName: editBillForm.customerName,
         companyName: editBillForm.companyName,
         date: editBillForm.date,
@@ -1507,7 +1690,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   },
                 }}
               >
-                {tab}
+                {tab === 'Create Particular' && editingBillId ? `Edit Bill #${editingBillNumber || billNo}` : tab}
               </Typography>
 
               {/* Active Tab Underline Bar */}
@@ -1600,7 +1783,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   options={customerOptions}
                   getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
                   isOptionEqualToValue={(option, val) => option.id === val.id || option.name === val.name}
-                  value={customerOptions.find((c) => c.id === selectedCustomerId) || null}
+                  value={customerOptions.find((c) => c.id === selectedCustomerId || c.name.toLowerCase() === (currentCustomerName || '').toLowerCase()) || null}
                   onChange={(_, val) => {
                     if (val) {
                       setSelectedCustomerId(val.id);
@@ -1700,12 +1883,15 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
           >
             <Box
               sx={{
-                background: 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
+                background: editingBillId
+                  ? 'linear-gradient(135deg, #0369A1 0%, #0284C7 55%, #38BDF8 100%)'
+                  : 'linear-gradient(135deg, #1E3A8A 0%, #2563EB 55%, #38BDF8 100%)',
                 px: 2.2,
                 py: 1.4,
                 minHeight: '48px',
                 display: 'flex',
                 alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
               <Typography
@@ -1716,11 +1902,52 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   letterSpacing: '-0.01em',
                 }}
               >
-                Create Particular - {currentCustomerName || 'Customer'}
+                {editingBillId
+                  ? `Edit Particular Bill #${editingBillNumber || billNo} - ${currentCustomerName || 'Customer'}`
+                  : `Create Particular - ${currentCustomerName || 'Customer'}`}
               </Typography>
+              {editingBillId && (
+                <Chip
+                  label="EDIT MODE"
+                  size="small"
+                  sx={{
+                    backgroundColor: '#FEF08A',
+                    color: '#854D0E',
+                    fontWeight: 800,
+                    fontSize: '10.5px',
+                    height: '20px',
+                  }}
+                />
+              )}
             </Box>
 
             <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', gap: 1.8 }}>
+              {editingBillId && (
+                <Alert
+                  severity="info"
+                  sx={{
+                    backgroundColor: '#F0F9FF',
+                    border: '1px solid #BAE6FD',
+                    color: '#0369A1',
+                    fontSize: '12px',
+                    fontWeight: 600,
+                    borderRadius: '6px',
+                    py: 0.5,
+                  }}
+                  action={
+                    <Button
+                      color="inherit"
+                      size="small"
+                      onClick={handleCancelEditParticular}
+                      sx={{ fontWeight: 700, fontSize: '11px', textTransform: 'none' }}
+                    >
+                      Cancel
+                    </Button>
+                  }
+                >
+                  Editing Bill #{editingBillNumber || billNo}. Update details and click Save below.
+                </Alert>
+              )}
               {/* Date */}
               <Box>
                 <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
@@ -1735,59 +1962,71 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 />
               </Box>
 
-              {/* Customer */}
+              {/* Customer (Locked to Selected Customer from 'Select Customer' tab) */}
               <Box>
-                <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569', mb: 0.5 }}>
-                  Customer *
-                </Typography>
-                <Autocomplete
+                <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
+                  <Typography sx={{ fontSize: '12px', fontWeight: 600, color: '#475569' }}>
+                    Customer *
+                  </Typography>
+                  <Tooltip title="To change customer, please go to 'Select Customer' tab">
+                    <Typography
+                      onClick={() => setActiveSubTab('Select Customer')}
+                      sx={{
+                        fontSize: '11px',
+                        color: '#1D4ED8',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 0.3,
+                        '&:hover': { textDecoration: 'underline', color: '#1E40AF' },
+                      }}
+                    >
+                      Change in 'Select Customer' ↗
+                    </Typography>
+                  </Tooltip>
+                </Box>
+                <TextField
                   fullWidth
                   size="small"
-                  autoHighlight
-                  options={customerOptions}
-                  getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
-                  isOptionEqualToValue={(option, val) => option.id === val.id || option.name === val.name}
-                  value={customerOptions.find((c) => c.name === currentCustomerName) || null}
-                  onChange={(_, val) => {
-                    const name = val ? val.name : '';
-                    setCurrentCustomerName(name);
-                    localStorage.setItem('gpk_active_customer', name);
-                    if (val) {
-                      setSelectedCustomerId(val.id);
-                      setFilterCustomer(val.name);
-                      setAddCreditCustomerName(val.name);
-                    } else {
-                      setSelectedCustomerId('');
-                    }
-                  }}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      placeholder="Search Customer..."
-                      sx={{
-                        backgroundColor: '#FFFFFF',
+                  value={currentCustomerName || ''}
+                  placeholder="No customer selected (Please select in 'Select Customer' tab)"
+                  slotProps={{
+                    input: {
+                      readOnly: true,
+                      sx: {
+                        height: '36px',
                         borderRadius: '6px',
-                        '& .MuiOutlinedInput-root': {
-                          height: '36px',
-                          borderRadius: '6px',
-                          fontSize: '13px',
-                          fontWeight: 600,
-                          color: '#0F172A',
-                          '& fieldset': {
-                            borderColor: '#CBD5E1',
-                          },
-                          '&:hover fieldset': {
-                            borderColor: '#94A3B8',
-                          },
-                          '&.Mui-focused fieldset': {
-                            borderColor: '#1D4ED8',
-                            borderWidth: '1.5px',
-                          },
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        backgroundColor: '#F8FAFC',
+                        color: currentCustomerName ? '#0F172A' : '#94A3B8',
+                        cursor: 'not-allowed',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#CBD5E1',
                         },
-                      }}
-                    />
-                  )}
+                      },
+                    },
+                  }}
                 />
+                {!currentCustomerName && (
+                  <Alert
+                    severity="warning"
+                    action={
+                      <Button
+                        size="small"
+                        color="inherit"
+                        onClick={() => setActiveSubTab('Select Customer')}
+                        sx={{ fontWeight: 700, fontSize: '11px', textTransform: 'none' }}
+                      >
+                        Select Customer
+                      </Button>
+                    }
+                    sx={{ mt: 1, py: 0.2, fontSize: '11.5px', fontWeight: 600 }}
+                  >
+                    Please select a customer first from the "Select Customer" tab.
+                  </Alert>
+                )}
               </Box>
 
               {/* Company Selection */}
@@ -3204,29 +3443,57 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   </Typography>
                 </Box>
 
-                {/* Submit Button in Bottom Right Corner */}
-                <Button
-                  variant="contained"
-                  disableElevation
-                  fullWidth
-                  onClick={handleCreateParticular}
-                  disabled={createLoading}
-                  sx={{
-                    mt: 1,
-                    backgroundColor: '#1D4ED8',
-                    color: '#FFFFFF !important',
-                    height: '38px',
-                    fontSize: '13.5px',
-                    fontWeight: 700,
-                    textTransform: 'none',
-                    borderRadius: '6px',
-                    '&:hover': {
-                      backgroundColor: '#1E40AF',
-                    },
-                  }}
-                >
-                  {createLoading ? 'Submitting...' : 'Submit'}
-                </Button>
+                {/* Submit / Update Button in Bottom Right Corner */}
+                <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
+                  {editingBillId && (
+                    <Button
+                      variant="outlined"
+                      color="inherit"
+                      onClick={handleCancelEditParticular}
+                      disabled={createLoading}
+                      sx={{
+                        flex: 1,
+                        height: '38px',
+                        fontSize: '13px',
+                        fontWeight: 700,
+                        textTransform: 'none',
+                        borderRadius: '6px',
+                        color: '#64748B',
+                        borderColor: '#CBD5E1',
+                        '&:hover': {
+                          backgroundColor: '#F1F5F9',
+                          borderColor: '#94A3B8',
+                        },
+                      }}
+                    >
+                      Cancel Edit
+                    </Button>
+                  )}
+                  <Button
+                    variant="contained"
+                    disableElevation
+                    fullWidth={!editingBillId}
+                    onClick={handleCreateParticular}
+                    disabled={createLoading}
+                    sx={{
+                      flex: editingBillId ? 2 : 1,
+                      backgroundColor: editingBillId ? '#0284C7' : '#1D4ED8',
+                      color: '#FFFFFF !important',
+                      height: '38px',
+                      fontSize: '13.5px',
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      borderRadius: '6px',
+                      '&:hover': {
+                        backgroundColor: editingBillId ? '#0369A1' : '#1E40AF',
+                      },
+                    }}
+                  >
+                    {createLoading
+                      ? (editingBillId ? 'Updating...' : 'Submitting...')
+                      : (editingBillId ? `Update Bill #${editingBillNumber || billNo}` : 'Submit')}
+                  </Button>
+                </Box>
               </Box>
             </Box>
           </Paper>
@@ -3606,8 +3873,21 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                               />
                             )}
                           </TableCell>
-                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, fontSize: '13px', fontWeight: 600, color: '#334155', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
-                            {row.type === 'BILL' ? '-' : (row.depositAccount || (row.notes && row.notes.includes('to A/C:') ? row.notes.split('to A/C:')[1].trim() : '-'))}
+                          <TableCell sx={{ py: 1.6, px: { xs: 1.5, sm: 2 }, borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
+                            {row.type === 'BILL' ? (
+                              <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>-</Typography>
+                            ) : (
+                              <Box>
+                                <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>
+                                  {row.depositAccount || (row.notes && row.notes.includes('to A/C:') ? row.notes.split('to A/C:')[1].trim() : '-')}
+                                </Typography>
+                                {row.bankName && (
+                                  <Typography sx={{ fontSize: '11px', fontWeight: 600, color: '#1D4ED8', mt: 0.2 }}>
+                                    {row.bankName}
+                                  </Typography>
+                                )}
+                              </Box>
+                            )}
                           </TableCell>
                           <TableCell align="right" sx={{ py: 1.6, px: { xs: 1.5, sm: 2.5 }, fontSize: '13.5px', fontWeight: 500, color: '#DC2626', borderBottom: isLast ? 'none' : '1px solid #EEF2F6' }}>
                             {row.debit}
@@ -4525,6 +4805,108 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 </FormControl>
               </Box>
 
+              {/* Bank Name (with dropdown and Add Bank button on right) */}
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  alignItems: { xs: 'flex-start', sm: 'center' },
+                  gap: { xs: 1, sm: 3.5 },
+                }}
+              >
+                <Typography
+                  sx={{
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    color: '#0F172A',
+                    minWidth: '150px',
+                    textAlign: { sm: 'right' },
+                  }}
+                >
+                  Bank Name
+                </Typography>
+                <Box sx={{ display: 'flex', gap: 1.5, width: '100%', alignItems: 'center' }}>
+                  <FormControl fullWidth size="small">
+                    <Select
+                      value={creditBankName}
+                      onChange={(e: any) => setCreditBankName(e.target.value)}
+                      displayEmpty
+                      MenuProps={{
+                        anchorOrigin: {
+                          vertical: 'bottom',
+                          horizontal: 'left',
+                        },
+                        transformOrigin: {
+                          vertical: 'top',
+                          horizontal: 'left',
+                        },
+                        slotProps: {
+                          paper: {
+                            sx: {
+                              mt: 0.5,
+                              maxHeight: 280,
+                              boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)',
+                              borderRadius: '8px',
+                              border: '1px solid #E2E8F0',
+                            },
+                          },
+                        },
+                      }}
+                      sx={{
+                        backgroundColor: '#FFFFFF',
+                        borderRadius: '6px',
+                        height: '42px',
+                        fontSize: '13.5px',
+                        fontWeight: 600,
+                        color: '#0F172A',
+                        '& .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#CBD5E1',
+                        },
+                        '&:hover .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#94A3B8',
+                        },
+                        '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                          borderColor: '#1D4ED8',
+                          borderWidth: '1.5px',
+                        },
+                      }}
+                    >
+                      {bankNameOptions.map((bName) => (
+                        <MenuItem key={bName} value={bName}>
+                          {bName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                  <Button
+                    variant="contained"
+                    onClick={() => {
+                      setNewBankNameInput('');
+                      setOpenAddBankDialog(true);
+                    }}
+                    sx={{
+                      minWidth: '135px',
+                      height: '42px',
+                      backgroundColor: '#1D4ED8',
+                      color: '#FFFFFF',
+                      fontSize: '13px',
+                      fontWeight: 700,
+                      textTransform: 'none',
+                      borderRadius: '6px',
+                      whiteSpace: 'nowrap',
+                      boxShadow: 'none',
+                      px: 2,
+                      '&:hover': {
+                        backgroundColor: '#1E40AF',
+                      },
+                    }}
+                    startIcon={<AddRoundedIcon sx={{ fontSize: 18 }} />}
+                  >
+                    Manage / Add
+                  </Button>
+                </Box>
+              </Box>
+
               {/* Transferred To Account / Person Name (with dropdown and Add Name button on right) */}
               <Box
                 sx={{
@@ -4924,7 +5306,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
             <Table size="small">
               <TableHead>
                 <TableRow sx={{ backgroundColor: '#F8FAFC' }}>
-                  <TableCell sx={{ fontSize: '11px', fontWeight: 700, width: '40px' }}>#</TableCell>
+                  <TableCell sx={{ fontSize: '11px', fontWeight: 700, width: '45px' }}>S.No</TableCell>
                   <TableCell sx={{ fontSize: '11px', fontWeight: 700 }}>Particular / Item</TableCell>
                   <TableCell sx={{ fontSize: '11px', fontWeight: 700, width: '90px' }}>Qty</TableCell>
                   <TableCell sx={{ fontSize: '11px', fontWeight: 700, width: '90px' }}>Rate (₹)</TableCell>
@@ -5437,6 +5819,190 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
             onClick={() => {
               setOpenAddAccountDialog(false);
               setNewAccountNameInput('');
+            }}
+            variant="outlined"
+            sx={{
+              color: '#475569',
+              borderColor: '#CBD5E1',
+              fontWeight: 600,
+              textTransform: 'none',
+              fontSize: '13px',
+              borderRadius: '6px',
+              px: 2.5,
+              '&:hover': {
+                borderColor: '#94A3B8',
+                backgroundColor: '#F8FAFC',
+              },
+            }}
+          >
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Manage / Add Bank Names Dialog */}
+      <Dialog
+        open={openAddBankDialog}
+        onClose={() => {
+          setOpenAddBankDialog(false);
+          setNewBankNameInput('');
+        }}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          '& .MuiDialog-paper': {
+            borderRadius: '12px',
+            p: 1,
+            backgroundColor: '#FFFFFF',
+          },
+        }}
+      >
+        <DialogTitle sx={{ fontWeight: 800, fontSize: '16px', color: '#0F172A', pb: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>Manage / Add Bank Names</span>
+          <IconButton
+            size="small"
+            onClick={() => {
+              setOpenAddBankDialog(false);
+              setNewBankNameInput('');
+            }}
+            sx={{ color: '#64748B' }}
+          >
+            <CloseRoundedIcon sx={{ fontSize: 20 }} />
+          </IconButton>
+        </DialogTitle>
+        <DialogContent sx={{ pt: 1 }}>
+          <Typography sx={{ fontSize: '13px', color: '#64748B', mb: 2 }}>
+            Add new bank name or delete unwanted banks from the dropdown list.
+          </Typography>
+
+          {/* Add New Bank Form */}
+          <Box sx={{ display: 'flex', gap: 1, mb: 2.5 }}>
+            <TextField
+              autoFocus
+              fullWidth
+              size="small"
+              placeholder="e.g. State Bank of India, Indian Overseas Bank"
+              value={newBankNameInput}
+              onChange={(e) => setNewBankNameInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSaveNewBank();
+                }
+              }}
+              slotProps={{
+                input: {
+                  sx: {
+                    fontSize: '13px',
+                    fontWeight: 600,
+                    height: '40px',
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '6px',
+                  },
+                },
+              }}
+            />
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={handleSaveNewBank}
+              disabled={!newBankNameInput.trim()}
+              sx={{
+                backgroundColor: '#1D4ED8',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                textTransform: 'none',
+                fontSize: '13px',
+                borderRadius: '6px',
+                px: 2.5,
+                whiteSpace: 'nowrap',
+                '&:hover': {
+                  backgroundColor: '#1E40AF',
+                },
+              }}
+            >
+              Add
+            </Button>
+          </Box>
+
+          {/* Saved Bank Names List with Delete Option */}
+          <Typography
+            sx={{
+              fontSize: '11.5px',
+              fontWeight: 700,
+              color: '#475569',
+              textTransform: 'uppercase',
+              letterSpacing: '0.05em',
+              mb: 1,
+            }}
+          >
+            Saved Bank Names ({bankNameOptions.length})
+          </Typography>
+
+          <Box
+            sx={{
+              maxHeight: '220px',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 0.8,
+              pr: 0.5,
+            }}
+          >
+            {bankNameOptions.length === 0 ? (
+              <Typography sx={{ fontSize: '13px', color: '#94A3B8', py: 1.5, textAlign: 'center', fontStyle: 'italic' }}>
+                No banks saved. Add a bank name above.
+              </Typography>
+            ) : (
+              bankNameOptions.map((bName) => (
+                <Box
+                  key={bName}
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    px: 1.5,
+                    py: 1,
+                    backgroundColor: '#F8FAFC',
+                    border: '1px solid #E2E8F0',
+                    borderRadius: '8px',
+                    transition: 'all 0.15s ease',
+                    '&:hover': {
+                      backgroundColor: '#F1F5F9',
+                      borderColor: '#CBD5E1',
+                    },
+                  }}
+                >
+                  <Typography sx={{ fontSize: '13px', fontWeight: 600, color: '#1E293B', wordBreak: 'break-word' }}>
+                    {bName}
+                  </Typography>
+                  <Tooltip title="Delete bank name">
+                    <IconButton
+                      size="small"
+                      onClick={() => handleDeleteBankOption(bName)}
+                      sx={{
+                        color: '#EF4444',
+                        p: 0.5,
+                        ml: 1,
+                        '&:hover': {
+                          backgroundColor: '#FEE2E2',
+                          color: '#DC2626',
+                        },
+                      }}
+                    >
+                      <DeleteOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              ))
+            )}
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, pt: 1 }}>
+          <Button
+            onClick={() => {
+              setOpenAddBankDialog(false);
+              setNewBankNameInput('');
             }}
             variant="outlined"
             sx={{

@@ -40,6 +40,8 @@ import CheckCircleOutlineRoundedIcon from '@mui/icons-material/CheckCircleOutlin
 import ReceiptLongRoundedIcon from '@mui/icons-material/ReceiptLongRounded';
 import PrintOutlinedIcon from '@mui/icons-material/PrintOutlined';
 import ModeEditOutlineRoundedIcon from '@mui/icons-material/ModeEditOutlineRounded';
+import EditRoundedIcon from '@mui/icons-material/EditRounded';
+import CheckRoundedIcon from '@mui/icons-material/CheckRounded';
 import VisibilityRoundedIcon from '@mui/icons-material/VisibilityRounded';
 import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import RefreshRoundedIcon from '@mui/icons-material/RefreshRounded';
@@ -88,6 +90,7 @@ interface PerformaPageProps {
   initialSubTab?: PerformaSubTab;
   onNavigateAllPerforma?: () => void;
   onSelectCustomerForBill?: (customerName: string, subTab?: any) => void;
+  userRole?: 'superadmin' | 'admin' | 'user';
 }
 
 export const PerformaPage: FC<PerformaPageProps> = ({
@@ -95,7 +98,14 @@ export const PerformaPage: FC<PerformaPageProps> = ({
   initialSubTab,
   onNavigateAllPerforma,
   onSelectCustomerForBill,
+  userRole,
 }) => {
+  const effectiveRole = userRole || (() => {
+    try {
+      const u = localStorage.getItem('gpk_user') || localStorage.getItem('gpk_auth_user') || localStorage.getItem('dheeksha_auth_user');
+      return u ? JSON.parse(u).role : (localStorage.getItem('user_role') || '');
+    } catch { return ''; }
+  })();
   // Subtab Navigation
   const [activeSubTab, setActiveSubTab] = useState<PerformaSubTab>(() => {
     return (
@@ -306,10 +316,10 @@ export const PerformaPage: FC<PerformaPageProps> = ({
     }
   }, [selectedCustomer]);
 
-  // Filter available products strictly by selected productCompany
+  // Filter available products strictly by selected productCompany (Mandatory company selection)
   const filteredProductsForEntry = useMemo(() => {
-    if (!productCompany || !productCompany.trim() || productCompany.trim().toLowerCase() === 'general') {
-      return products;
+    if (!productCompany || !productCompany.trim()) {
+      return [];
     }
     const comp = productCompany.trim().toLowerCase();
     const exactMatches = products.filter((p: any) => {
@@ -346,36 +356,6 @@ export const PerformaPage: FC<PerformaPageProps> = ({
     }
   };
 
-  // Open Extra Quantity Dialog
-  const handleOpenExtraQtyDialog = (
-    item: {
-      id: string;
-      productName: string;
-      companyName?: string;
-      requiredCases: number | string;
-      rate: number | string;
-      pktUnit?: number | string;
-      pktPerUnit?: number | string;
-    },
-    isEditModal: boolean = false
-  ) => {
-    const existingCasesNum = parseFloat(String(item.requiredCases)) || 0;
-    const rateNum = parseFloat(String(item.rate)) || 0;
-    const pktNum = parseFloat(String(item.pktUnit || item.pktPerUnit || '1')) || 1;
-
-    setExtraQtyDialog({
-      open: true,
-      targetId: item.id,
-      productName: item.productName,
-      companyName: item.companyName || '',
-      existingCases: existingCasesNum,
-      extraCases: '',
-      rate: rateNum,
-      pktUnit: pktNum,
-      isEditModal,
-      mode: 'button',
-    });
-  };
 
   // Confirm Extra Quantity Update
   const handleConfirmExtraQty = () => {
@@ -446,6 +426,10 @@ export const PerformaPage: FC<PerformaPageProps> = ({
 
   // Add Product Row
   const handleAddProductRow = () => {
+    if (!productCompany || !productCompany.trim()) {
+      setToast({ open: true, message: 'Please select a company first (Mandatory)', severity: 'error' });
+      return;
+    }
     const trimmedName = productName.trim();
     if (!trimmedName) {
       setToast({ open: true, message: 'Please select or enter a product name', severity: 'error' });
@@ -522,6 +506,59 @@ export const PerformaPage: FC<PerformaPageProps> = ({
 
   const handleRemoveProductRow = (id: string) => {
     setProductRows((prev) => prev.filter((r) => r.id !== id));
+  };
+
+  // Inline editing state for product rows in Create Performa tab
+  const [inlineEditingRowId, setInlineEditingRowId] = useState<string | null>(null);
+  const [inlineEditCases, setInlineEditCases] = useState<string>('');
+  const [inlineEditRate, setInlineEditRate] = useState<string>('');
+  const [inlineEditPktUnit, setInlineEditPktUnit] = useState<string>('');
+
+  const handleStartInlineEdit = (row: ProductRowItem) => {
+    setInlineEditingRowId(row.id);
+    setInlineEditCases(row.requiredCases || '');
+    setInlineEditRate(row.rate || '');
+    setInlineEditPktUnit(row.pktUnit || '1');
+  };
+
+  const handleCancelInlineEdit = () => {
+    setInlineEditingRowId(null);
+    setInlineEditCases('');
+    setInlineEditRate('');
+    setInlineEditPktUnit('');
+  };
+
+  const handleSaveInlineEdit = (id: string) => {
+    const cVal = parseFloat(String(inlineEditCases)) || 0;
+    const rVal = parseFloat(String(inlineEditRate)) || 0;
+    const pVal = parseFloat(String(inlineEditPktUnit)) || 1;
+
+    if (cVal <= 0) {
+      setToast({ open: true, message: 'Please enter a valid quantity of cases > 0', severity: 'error' });
+      return;
+    }
+    if (rVal < 0) {
+      setToast({ open: true, message: 'Rate cannot be negative', severity: 'error' });
+      return;
+    }
+
+    const calculatedAllocated = (cVal * rVal * pVal).toFixed(2);
+
+    setProductRows((prev) =>
+      prev.map((r) => {
+        if (r.id !== id) return r;
+        return {
+          ...r,
+          requiredCases: String(cVal),
+          rate: String(rVal),
+          pktUnit: String(pVal),
+          allocatedAmount: calculatedAllocated,
+        };
+      })
+    );
+
+    setInlineEditingRowId(null);
+    setToast({ open: true, message: 'Product updated successfully!', severity: 'success' });
   };
 
   // Group products by Company Name (Set of products grouped like wholesale order sheet)
@@ -826,6 +863,17 @@ export const PerformaPage: FC<PerformaPageProps> = ({
 
   // Open Edit Performa Modal
   const handleOpenEditModal = async (performa: any) => {
+    const isCustomerOrder =
+      performa.createdBy === 'Customer Order' ||
+      (performa.notes && /Customer Online Order/i.test(performa.notes));
+    if (effectiveRole === 'admin' && isCustomerOrder) {
+      setToast({
+        open: true,
+        message: 'Customer Online Order performas can only be edited by Superadmin.',
+        severity: 'info',
+      });
+      return;
+    }
     try {
       setEditLoading(true);
       setEditModalOpen(true);
@@ -1484,7 +1532,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                 <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.2 }}>
                   <ReceiptLongRoundedIcon sx={{ color: '#1D4ED8', fontSize: 24 }} />
                   <Typography variant="h6" sx={{ fontSize: '18px', fontWeight: 900, color: '#0F172A', letterSpacing: '-0.2px' }}>
-                    Product Required
+                    Product Required *
                   </Typography>
                   <Chip
                     label="Customer Requirement Entry"
@@ -1544,7 +1592,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
             >
               <Typography sx={{ fontSize: '12px', fontWeight: 800, color: '#1D4ED8', mb: 1.5, display: 'flex', alignItems: 'center', gap: 1, textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                 <BusinessRoundedIcon sx={{ fontSize: 18, color: '#1D4ED8' }} />
-                Company Selection (Type / Select Company First)
+                Company Selection (Type / Select Company First) *
               </Typography>
 
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
@@ -1575,7 +1623,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      placeholder="Type / Select Company (e.g. AJANTA BRAND)..."
+                      placeholder="Type / Select Company..."
                       size="small"
                       fullWidth
                     />
@@ -1623,10 +1671,16 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                 p: 2,
                 mb: 3,
                 borderRadius: '10px',
-                border: '1px solid #E2E8F0',
-                backgroundColor: '#F8FAFC',
+                border: !productCompany || !productCompany.trim() ? '1.5px dashed #CBD5E1' : '1px solid #E2E8F0',
+                backgroundColor: !productCompany || !productCompany.trim() ? '#F8FAFC' : '#FFFFFF',
+                transition: 'all 0.2s ease',
               }}
             >
+              {(!productCompany || !productCompany.trim()) && (
+                <Typography sx={{ fontSize: '12.5px', fontWeight: 600, color: '#64748B', mb: 1.5, display: 'flex', alignItems: 'center', gap: 0.8 }}>
+                  ℹ️ Select a Company above first to view and select products.
+                </Typography>
+              )}
               <Box
                 sx={{
                   display: 'grid',
@@ -1637,6 +1691,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
               >
                 {/* Customer Product Required */}
                 <Autocomplete
+                  disabled={!productCompany || !productCompany.trim()}
                   options={filteredProductsForEntry}
                   getOptionLabel={(option) => {
                     if (typeof option === 'string') return option;
@@ -1645,12 +1700,12 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   }}
                   value={selectedProductObj}
                   onChange={(_e, val) => handleProductSelect(val)}
-                  freeSolo
+                  freeSolo={Boolean(productCompany && productCompany.trim())}
                   onInputChange={(_e, newInputValue) => setProductName(newInputValue)}
                   noOptionsText={
-                    productCompany
+                    productCompany && productCompany.trim()
                       ? `No products found for "${productCompany}".`
-                      : 'No products available.'
+                      : 'Please select a company above first.'
                   }
                   renderOption={(props, option) => {
                     const { key, ...otherProps } = props;
@@ -1701,12 +1756,12 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   renderInput={(params) => (
                     <TextField
                       {...params}
-                      label="Customer Product Required"
+                      label="Customer Product Required *"
                       size="small"
                       placeholder={
-                        productCompany
+                        productCompany && productCompany.trim()
                           ? `Select product from ${productCompany}...`
-                          : 'Select company first, or type product...'
+                          : 'Select company above first...'
                       }
                     />
                   )}
@@ -1714,6 +1769,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
 
                 {/* Required Cases */}
                 <TextField
+                  disabled={!productCompany || !productCompany.trim()}
                   label="Required Cases"
                   size="small"
                   type="number"
@@ -1724,6 +1780,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
 
                 {/* Rate */}
                 <TextField
+                  disabled={!productCompany || !productCompany.trim()}
                   label="Rate (₹)"
                   size="small"
                   type="number"
@@ -1734,6 +1791,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
 
                 {/* Pkt / Units */}
                 <TextField
+                  disabled={!productCompany || !productCompany.trim()}
                   label="Units/Pkt"
                   size="small"
                   type="number"
@@ -1745,6 +1803,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                 <Button
                   variant="contained"
                   disableElevation
+                  disabled={!productCompany || !productCompany.trim()}
                   onClick={handleAddProductRow}
                   startIcon={<AddRoundedIcon />}
                   sx={{
@@ -1887,66 +1946,161 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                             </TableRow>
                           </TableHead>
                           <TableBody>
-                            {items.map((row, idx) => (
-                              <TableRow key={row.id} hover sx={{ '&:last-child td': { borderBottom: 0 } }}>
-                                <TableCell sx={{ textAlign: 'center', fontWeight: 700, color: '#64748B', fontSize: '12.5px' }}>
-                                  {idx + 1}
-                                </TableCell>
-                                <TableCell sx={{ fontWeight: 700, color: '#0F172A', fontSize: '13.5px' }}>
-                                  {row.productName}
-                                </TableCell>
-                                <TableCell sx={{ textAlign: 'center', fontWeight: 800, color: '#1D4ED8', fontSize: '13px' }}>
-                                  {row.requiredCases} Cases
-                                </TableCell>
-                                <TableCell sx={{ textAlign: 'right', fontWeight: 600, color: '#334155', fontSize: '13px' }}>
-                                  ₹{parseFloat(row.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                </TableCell>
-                                <TableCell sx={{ textAlign: 'center', color: '#64748B', fontSize: '12.5px' }}>
-                                  {row.pktUnit}
-                                </TableCell>
-                                <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: '#16A34A', fontSize: '13px' }}>
-                                  ₹{parseFloat(row.allocatedAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
-                                </TableCell>
-                                <TableCell sx={{ textAlign: 'center' }}>
-                                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8 }}>
-                                    <Tooltip title="Add Extra Quantity (Live Total Cases Preview)">
-                                      <Button
+                            {items.map((row, idx) => {
+                              const isEditing = inlineEditingRowId === row.id;
+                              const editCasesNum = parseFloat(inlineEditCases) || 0;
+                              const editRateNum = parseFloat(inlineEditRate) || 0;
+                              const editPktNum = parseFloat(inlineEditPktUnit) || 1;
+                              const liveAllocated = (editCasesNum * editRateNum * editPktNum).toFixed(2);
+
+                              return (
+                                <TableRow key={row.id} hover sx={{ '&:last-child td': { borderBottom: 0 }, backgroundColor: isEditing ? '#F0F9FF' : 'inherit' }}>
+                                  <TableCell sx={{ textAlign: 'center', fontWeight: 700, color: '#64748B', fontSize: '12.5px' }}>
+                                    {idx + 1}
+                                  </TableCell>
+                                  <TableCell sx={{ fontWeight: 700, color: '#0F172A', fontSize: '13.5px' }}>
+                                    {row.productName}
+                                  </TableCell>
+                                  <TableCell sx={{ textAlign: 'center' }}>
+                                    {isEditing ? (
+                                      <TextField
                                         size="small"
-                                        variant="outlined"
-                                        onClick={() => handleOpenExtraQtyDialog(row, false)}
-                                        startIcon={<AddCircleOutlineRoundedIcon sx={{ fontSize: 13 }} />}
-                                        sx={{
-                                          fontSize: '11px',
-                                          fontWeight: 700,
-                                          py: 0.3,
-                                          px: 1,
-                                          borderRadius: '6px',
-                                          textTransform: 'none',
-                                          borderColor: '#93C5FD',
-                                          color: '#1D4ED8',
-                                          backgroundColor: '#F0F9FF',
-                                          '&:hover': {
-                                            borderColor: '#3B82F6',
-                                            backgroundColor: '#BAE6FD',
-                                          },
+                                        type="number"
+                                        autoFocus
+                                        value={inlineEditCases}
+                                        onChange={(e) => setInlineEditCases(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') handleSaveInlineEdit(row.id);
+                                          if (e.key === 'Escape') handleCancelInlineEdit();
                                         }}
-                                      >
-                                        + Extra
-                                      </Button>
-                                    </Tooltip>
-                                    <Tooltip title="Remove item">
-                                      <IconButton
+                                        slotProps={{
+                                          htmlInput: { min: 1, style: { textAlign: 'center', padding: '4px 6px', fontSize: '13px', fontWeight: 700, color: '#1D4ED8' } },
+                                        }}
+                                        sx={{ width: '85px', backgroundColor: '#FFFFFF' }}
+                                      />
+                                    ) : (
+                                      <Typography sx={{ fontWeight: 800, color: '#1D4ED8', fontSize: '13px' }}>
+                                        {row.requiredCases} Cases
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+                                  <TableCell sx={{ textAlign: 'right' }}>
+                                    {isEditing ? (
+                                      <TextField
                                         size="small"
-                                        onClick={() => handleRemoveProductRow(row.id)}
-                                        sx={{ color: '#EF4444', '&:hover': { backgroundColor: '#FEE2E2' } }}
-                                      >
-                                        <DeleteOutlineRoundedIcon sx={{ fontSize: 18 }} />
-                                      </IconButton>
-                                    </Tooltip>
-                                  </Box>
-                                </TableCell>
-                              </TableRow>
-                            ))}
+                                        type="number"
+                                        value={inlineEditRate}
+                                        onChange={(e) => setInlineEditRate(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') handleSaveInlineEdit(row.id);
+                                          if (e.key === 'Escape') handleCancelInlineEdit();
+                                        }}
+                                        slotProps={{
+                                          htmlInput: { min: 0, step: 'any', style: { textAlign: 'right', padding: '4px 6px', fontSize: '13px', fontWeight: 600, color: '#334155' } },
+                                        }}
+                                        sx={{ width: '90px', backgroundColor: '#FFFFFF' }}
+                                      />
+                                    ) : (
+                                      <Typography sx={{ fontWeight: 600, color: '#334155', fontSize: '13px' }}>
+                                        ₹{parseFloat(row.rate).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+                                  <TableCell sx={{ textAlign: 'center' }}>
+                                    {isEditing ? (
+                                      <TextField
+                                        size="small"
+                                        type="number"
+                                        value={inlineEditPktUnit}
+                                        onChange={(e) => setInlineEditPktUnit(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') handleSaveInlineEdit(row.id);
+                                          if (e.key === 'Escape') handleCancelInlineEdit();
+                                        }}
+                                        slotProps={{
+                                          htmlInput: { min: 1, style: { textAlign: 'center', padding: '4px 6px', fontSize: '12.5px', fontWeight: 600, color: '#64748B' } },
+                                        }}
+                                        sx={{ width: '65px', backgroundColor: '#FFFFFF' }}
+                                      />
+                                    ) : (
+                                      <Typography sx={{ color: '#64748B', fontSize: '12.5px', fontWeight: 500 }}>
+                                        {row.pktUnit}
+                                      </Typography>
+                                    )}
+                                  </TableCell>
+                                  <TableCell sx={{ textAlign: 'right', fontWeight: 800, color: '#16A34A', fontSize: '13px' }}>
+                                    ₹{parseFloat(isEditing ? liveAllocated : row.allocatedAmount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                  </TableCell>
+                                  <TableCell sx={{ textAlign: 'center' }}>
+                                    {isEditing ? (
+                                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.5 }}>
+                                        <Tooltip title="Save (Enter)">
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => handleSaveInlineEdit(row.id)}
+                                            sx={{
+                                              color: '#FFFFFF',
+                                              backgroundColor: '#16A34A',
+                                              borderRadius: '6px',
+                                              p: 0.6,
+                                              '&:hover': { backgroundColor: '#15803D' },
+                                            }}
+                                          >
+                                            <CheckRoundedIcon sx={{ fontSize: 16 }} />
+                                          </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Cancel (Esc)">
+                                          <IconButton
+                                            size="small"
+                                            onClick={handleCancelInlineEdit}
+                                            sx={{
+                                              color: '#64748B',
+                                              backgroundColor: '#F1F5F9',
+                                              borderRadius: '6px',
+                                              p: 0.6,
+                                              '&:hover': { backgroundColor: '#E2E8F0', color: '#0F172A' },
+                                            }}
+                                          >
+                                            <CloseRoundedIcon sx={{ fontSize: 16 }} />
+                                          </IconButton>
+                                        </Tooltip>
+                                      </Box>
+                                    ) : (
+                                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 0.8 }}>
+                                        <Tooltip title="Edit Cases, Rate & Units/Pkt">
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => handleStartInlineEdit(row)}
+                                            sx={{
+                                              color: '#1D4ED8',
+                                              backgroundColor: '#EFF6FF',
+                                              border: '1px solid #BFDBFE',
+                                              borderRadius: '6px',
+                                              p: 0.6,
+                                              '&:hover': {
+                                                backgroundColor: '#DBEAFE',
+                                                borderColor: '#93C5FD',
+                                              },
+                                            }}
+                                          >
+                                            <EditRoundedIcon sx={{ fontSize: 16 }} />
+                                          </IconButton>
+                                        </Tooltip>
+                                        <Tooltip title="Remove item">
+                                          <IconButton
+                                            size="small"
+                                            onClick={() => handleRemoveProductRow(row.id)}
+                                            sx={{ color: '#EF4444', '&:hover': { backgroundColor: '#FEE2E2' } }}
+                                          >
+                                            <DeleteOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                                          </IconButton>
+                                        </Tooltip>
+                                      </Box>
+                                    )}
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
                           </TableBody>
                         </Table>
                       </TableContainer>
@@ -2063,7 +2217,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                 <Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
                     <Typography sx={{ fontSize: '12px', fontWeight: 700, color: '#475569' }}>
-                      Tax (18% on ₹2500/case)
+                      Tax
                     </Typography>
                     <Button
                       size="small"
@@ -2091,16 +2245,16 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   <TextField
                     fullWidth
                     size="small"
-                    placeholder="e.g. 18% (Formula: 2500 × Cases × 18%)"
+                    placeholder="e.g. 18%"
                     value={tax}
                     onChange={(e) => setTax(e.target.value)}
                     helperText={
                       taxVal > 0
-                        ? `+ ₹${taxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })} (2,500 × ${totalRequiredCasesCount} cases × ${tax.includes('%') ? tax : `${tax}%`})`
-                        : 'Formula: 2500 × Cases × 18%'
+                        ? `+ ₹${taxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
+                        : undefined
                     }
                     slotProps={{
-                      formHelperText: { sx: { color: taxVal > 0 ? '#166534' : '#64748B', fontWeight: 600 } },
+                      formHelperText: { sx: { color: taxVal > 0 ? '#166534' : undefined, fontWeight: 700 } },
                     }}
                   />
                 </Box>
@@ -2179,7 +2333,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                   {taxVal > 0 && (
                     <Box>
                       <Typography sx={{ fontSize: '10.5px', color: '#166534', fontWeight: 700, textTransform: 'uppercase' }}>
-                        Tax ({tax.includes('%') ? tax : `${tax}%`} on ₹2500/case)
+                        Tax ({tax.includes('%') ? tax : `${tax}%`})
                       </Typography>
                       <Typography sx={{ fontSize: '16px', fontWeight: 800, color: '#166534' }}>
                         + ₹{taxVal.toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -2416,7 +2570,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
               <Table size="small">
                 <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
                   <TableRow>
-                    <TableCell sx={{ fontWeight: 800, color: '#475569', py: 1.5, width: '40px' }}>#</TableCell>
+                    <TableCell sx={{ fontWeight: 800, color: '#475569', py: 1.5, width: '50px' }}>S.No</TableCell>
                     <TableCell sx={{ fontWeight: 800, color: '#475569' }}>Performa No</TableCell>
                     <TableCell sx={{ fontWeight: 800, color: '#475569' }}>Date</TableCell>
                     <TableCell sx={{ fontWeight: 800, color: '#475569' }}>Company / Brand</TableCell>
@@ -2555,15 +2709,38 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                                 </IconButton>
                               </Tooltip>
 
-                              <Tooltip title="Edit Performa">
-                                <IconButton
-                                  size="small"
-                                  onClick={() => handleOpenEditModal(p)}
-                                  sx={{ color: '#2563EB' }}
-                                >
-                                  <ModeEditOutlineRoundedIcon sx={{ fontSize: 18 }} />
-                                </IconButton>
-                              </Tooltip>
+                              {(() => {
+                                const isCustomerOrder =
+                                  p.createdBy === 'Customer Order' ||
+                                  (p.notes && /Customer Online Order/i.test(p.notes));
+                                const canEdit = effectiveRole === 'superadmin' || !isCustomerOrder;
+                                if (!canEdit) {
+                                  return (
+                                    <Tooltip title="Customer Online Orders can only be edited by Superadmin">
+                                      <span>
+                                        <IconButton
+                                          size="small"
+                                          disabled
+                                          sx={{ color: '#94A3B8 !important', cursor: 'not-allowed' }}
+                                        >
+                                          <ModeEditOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                                        </IconButton>
+                                      </span>
+                                    </Tooltip>
+                                  );
+                                }
+                                return (
+                                  <Tooltip title="Edit Performa">
+                                    <IconButton
+                                      size="small"
+                                      onClick={() => handleOpenEditModal(p)}
+                                      sx={{ color: '#2563EB' }}
+                                    >
+                                      <ModeEditOutlineRoundedIcon sx={{ fontSize: 18 }} />
+                                    </IconButton>
+                                  </Tooltip>
+                                );
+                              })()}
 
                               <Tooltip title="Delete">
                                 <IconButton size="small" onClick={() => handleDeletePerforma(p._id, p.performaNumber)} sx={{ color: '#DC2626' }}>
@@ -2691,7 +2868,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                 <Table size="small">
                   <TableHead sx={{ backgroundColor: '#F1F5F9' }}>
                     <TableRow>
-                      <TableCell sx={{ fontWeight: 800, width: '40px' }}>#</TableCell>
+                      <TableCell sx={{ fontWeight: 800, width: '50px' }}>S.No</TableCell>
                       <TableCell sx={{ fontWeight: 800 }}>Product Name & Code</TableCell>
                       <TableCell sx={{ fontWeight: 800 }}>Company / Brand</TableCell>
                       <TableCell sx={{ fontWeight: 800, textAlign: 'center', width: '90px' }}>Total Cases</TableCell>
@@ -3064,41 +3241,13 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                             />
                           </TableCell>
                           <TableCell>
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                              <TextField
-                                type="number"
-                                size="small"
-                                value={p.requiredCases}
-                                onChange={(e) => handleEditProductChange(p.id, 'requiredCases', e.target.value)}
-                                sx={{ width: '85px' }}
-                              />
-                              <Tooltip title="Add Extra Quantity (Live Total Cases Preview)">
-                                <Button
-                                  size="small"
-                                  variant="outlined"
-                                  onClick={() => handleOpenExtraQtyDialog(p, true)}
-                                  startIcon={<AddCircleOutlineRoundedIcon sx={{ fontSize: 13 }} />}
-                                  sx={{
-                                    fontSize: '11px',
-                                    fontWeight: 700,
-                                    py: 0.3,
-                                    px: 0.8,
-                                    borderRadius: '6px',
-                                    textTransform: 'none',
-                                    whiteSpace: 'nowrap',
-                                    borderColor: '#93C5FD',
-                                    color: '#1D4ED8',
-                                    backgroundColor: '#F0F9FF',
-                                    '&:hover': {
-                                      borderColor: '#3B82F6',
-                                      backgroundColor: '#BAE6FD',
-                                    },
-                                  }}
-                                >
-                                  + Extra
-                                </Button>
-                              </Tooltip>
-                            </Box>
+                            <TextField
+                              type="number"
+                              size="small"
+                              value={p.requiredCases}
+                              onChange={(e) => handleEditProductChange(p.id, 'requiredCases', e.target.value)}
+                              sx={{ width: '85px' }}
+                            />
                           </TableCell>
                           <TableCell>
                             <TextField

@@ -1031,9 +1031,10 @@ export const calculatePendingCasesData = async (options?: {
 }): Promise<PendingCasesData> => {
   const { customerName, companyName, search } = options || {};
 
-  // Fetch all non-cancelled performas
+  // Fetch all non-cancelled, approved performas
   const filter: any = {
     status: { $nin: ['CANCELLED', 'cancelled'] },
+    isApproved: { $ne: false },
   };
 
   if (customerName && typeof customerName === 'string' && customerName.trim() !== '' && customerName.toLowerCase() !== 'all') {

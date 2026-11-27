@@ -55,6 +55,8 @@ export interface IPerforma extends Document {
   date: string;
   notes?: string;
   createdBy?: string;
+  isApproved?: boolean;
+  approvedForAdmin?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -118,6 +120,8 @@ const PerformaSchema: Schema = new Schema(
     date: { type: String, required: true },
     notes: { type: String, trim: true, default: '' },
     createdBy: { type: String, trim: true, default: 'Admin' },
+    isApproved: { type: Boolean, default: true, index: true },
+    approvedForAdmin: { type: Boolean, default: true, index: true },
   },
   { timestamps: true }
 );

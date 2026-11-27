@@ -49,12 +49,17 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     : null;
 
   let userRole = '';
+  let customerNameHeader = '';
   if (typeof window !== 'undefined') {
-    const userStr = localStorage.getItem('gpk_user');
+    const userStr =
+      localStorage.getItem('gpk_auth_user') ||
+      localStorage.getItem('dheeksha_auth_user') ||
+      localStorage.getItem('gpk_user');
     if (userStr) {
       try {
         const u = JSON.parse(userStr);
         userRole = u.role || '';
+        customerNameHeader = u.customerName || u.name || (u.role === 'user' ? u.username : '');
       } catch {}
     }
   }
@@ -63,6 +68,7 @@ async function request<T>(endpoint: string, options: RequestInit = {}): Promise<
     'Content-Type': 'application/json',
     ...(token ? { Authorization: `Bearer ${token}` } : {}),
     ...(userRole ? { 'x-user-role': userRole } : {}),
+    ...(customerNameHeader ? { 'x-customer-name': customerNameHeader } : {}),
     ...((options.headers as Record<string, string>) || {}),
   };
 
@@ -166,6 +172,7 @@ export const AccountsApi = {
     date: string;
     paymentMode?: string;
     depositAccount?: string;
+    bankName?: string;
     reference?: string;
     notes?: string;
   }) => request<any>('/accounts/credit', { method: 'POST', body: JSON.stringify(data) }),
@@ -184,12 +191,14 @@ export const PerformasApi = {
     endDate?: string;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
+    source?: string;
   }) => {
     const searchParams = new URLSearchParams();
     if (params?.customerName && params.customerName !== 'ALL') searchParams.append('customerName', params.customerName);
     if (params?.customerId) searchParams.append('customerId', params.customerId);
     if (params?.companyName && params.companyName !== 'ALL') searchParams.append('companyName', params.companyName);
     if (params?.status && params.status !== 'ALL') searchParams.append('status', params.status);
+    if (params?.source && params.source !== 'ALL') searchParams.append('source', params.source);
     if (params?.search) searchParams.append('search', params.search);
     if (params?.startDate) searchParams.append('startDate', params.startDate);
     if (params?.endDate) searchParams.append('endDate', params.endDate);
@@ -435,4 +444,91 @@ export const SettingsApi = {
 // Health Check API
 export const HealthApi = {
   check: () => request<{ status: string; message: string; timestamp: string }>('/health'),
+};
+
+// Customer Orders API
+export interface OrderItem {
+  productId?: string;
+  slNo?: number;
+  productName: string;
+  code?: string;
+  company?: string;
+  category?: string;
+  caseCount?: number;
+  rate: number;
+  pktUnit?: string;
+  quantity: number;
+  total: number;
+}
+
+export interface CustomerOrder {
+  _id?: string;
+  id?: string;
+  orderNumber: string;
+  customerId?: string;
+  customerName: string;
+  customerMobile?: string;
+  customerAddress?: string;
+  companyName?: string;
+  products: OrderItem[];
+  totalCases: number;
+  totalAmount: number;
+  status: 'PENDING' | 'SEEN' | 'VERIFIED' | 'SENT' | 'COMPLETED' | 'REJECTED';
+  date: string;
+  notes?: string;
+  performaId?: string;
+  performaNumber?: string;
+  isApproved?: boolean;
+  approvedForAdmin?: boolean;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export const OrdersApi = {
+  getAll: (params?: { customerName?: string; status?: string }): Promise<CustomerOrder[]> => {
+    const q = new URLSearchParams();
+    if (params?.customerName) q.append('customerName', params.customerName);
+    if (params?.status) q.append('status', params.status);
+    const queryString = q.toString() ? `?${q.toString()}` : '';
+    return request<any>(`/orders${queryString}`).then((res) => {
+      if (Array.isArray(res)) return res;
+      if (res && Array.isArray(res.data)) return res.data;
+      return [];
+    });
+  },
+  getById: (id: string): Promise<CustomerOrder> =>
+    request<any>(`/orders/${encodeURIComponent(id)}`).then((res) => {
+      if (res && res.data) return res.data;
+      return res;
+    }),
+  create: (data: {
+    customerName?: string;
+    customerMobile?: string;
+    customerAddress?: string;
+    companyName?: string;
+    products: any[];
+    date?: string;
+    notes?: string;
+  }) =>
+    request<any>('/orders', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+  updateStatus: (
+    id: string,
+    status: 'PENDING' | 'SEEN' | 'VERIFIED' | 'SENT' | 'COMPLETED' | 'REJECTED'
+  ) =>
+    request<any>(`/orders/${encodeURIComponent(id)}/status`, {
+      method: 'PUT',
+      body: JSON.stringify({ status }),
+    }),
+  updateApproval: (id: string, approvedForAdmin: boolean) =>
+    request<any>(`/orders/${encodeURIComponent(id)}/approval`, {
+      method: 'PUT',
+      body: JSON.stringify({ approvedForAdmin }),
+    }),
+  delete: (id: string) =>
+    request<any>(`/orders/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    }),
 };

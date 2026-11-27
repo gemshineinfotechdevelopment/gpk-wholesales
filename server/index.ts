@@ -18,6 +18,7 @@ import accountRoutes from './routes/accountRoutes';
 import authRoutes from './routes/authRoutes';
 import performaRoutes from './routes/performaRoutes';
 import settingRoutes from './routes/settingRoutes';
+import orderRoutes from './routes/orderRoutes';
 import { seedDefaultAdmin } from './controllers/authController';
 
 const app: Application = express();
@@ -81,6 +82,8 @@ const corsOptions: cors.CorsOptions = {
     'X-Requested-With',
     'x-user-role',
     'X-User-Role',
+    'x-customer-name',
+    'X-Customer-Name',
     'Accept',
     'Origin',
   ],
@@ -120,6 +123,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/particulars', particularRoutes);
 app.use('/api/accounts', accountRoutes);
 app.use('/api/performas', performaRoutes);
+app.use('/api/orders', orderRoutes);
 app.use('/api/settings', settingRoutes);
 
 // Global Error Handler

@@ -13,6 +13,7 @@ export interface IAccountLedger extends Document {
   balance: string;
   paymentMode?: string;
   depositAccount?: string;
+  bankName?: string;
   reference?: string;
   notes?: string;
   type: 'BILL' | 'CREDIT' | 'PAYMENT' | 'ADVANCE';
@@ -34,6 +35,7 @@ const AccountLedgerSchema: Schema = new Schema(
     balance: { type: String, default: '0.00' },
     paymentMode: { type: String, trim: true, default: 'Bank' },
     depositAccount: { type: String, trim: true, default: '' },
+    bankName: { type: String, trim: true, default: '' },
     reference: { type: String, trim: true, default: '' },
     notes: { type: String, trim: true, default: '' },
     type: { type: String, enum: ['BILL', 'CREDIT', 'PAYMENT', 'ADVANCE'], default: 'BILL' },

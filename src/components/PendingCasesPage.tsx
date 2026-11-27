@@ -47,12 +47,112 @@ import CloseRoundedIcon from '@mui/icons-material/CloseRounded';
 import TableRowsRoundedIcon from '@mui/icons-material/TableRowsRounded';
 import GridViewRoundedIcon from '@mui/icons-material/GridViewRounded';
 import ArrowBackRoundedIcon from '@mui/icons-material/ArrowBackRounded';
+import SortRoundedIcon from '@mui/icons-material/SortRounded';
+import CalendarMonthRoundedIcon from '@mui/icons-material/CalendarMonthRounded';
 import {
   PerformaApi,
   type PendingCasesResponse,
   type PendingCustomerGroup,
   type PendingCompanyGroup,
 } from '../services/api';
+
+export type PendingSortOption =
+  | 'DATE_DESC'
+  | 'DATE_ASC'
+  | 'AMT_DESC'
+  | 'AMT_ASC'
+  | 'CASES_DESC'
+  | 'CASES_ASC'
+  | 'NAME_ASC'
+  | 'NAME_DESC'
+  | 'BILL_DESC';
+
+// Helper to parse multiple date string formats (YYYY-MM-DD, DD-MM-YYYY, DD/MM/YYYY)
+const normalizeToYmd = (dStr?: string): string => {
+  if (!dStr) return '';
+  const clean = dStr.trim();
+  const parts = clean.includes('-') ? clean.split('-') : clean.split('/');
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      // YYYY-MM-DD
+      const y = parts[0];
+      const m = parts[1].padStart(2, '0');
+      const d = parts[2].padStart(2, '0');
+      return `${y}-${m}-${d}`;
+    } else {
+      // DD-MM-YYYY
+      const d = parts[0].padStart(2, '0');
+      const m = parts[1].padStart(2, '0');
+      const y = parts[2];
+      return `${y}-${m}-${d}`;
+    }
+  }
+  return clean;
+};
+
+const isDateMatch = (itemDateStr?: string, targetDateStr?: string): boolean => {
+  if (!itemDateStr || !targetDateStr) return false;
+  return normalizeToYmd(itemDateStr) === normalizeToYmd(targetDateStr);
+};
+
+const parseDateToTimestamp = (dateStr?: string): number => {
+  if (!dateStr || typeof dateStr !== 'string') return 0;
+  const trimmed = dateStr.trim();
+  if (!trimmed) return 0;
+  const parts = trimmed.includes('-') ? trimmed.split('-') : trimmed.split('/');
+  if (parts.length === 3) {
+    if (parts[0].length === 4) {
+      // YYYY-MM-DD
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const d = parseInt(parts[2], 10);
+      return new Date(y, m, d).getTime();
+    } else {
+      // DD-MM-YYYY
+      const d = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const y = parseInt(parts[2], 10);
+      return new Date(y, m, d).getTime();
+    }
+  }
+  const t = new Date(trimmed).getTime();
+  return isNaN(t) ? 0 : t;
+};
+
+const getCustomerDateTimestamp = (cust: PendingCustomerGroup, mode: 'latest' | 'earliest' = 'latest'): number => {
+  if (!cust.items || cust.items.length === 0) return 0;
+  const timestamps = cust.items
+    .map((item) => parseDateToTimestamp(item.performaDate))
+    .filter((t) => t > 0);
+  if (timestamps.length === 0) return 0;
+  return mode === 'latest' ? Math.max(...timestamps) : Math.min(...timestamps);
+};
+
+const getCustomerLatestDate = (cust: PendingCustomerGroup): string => {
+  if (!cust.items || cust.items.length === 0) return '';
+  const dates = cust.items
+    .map((item) => ({ dateStr: item.performaDate, ts: parseDateToTimestamp(item.performaDate) }))
+    .sort((a, b) => b.ts - a.ts);
+  return dates[0]?.dateStr || '';
+};
+
+const getCompanyDateTimestamp = (comp: PendingCompanyGroup, mode: 'latest' | 'earliest' = 'latest'): number => {
+  let timestamps: number[] = [];
+  (comp.productSummaries || []).forEach((p) => {
+    (p.customers || []).forEach((c) => {
+      const ts = parseDateToTimestamp(c.date);
+      if (ts > 0) timestamps.push(ts);
+    });
+  });
+  if (timestamps.length === 0) return 0;
+  return mode === 'latest' ? Math.max(...timestamps) : Math.min(...timestamps);
+};
+
+const getNumericRef = (refStr?: string): number => {
+  if (!refStr) return 0;
+  const clean = refStr.replace(/[^0-9]/g, '');
+  return parseInt(clean, 10) || 0;
+};
 
 interface PendingCasesPageProps {
   onSelectCustomerForBill?: (customerName: string, subTab?: any) => void;
@@ -82,6 +182,12 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
   // Filters
   const [search, setSearch] = useState<string>('');
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState<string>('ALL');
+
+  // Sorting Option (Default: Customer Name Alphabetical A-Z)
+  const [sortBy, setSortBy] = useState<PendingSortOption>('NAME_ASC');
+
+  // Calendar Date Filter
+  const [selectedDateFilter, setSelectedDateFilter] = useState<string>('');
 
   // Company Cases Tab specific selection
   const [activeCompanySelection, setActiveCompanySelection] = useState<string>('ALL');
@@ -222,16 +328,85 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
     return data.companyCases.map((c) => c.companyName);
   }, [data]);
 
-  // Filtered company list for the Company Cases tab based on activeCompanySelection
+  // Sorted Customer Cases based on selected sortBy option and optional calendar date filter
+  const sortedCustomerCases = useMemo(() => {
+    if (!data?.customerCases) return [];
+    let list = [...data.customerCases];
+
+    // Filter by specific selected calendar date if active
+    if (selectedDateFilter) {
+      list = list.filter((cust) =>
+        cust.items && cust.items.some((it) => isDateMatch(it.performaDate, selectedDateFilter))
+      );
+    }
+
+    switch (sortBy) {
+      case 'NAME_ASC':
+        return list.sort((a, b) => a.customerName.localeCompare(b.customerName, undefined, { sensitivity: 'base' }));
+      case 'NAME_DESC':
+        return list.sort((a, b) => b.customerName.localeCompare(a.customerName, undefined, { sensitivity: 'base' }));
+      case 'AMT_DESC':
+        return list.sort((a, b) => (b.totalPendingAmount || 0) - (a.totalPendingAmount || 0));
+      case 'AMT_ASC':
+        return list.sort((a, b) => (a.totalPendingAmount || 0) - (b.totalPendingAmount || 0));
+      case 'CASES_DESC':
+        return list.sort((a, b) => (b.totalPendingCases || 0) - (a.totalPendingCases || 0));
+      case 'CASES_ASC':
+        return list.sort((a, b) => (a.totalPendingCases || 0) - (b.totalPendingCases || 0));
+      case 'BILL_DESC':
+        return list.sort((a, b) => {
+          const refA = Math.max(...(a.performaNumbers || []).map(getNumericRef), 0);
+          const refB = Math.max(...(b.performaNumbers || []).map(getNumericRef), 0);
+          return refB - refA;
+        });
+      case 'DATE_DESC':
+        return list.sort((a, b) => getCustomerDateTimestamp(b, 'latest') - getCustomerDateTimestamp(a, 'latest'));
+      case 'DATE_ASC':
+        return list.sort((a, b) => getCustomerDateTimestamp(a, 'earliest') - getCustomerDateTimestamp(b, 'earliest'));
+      default:
+        return list.sort((a, b) => a.customerName.localeCompare(b.customerName, undefined, { sensitivity: 'base' }));
+    }
+  }, [data?.customerCases, selectedDateFilter, sortBy]);
+
+  // Filtered and sorted company list for the Company Cases tab based on activeCompanySelection and optional calendar date filter
   const displayedCompanyCases = useMemo(() => {
     if (!data?.companyCases) return [];
-    if (activeCompanySelection === 'ALL') {
-      return data.companyCases;
+    let list = activeCompanySelection === 'ALL'
+      ? [...data.companyCases]
+      : data.companyCases.filter(
+          (c) => c.companyName.toLowerCase() === activeCompanySelection.toLowerCase()
+        );
+
+    // Filter by specific selected calendar date if active
+    if (selectedDateFilter) {
+      list = list.filter((comp) =>
+        (comp.productSummaries || []).some((p) =>
+          (p.customers || []).some((c) => isDateMatch(c.date, selectedDateFilter))
+        )
+      );
     }
-    return data.companyCases.filter(
-      (c) => c.companyName.toLowerCase() === activeCompanySelection.toLowerCase()
-    );
-  }, [data, activeCompanySelection]);
+
+    switch (sortBy) {
+      case 'NAME_ASC':
+        return list.sort((a, b) => a.companyName.localeCompare(b.companyName, undefined, { sensitivity: 'base' }));
+      case 'NAME_DESC':
+        return list.sort((a, b) => b.companyName.localeCompare(a.companyName, undefined, { sensitivity: 'base' }));
+      case 'AMT_DESC':
+        return list.sort((a, b) => ((b.totalBalanceAmount ?? b.totalPendingAmount) || 0) - ((a.totalBalanceAmount ?? a.totalPendingAmount) || 0));
+      case 'AMT_ASC':
+        return list.sort((a, b) => ((a.totalBalanceAmount ?? a.totalPendingAmount) || 0) - ((b.totalBalanceAmount ?? b.totalPendingAmount) || 0));
+      case 'CASES_DESC':
+        return list.sort((a, b) => ((b.totalBalanceCases ?? b.totalPendingCases) || 0) - ((a.totalBalanceCases ?? a.totalPendingCases) || 0));
+      case 'CASES_ASC':
+        return list.sort((a, b) => ((a.totalBalanceCases ?? a.totalPendingCases) || 0) - ((b.totalBalanceCases ?? b.totalPendingCases) || 0));
+      case 'DATE_DESC':
+        return list.sort((a, b) => getCompanyDateTimestamp(b, 'latest') - getCompanyDateTimestamp(a, 'latest'));
+      case 'DATE_ASC':
+        return list.sort((a, b) => getCompanyDateTimestamp(a, 'earliest') - getCompanyDateTimestamp(b, 'earliest'));
+      default:
+        return list.sort((a, b) => a.companyName.localeCompare(b.companyName, undefined, { sensitivity: 'base' }));
+    }
+  }, [data?.companyCases, activeCompanySelection, selectedDateFilter, sortBy]);
 
   // Copy customer pending cases text for WhatsApp
   const handleCopyCustomerWhatsApp = (customer: PendingCustomerGroup) => {
@@ -755,6 +930,80 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
               ))}
             </Select>
           </FormControl>
+
+          {/* Calendar Date Filter */}
+          <TextField
+            type="date"
+            size="small"
+            value={selectedDateFilter}
+            onChange={(e) => setSelectedDateFilter(e.target.value)}
+            slotProps={{
+              input: {
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Tooltip title="Filter by Order Date (Calendar)">
+                      <CalendarMonthRoundedIcon sx={{ color: selectedDateFilter ? '#1D4ED8' : '#64748B', fontSize: 19 }} />
+                    </Tooltip>
+                  </InputAdornment>
+                ),
+                endAdornment: selectedDateFilter ? (
+                  <InputAdornment position="end">
+                    <Tooltip title="Clear Date Filter (Show All)">
+                      <IconButton
+                        size="small"
+                        onClick={() => setSelectedDateFilter('')}
+                        sx={{ p: 0.25, color: '#DC2626' }}
+                      >
+                        <CloseRoundedIcon sx={{ fontSize: 16 }} />
+                      </IconButton>
+                    </Tooltip>
+                  </InputAdornment>
+                ) : null,
+              },
+            }}
+            sx={{
+              minWidth: 165,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '8px',
+                backgroundColor: selectedDateFilter ? '#EFF6FF' : '#FFFFFF',
+                borderColor: selectedDateFilter ? '#1D4ED8' : undefined,
+                fontWeight: 600,
+                fontSize: '13px',
+              },
+            }}
+          />
+
+          {/* Sort By Dropdown */}
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel id="sort-filter-label">Sort By</InputLabel>
+            <Select
+              labelId="sort-filter-label"
+              value={sortBy}
+              label="Sort By"
+              onChange={(e) => setSortBy(e.target.value as PendingSortOption)}
+              startAdornment={
+                <InputAdornment position="start">
+                  <SortRoundedIcon sx={{ color: '#64748B', fontSize: 18, mr: -0.5 }} />
+                </InputAdornment>
+              }
+              sx={{
+                borderRadius: '8px',
+                backgroundColor: '#FFFFFF',
+                fontSize: '13px',
+                fontWeight: 600,
+              }}
+            >
+              <MenuItem value="NAME_ASC">Name: A to Z (Default)</MenuItem>
+              <MenuItem value="NAME_DESC">Name: Z to A</MenuItem>
+              <MenuItem value="AMT_DESC">Amount: High to Low (₹)</MenuItem>
+              <MenuItem value="AMT_ASC">Amount: Low to High (₹)</MenuItem>
+              <MenuItem value="CASES_DESC">Pending Cases: High to Low</MenuItem>
+              <MenuItem value="CASES_ASC">Pending Cases: Low to High</MenuItem>
+              <MenuItem value="BILL_DESC">Performa / Bill No: Latest</MenuItem>
+              <MenuItem value="DATE_DESC">Date: Newest First</MenuItem>
+              <MenuItem value="DATE_ASC">Date: Oldest First</MenuItem>
+            </Select>
+          </FormControl>
         </Box>
       </Paper>
 
@@ -774,12 +1023,51 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
         </Alert>
       )}
 
+      {/* Active Date Filter Banner */}
+      {selectedDateFilter && (
+        <Box sx={{ mb: 2.5, display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
+          <Chip
+            icon={<CalendarMonthRoundedIcon sx={{ fontSize: '16px !important', color: '#1D4ED8' }} />}
+            label={`Filtered to Date: ${selectedDateFilter.split('-').reverse().join('-')} (${subTab === 'customer' ? sortedCustomerCases.length : displayedCompanyCases.length} ${subTab === 'customer' ? 'customers' : 'companies'} found)`}
+            onDelete={() => setSelectedDateFilter('')}
+            sx={{
+              backgroundColor: '#EFF6FF',
+              color: '#1D4ED8',
+              fontWeight: 700,
+              fontSize: '12.5px',
+              height: 32,
+              px: 0.5,
+              border: '1.5px solid #BFDBFE',
+              borderRadius: '8px',
+              '& .MuiChip-deleteIcon': {
+                color: '#DC2626',
+                '&:hover': { color: '#991B1B' },
+              },
+            }}
+          />
+          <Button
+            size="small"
+            variant="text"
+            onClick={() => setSelectedDateFilter('')}
+            sx={{
+              textTransform: 'none',
+              fontWeight: 700,
+              fontSize: '12px',
+              color: '#DC2626',
+              '&:hover': { backgroundColor: '#FEE2E2' },
+            }}
+          >
+            Clear Date (Show All Customers)
+          </Button>
+        </Box>
+      )}
+
       {/* ========================================================================= */}
       {/* SUB-TAB 1: CUSTOMER CASES                                                */}
       {/* ========================================================================= */}
       {subTab === 'customer' && !loading && (
         <Box>
-          {data?.customerCases?.length === 0 ? (
+          {sortedCustomerCases.length === 0 ? (
             <Paper
               elevation={0}
               sx={{
@@ -806,10 +1094,13 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                   <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 800, color: '#64748B', width: '50px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>
-                        #
+                        S.No
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>
-                        Customer Name & Info
+                      <TableCell
+                        onClick={() => setSortBy((prev) => (prev === 'NAME_ASC' ? 'NAME_DESC' : 'NAME_ASC'))}
+                        sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none', '&:hover': { color: '#1D4ED8' } }}
+                      >
+                        Customer Name & Info {sortBy === 'NAME_ASC' ? '▲' : sortBy === 'NAME_DESC' ? '▼' : ''}
                       </TableCell>
                       <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>
                         Ordered
@@ -817,11 +1108,17 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                       <TableCell sx={{ fontWeight: 800, color: '#16A34A', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>
                         Delivered
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#B45309', textAlign: 'center', width: '130px', fontSize: '11px', textTransform: 'uppercase' }}>
-                        Pending Cases
+                      <TableCell
+                        onClick={() => setSortBy((prev) => (prev === 'CASES_DESC' ? 'CASES_ASC' : 'CASES_DESC'))}
+                        sx={{ fontWeight: 800, color: '#B45309', textAlign: 'center', width: '130px', fontSize: '11px', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none', '&:hover': { color: '#92400E' } }}
+                      >
+                        Pending Cases {sortBy === 'CASES_DESC' ? '▼' : sortBy === 'CASES_ASC' ? '▲' : ''}
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase' }}>
-                        Pending Amount
+                      <TableCell
+                        onClick={() => setSortBy((prev) => (prev === 'AMT_DESC' ? 'AMT_ASC' : 'AMT_DESC'))}
+                        sx={{ fontWeight: 800, color: '#64748B', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none', '&:hover': { color: '#1D4ED8' } }}
+                      >
+                        Pending Amount {sortBy === 'AMT_DESC' ? '▼' : sortBy === 'AMT_ASC' ? '▲' : ''}
                       </TableCell>
                       <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>
                         Status
@@ -833,7 +1130,9 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                   </TableHead>
 
                   <TableBody>
-                    {data?.customerCases?.map((customer, idx) => (
+                    {sortedCustomerCases.map((customer, idx) => {
+                      const latestDate = getCustomerLatestDate(customer);
+                      return (
                       <TableRow
                         key={customer.customerName}
                         hover
@@ -878,6 +1177,32 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                                   <Typography sx={{ fontSize: '11px', color: '#64748B' }}>
                                     {customer.customerPhone}
                                   </Typography>
+                                )}
+                                {latestDate && (
+                                  <Tooltip title={`Click to filter orders from ${latestDate}`}>
+                                    <Chip
+                                      icon={<CalendarMonthRoundedIcon sx={{ fontSize: '12px !important' }} />}
+                                      label={latestDate}
+                                      size="small"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedDateFilter(normalizeToYmd(latestDate));
+                                      }}
+                                      sx={{
+                                        height: 19,
+                                        fontSize: '10.5px',
+                                        fontWeight: 700,
+                                        backgroundColor: isDateMatch(latestDate, selectedDateFilter) ? '#1D4ED8' : '#EFF6FF',
+                                        color: isDateMatch(latestDate, selectedDateFilter) ? '#FFFFFF' : '#1D4ED8',
+                                        cursor: 'pointer',
+                                        border: isDateMatch(latestDate, selectedDateFilter) ? '1px solid #1E40AF' : '1px solid #DBEAFE',
+                                        '&:hover': {
+                                          backgroundColor: '#1D4ED8',
+                                          color: '#FFFFFF',
+                                        },
+                                      }}
+                                    />
+                                  </Tooltip>
                                 )}
                               </Box>
                             </Box>
@@ -1038,7 +1363,8 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                           </Box>
                         </TableCell>
                       </TableRow>
-                    ))}
+                    );
+                    })}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -1046,7 +1372,9 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
           ) : (
             /* DETAILED CARD VIEW (ALTERNATIVE) */
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {data?.customerCases?.map((customer) => (
+              {sortedCustomerCases.map((customer) => {
+                const latestDate = getCustomerLatestDate(customer);
+                return (
                 <Paper
                   key={customer.customerName}
                   sx={{
@@ -1076,9 +1404,37 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                           <Typography sx={{ fontWeight: 800, fontSize: '15px', color: '#0F172A' }}>
                             {customer.customerName}
                           </Typography>
-                          <Typography sx={{ fontSize: '12px', color: '#64748B' }}>
-                            {customer.customerPhone || customer.customerCompany || 'Customer'}
-                          </Typography>
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mt: 0.3, flexWrap: 'wrap' }}>
+                            <Typography sx={{ fontSize: '12px', color: '#64748B' }}>
+                              {customer.customerPhone || customer.customerCompany || 'Customer'}
+                            </Typography>
+                            {latestDate && (
+                              <Tooltip title={`Click to filter orders from ${latestDate}`}>
+                                <Chip
+                                  icon={<CalendarMonthRoundedIcon sx={{ fontSize: '12px !important' }} />}
+                                  label={latestDate}
+                                  size="small"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setSelectedDateFilter(normalizeToYmd(latestDate));
+                                  }}
+                                  sx={{
+                                    height: 19,
+                                    fontSize: '10.5px',
+                                    fontWeight: 700,
+                                    backgroundColor: isDateMatch(latestDate, selectedDateFilter) ? '#1D4ED8' : '#EFF6FF',
+                                    color: isDateMatch(latestDate, selectedDateFilter) ? '#FFFFFF' : '#1D4ED8',
+                                    cursor: 'pointer',
+                                    border: isDateMatch(latestDate, selectedDateFilter) ? '1px solid #1E40AF' : '1px solid #DBEAFE',
+                                    '&:hover': {
+                                      backgroundColor: '#1D4ED8',
+                                      color: '#FFFFFF',
+                                    },
+                                  }}
+                                />
+                              </Tooltip>
+                            )}
+                          </Box>
                         </Box>
                       </Box>
 
@@ -1096,7 +1452,8 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                       </Box>
                     </Box>
                   </Paper>
-                ))}
+                );
+              })}
             </Box>
           )}
         </Box>
@@ -1192,10 +1549,13 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                   <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 800, color: '#64748B', width: '50px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>
-                        #
+                        S.No
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>
-                        Company / Brand
+                      <TableCell
+                        onClick={() => setSortBy((prev) => (prev === 'NAME_ASC' ? 'NAME_DESC' : 'NAME_ASC'))}
+                        sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none', '&:hover': { color: '#1D4ED8' } }}
+                      >
+                        Company / Brand {sortBy === 'NAME_ASC' ? '▲' : sortBy === 'NAME_DESC' ? '▼' : ''}
                       </TableCell>
                       <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>
                         Stock Ordered
@@ -1203,11 +1563,17 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                       <TableCell sx={{ fontWeight: 800, color: '#16A34A', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>
                         Given To Customers
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#7C3AED', textAlign: 'center', width: '140px', fontSize: '11px', textTransform: 'uppercase' }}>
-                        Balance in Company
+                      <TableCell
+                        onClick={() => setSortBy((prev) => (prev === 'CASES_DESC' ? 'CASES_ASC' : 'CASES_DESC'))}
+                        sx={{ fontWeight: 800, color: '#7C3AED', textAlign: 'center', width: '140px', fontSize: '11px', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none', '&:hover': { color: '#6D28D9' } }}
+                      >
+                        Balance in Company {sortBy === 'CASES_DESC' ? '▼' : sortBy === 'CASES_ASC' ? '▲' : ''}
                       </TableCell>
-                      <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase' }}>
-                        Balance Value
+                      <TableCell
+                        onClick={() => setSortBy((prev) => (prev === 'AMT_DESC' ? 'AMT_ASC' : 'AMT_DESC'))}
+                        sx={{ fontWeight: 800, color: '#64748B', textAlign: 'right', fontSize: '11px', textTransform: 'uppercase', cursor: 'pointer', userSelect: 'none', '&:hover': { color: '#1D4ED8' } }}
+                      >
+                        Balance Value {sortBy === 'AMT_DESC' ? '▼' : sortBy === 'AMT_ASC' ? '▲' : ''}
                       </TableCell>
                       <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', width: '120px', fontSize: '11px', textTransform: 'uppercase' }}>
                         Actions
@@ -1644,7 +2010,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                   <Table>
                     <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
                       <TableRow>
-                        <TableCell sx={{ fontWeight: 800, color: '#64748B', width: '50px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>#</TableCell>
+                        <TableCell sx={{ fontWeight: 800, color: '#64748B', width: '50px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>S.No</TableCell>
                         <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>Product Details</TableCell>
                         <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>Brand / Company</TableCell>
                         <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Ordered</TableCell>
@@ -2020,7 +2386,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                     <Table>
                       <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 800, color: '#64748B', width: '50px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>#</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', width: '50px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>S.No</TableCell>
                           <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>Product Name</TableCell>
                           <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Total Stock</TableCell>
                           <TableCell sx={{ fontWeight: 800, color: '#16A34A', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Delivered</TableCell>
@@ -2115,7 +2481,7 @@ export const PendingCasesPage: FC<PendingCasesPageProps> = ({
                     <Table>
                       <TableHead sx={{ backgroundColor: '#F8FAFC' }}>
                         <TableRow>
-                          <TableCell sx={{ fontWeight: 800, color: '#64748B', width: '50px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>#</TableCell>
+                          <TableCell sx={{ fontWeight: 800, color: '#64748B', width: '50px', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>S.No</TableCell>
                           <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>Customer Name</TableCell>
                           <TableCell sx={{ fontWeight: 800, color: '#64748B', fontSize: '11px', textTransform: 'uppercase' }}>Product Name</TableCell>
                           <TableCell sx={{ fontWeight: 800, color: '#64748B', textAlign: 'center', fontSize: '11px', textTransform: 'uppercase' }}>Ordered</TableCell>

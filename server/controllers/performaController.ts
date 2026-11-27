@@ -11,7 +11,8 @@ import { getCustomerPerformaSummary, calculatePendingCasesData } from '../servic
 
 export const getPerformas = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    const { customerName, customerId, companyName, status, search, startDate, endDate, sortBy, sortOrder } = req.query;
+    const userRole = ((req.headers['x-user-role'] as string) || '').toLowerCase();
+    const { customerName, customerId, companyName, status, search, startDate, endDate, sortBy, sortOrder, source } = req.query;
     const filter: any = {};
 
     if (customerId && mongoose.Types.ObjectId.isValid(String(customerId))) {
@@ -40,6 +41,47 @@ export const getPerformas = async (req: Request, res: Response, next: NextFuncti
 
     if (status && typeof status === 'string' && status.trim() !== '' && status.toUpperCase() !== 'ALL') {
       filter.status = status.toUpperCase();
+    }
+
+    if (source && typeof source === 'string' && source.trim() !== '' && source.toUpperCase() !== 'ALL') {
+      const srcUpper = source.toUpperCase();
+      if (srcUpper === 'CUSTOMER') {
+        const customerCond = [
+          { createdBy: 'Customer Order' },
+          { notes: { $regex: 'Customer Online Order', $options: 'i' } },
+        ];
+        if (filter.$and) {
+          filter.$and.push({ $or: customerCond });
+        } else {
+          filter.$or = filter.$or ? [{ $or: filter.$or }, { $or: customerCond }] : customerCond;
+        }
+      } else if (srcUpper === 'ADMIN') {
+        const adminCond = [
+          { createdBy: { $ne: 'Customer Order' } },
+          { notes: { $not: /Customer Online Order/i } },
+        ];
+        if (filter.$and) {
+          filter.$and.push(...adminCond);
+        } else {
+          filter.$and = adminCond;
+        }
+      }
+    }
+
+    // Regular admin can only see admin-created performas OR customer online orders approved by superadmin
+    if (userRole === 'admin') {
+      const adminVisibilityCond = [
+        { createdBy: { $ne: 'Customer Order' }, notes: { $not: /Customer Online Order/i } },
+        { isApproved: true, approvedForAdmin: true },
+      ];
+      if (filter.$and) {
+        filter.$and.push({ $or: adminVisibilityCond });
+      } else if (filter.$or) {
+        filter.$and = [{ $or: filter.$or }, { $or: adminVisibilityCond }];
+        delete filter.$or;
+      } else {
+        filter.$or = adminVisibilityCond;
+      }
     }
 
     if (startDate || endDate) {
@@ -82,6 +124,7 @@ export const getPerformas = async (req: Request, res: Response, next: NextFuncti
     else if (sortBy === 'remainingAdvance') sortObj.remainingAdvanceAmount = order;
     else if (sortBy === 'performaNumber') sortObj.performaNumber = order;
     else if (sortBy === 'cases' || sortBy === 'totalRequiredCases') sortObj.totalRequiredCases = order;
+    else if (sortBy === 'source' || sortBy === 'createdBy') sortObj.createdBy = order;
     else {
       sortObj.date = -1;
       sortObj.createdAt = -1;
@@ -437,7 +480,8 @@ export const createPerforma = async (req: Request, res: Response, next: NextFunc
 
 export const updatePerforma = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    if (req.headers['x-user-role'] === 'user') {
+    const userRole = ((req.headers['x-user-role'] as string) || '').toLowerCase();
+    if (userRole === 'user') {
       res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to edit performas.' });
       return;
     }
@@ -445,6 +489,19 @@ export const updatePerforma = async (req: Request, res: Response, next: NextFunc
     const existing = await Performa.findById(id);
     if (!existing) {
       res.status(404).json({ success: false, error: 'Performa record not found' });
+      return;
+    }
+
+    // Customer online orders can only be edited by Superadmin (regular admin cannot edit them)
+    const isCustomerOrder =
+      existing.createdBy === 'Customer Order' ||
+      (existing.notes && /Customer Online Order/i.test(existing.notes));
+
+    if (userRole === 'admin' && isCustomerOrder) {
+      res.status(403).json({
+        success: false,
+        error: 'Customer online order performas can only be edited by Superadmin.',
+      });
       return;
     }
 
@@ -638,7 +695,8 @@ export const cancelPerforma = async (req: Request, res: Response, next: NextFunc
 
 export const deletePerforma = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
-    if (req.headers['x-user-role'] === 'user') {
+    const userRole = ((req.headers['x-user-role'] as string) || '').toLowerCase();
+    if (userRole === 'user') {
       res.status(403).json({ success: false, error: 'Access denied. Customers are not allowed to delete performas.' });
       return;
     }
@@ -646,6 +704,19 @@ export const deletePerforma = async (req: Request, res: Response, next: NextFunc
     const performa = await Performa.findById(id);
     if (!performa) {
       res.status(404).json({ success: false, error: 'Performa record not found' });
+      return;
+    }
+
+    // Customer online orders can only be deleted by Superadmin
+    const isCustomerOrder =
+      performa.createdBy === 'Customer Order' ||
+      (performa.notes && /Customer Online Order/i.test(performa.notes));
+
+    if (userRole === 'admin' && isCustomerOrder) {
+      res.status(403).json({
+        success: false,
+        error: 'Customer online order performas can only be deleted by Superadmin.',
+      });
       return;
     }
 

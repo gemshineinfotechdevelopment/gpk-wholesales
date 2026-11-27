@@ -49,7 +49,7 @@ function App() {
       'Settings',
     ];
     if (isCustomer) {
-      return saved === 'All Performa' ? 'All Performa' : 'Particulars';
+      return (saved === 'All Performa' || saved === 'Product') ? saved : 'Particulars';
     }
     if (saved === 'Settings' && currentUser?.role !== 'superadmin') {
       return 'Customers';
@@ -112,7 +112,7 @@ function App() {
   };
 
   const handleSelectTab = (tab: NavTab) => {
-    if (currentUser?.role === 'user' && tab !== 'Particulars' && tab !== 'All Performa') {
+    if (currentUser?.role === 'user' && tab !== 'Particulars' && tab !== 'All Performa' && tab !== 'Product') {
       return;
     }
     if (tab === 'Settings' && currentUser?.role !== 'superadmin') {
@@ -209,6 +209,7 @@ function App() {
               initialCustomerName={effectiveCustomerName}
               onNavigateAllPerforma={() => handleSelectTab('All Performa')}
               onSelectCustomerForBill={handleCustomerSelectedForParticular}
+              userRole={currentUser?.role}
             />
           )}
 
@@ -251,8 +252,8 @@ function App() {
             />
           )}
 
-          {/* Product Tab (Admin & Superadmin only) */}
-          {activeTab === 'Product' && currentUser?.role !== 'user' && <ProductsPage />}
+          {/* Product Tab (Customer: Order Products; Admin/Superadmin: Manage Products) */}
+          {activeTab === 'Product' && <ProductsPage user={currentUser} />}
 
           {/* Company Tab (Admin & Superadmin only) */}
           {activeTab === 'Company' && currentUser?.role !== 'user' && (

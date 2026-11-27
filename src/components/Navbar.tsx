@@ -59,6 +59,7 @@ export const Navbar: FC<NavbarProps> = ({
   const fullTabs: NavTab[] = isSuperAdmin ? [...baseTabs, 'Settings'] : baseTabs;
 
   const customerTabs: { label: string; tab: NavTab }[] = [
+    { label: 'Order Products', tab: 'Product' },
     { label: 'All Performa', tab: 'All Performa' },
     { label: 'Particulars', tab: 'Particulars' },
   ];
@@ -624,7 +625,10 @@ export const Navbar: FC<NavbarProps> = ({
 
           {/* Navigation Links */}
           <List sx={{ p: 0 }}>
-            {(isCustomer ? customerTabs.map((ct) => ct.tab) : fullTabs).map((tab) => {
+            {(isCustomer
+              ? customerTabs.map((ct) => ({ tab: ct.tab, label: ct.label }))
+              : fullTabs.map((tab) => ({ tab, label: tab }))
+            ).map(({ tab, label }) => {
               const isActive = activeTab === tab;
               return (
                 <ListItem key={tab} disablePadding sx={{ mb: 0.6 }}>
@@ -657,7 +661,7 @@ export const Navbar: FC<NavbarProps> = ({
                             color: isActive ? '#1D4ED8' : '#334155',
                           }}
                         >
-                          {tab}
+                          {label}
                         </Typography>
                       }
                     />

@@ -244,9 +244,32 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
                 fontSize: '12px',
               }}
             >
-              {performa.status}
+              {performa.status === 'PARTIALLY_USED' ? 'PARTIAL' : (performa.status || 'ACTIVE')}
             </span>
           </div>
+
+          {/* Highlighted Performa Company Name */}
+          {(performa.companyName || (performa.products || []).find((p: any) => p.companyName)?.companyName) && (
+            <div style={{ marginTop: '8px' }}>
+              <span
+                style={{
+                  display: 'inline-block',
+                  padding: '4px 12px',
+                  backgroundColor: '#EFF6FF',
+                  color: '#1D4ED8',
+                  border: '2px solid #2563EB',
+                  borderRadius: '6px',
+                  fontWeight: 900,
+                  fontSize: '13px',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.04em',
+                  boxShadow: '0 1px 3px rgba(37, 99, 235, 0.12)',
+                }}
+              >
+                🏢 COMPANY: {performa.companyName || (performa.products || []).find((p: any) => p.companyName)?.companyName}
+              </span>
+            </div>
+          )}
         </div>
 
         <div>
@@ -261,9 +284,22 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
             </div>
           )}
           {customer.companyName && (
-            <div style={{ marginBottom: '4px' }}>
-              <span style={{ color: '#64748B', fontWeight: 600 }}>Company: </span>
-              <span style={{ fontWeight: 600 }}>{customer.companyName}</span>
+            <div style={{ marginBottom: '5px', marginTop: '2px' }}>
+              <span style={{ color: '#475569', fontWeight: 700 }}>Customer Company: </span>
+              <span
+                style={{
+                  display: 'inline-block',
+                  padding: '2.5px 9px',
+                  backgroundColor: '#FEF3C7',
+                  color: '#92400E',
+                  border: '1.5px solid #F59E0B',
+                  borderRadius: '4px',
+                  fontWeight: 900,
+                  fontSize: '12.5px',
+                }}
+              >
+                {customer.companyName}
+              </span>
             </div>
           )}
           {customer.address && (
@@ -280,16 +316,16 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
         style={{
           width: '100%',
           borderCollapse: 'collapse',
-          border: '1px solid #0F172A',
+          border: '1.5px solid #0F172A',
           marginBottom: '16px',
           fontSize: '12px',
         }}
       >
         <thead>
           <tr style={{ backgroundColor: '#0F172A', color: '#FFFFFF' }}>
-            <th style={{ padding: '8px 6px', textAlign: 'center', width: '35px', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', border: '1px solid #0F172A' }}>#</th>
+            <th style={{ padding: '8px 6px', textAlign: 'center', width: '40px', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', border: '1px solid #0F172A' }}>S.No</th>
             <th style={{ padding: '8px 10px', textAlign: 'left', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', border: '1px solid #0F172A' }}>Product Description</th>
-            <th style={{ padding: '8px 8px', textAlign: 'left', width: '120px', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', border: '1px solid #0F172A' }}>Company</th>
+            <th style={{ padding: '8px 8px', textAlign: 'center', width: '130px', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', border: '1px solid #0F172A', backgroundColor: '#1E293B', color: '#FEF08A' }}>Company</th>
             <th style={{ padding: '8px 6px', textAlign: 'center', width: '75px', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', border: '1px solid #0F172A' }}>Total Cases</th>
             <th style={{ padding: '8px 8px', textAlign: 'right', width: '80px', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', border: '1px solid #0F172A' }}>Rate (₹)</th>
             <th style={{ padding: '8px 6px', textAlign: 'center', width: '55px', fontWeight: 800, fontSize: '11px', textTransform: 'uppercase', border: '1px solid #0F172A' }}>Units</th>
@@ -315,8 +351,24 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
                       <div style={{ fontSize: '10.5px', color: '#64748B' }}>Code: {item.productCode}</div>
                     )}
                   </td>
-                  <td style={{ padding: '7px 8px', color: '#1D4ED8', fontWeight: 600, border: '1px solid #CBD5E1', fontSize: '11.5px' }}>
-                    {(item.companyName && item.companyName.trim()) || (item as any).productSnapshot?.companyName || performa.companyName || '-'}
+                  <td style={{ padding: '6px 8px', textAlign: 'center', border: '1px solid #CBD5E1' }}>
+                    <span
+                      style={{
+                        display: 'inline-block',
+                        padding: '2.5px 8px',
+                        borderRadius: '4px',
+                        backgroundColor: '#EFF6FF',
+                        color: '#1D4ED8',
+                        border: '1px solid #BFDBFE',
+                        fontWeight: 800,
+                        fontSize: '11px',
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.02em',
+                        whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {(item.companyName && item.companyName.trim()) || (item as any).productSnapshot?.companyName || performa.companyName || '-'}
+                    </span>
                   </td>
                   <td style={{ padding: '7px 6px', textAlign: 'center', fontWeight: 800, color: '#0F172A', border: '1px solid #CBD5E1' }}>
                     {item.requiredCases}
@@ -378,7 +430,7 @@ export const PerformaPrintTemplate: React.FC<PerformaPrintTemplateProps> = ({ pe
           )}
           {taxAmt > 0 && (
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', color: '#475569' }}>
-              <span>Tax (Amount):</span>
+              <span>Tax Amount {taxNum > 0 ? `(${taxNum}%)` : ''}:</span>
               <strong style={{ fontWeight: 700, color: '#0F172A' }}>+ ₹ {formatCurrency(taxAmt)}</strong>
             </div>
           )}

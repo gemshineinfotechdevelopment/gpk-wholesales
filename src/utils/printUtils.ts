@@ -108,7 +108,7 @@ export const generateBillHtml = (bill: BillPrintData): string => {
     if (rawTaxStr.includes('%') || taxNum <= 100) {
       const casesVal = parseFloat(String(bill.caseCount || '0')) || (Array.isArray(bill.products) ? bill.products.reduce((acc: number, p: any) => acc + (parseFloat(p.quantity) || 0), 0) : 0);
       taxAmt = (2500 * casesVal * taxNum) / 100;
-      taxLabel = `Tax Amount (${taxNum}% on ₹2500/case)`;
+      taxLabel = `Tax Amount (${taxNum}%)`;
     } else {
       taxAmt = taxNum;
       taxLabel = `Tax Amount (₹${taxNum.toLocaleString('en-IN')})`;
@@ -498,7 +498,7 @@ export const generateBillHtml = (bill: BillPrintData): string => {
       <table class="prod-table" style="width: 100%; border-collapse: collapse; border: 1.5px solid #0F172A; font-size: 12px; margin-bottom: 14px;">
         <thead>
           <tr style="background-color: #0F172A;">
-            <th style="width: 5%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 11px;">#</th>
+            <th style="width: 6%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 11px;">S.No</th>
             <th style="width: 45%; text-align: left; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 10px; font-weight: 800; font-size: 11px;">Particular / Product Description</th>
             <th style="width: 10%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 11px;">Cases</th>
             <th style="width: 12%; text-align: right; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 8px; font-weight: 800; font-size: 11px;">Rate (₹)</th>
@@ -679,12 +679,12 @@ export const generateCustomerListPrintHtml = (
       return `
         <tr class="data-row" style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
           <td class="text-center" style="width: 4%;">${globalIdx + 1}</td>
-          <td class="text-center" style="width: 8%; font-weight:700; color:#475569;">${idDisplay}</td>
-          <td style="width: 28%; font-weight:800; color:#0F172A; word-break: break-word;">${c.name}</td>
-          <td style="width: 26%; color:#475569; word-break: break-word;">${c.address || '-'}${c.state ? `, ${c.state}` : ''}</td>
-          <td class="text-right" style="width: 11%; font-weight:700; color:#1E293B;">₹ ${deb}</td>
-          <td class="text-right" style="width: 11%; font-weight:700; color:#16A34A;">₹ ${cred}</td>
-          <td class="text-right" style="width: 12%;">${balanceHtml}</td>
+          <td class="text-center" style="width: 7%; font-weight:700; color:#475569;">${idDisplay}</td>
+          <td style="width: 24%; font-weight:800; color:#0F172A; word-break: break-word;">${c.name}</td>
+          <td style="width: 20%; color:#475569; word-break: break-word;">${c.address || '-'}${c.state ? `, ${c.state}` : ''}</td>
+          <td class="text-right" style="width: 14%; font-weight:700; color:#1E293B; white-space: nowrap; padding-right: 6px;">₹ ${deb}</td>
+          <td class="text-right" style="width: 14%; font-weight:700; color:#16A34A; white-space: nowrap; padding-right: 6px;">₹ ${cred}</td>
+          <td class="text-right" style="width: 17%; white-space: nowrap; padding-right: 6px;">${balanceHtml}</td>
         </tr>
       `;
     }).join('');
@@ -753,13 +753,13 @@ export const generateCustomerListPrintHtml = (
         <table class="data-table">
           <thead>
             <tr>
-              <th class="text-center" style="width: 4%;">#</th>
-              <th class="text-center" style="width: 8%;">ID</th>
-              <th style="width: 28%;">Customer Name</th>
-              <th style="width: 26%;">Address</th>
-              <th class="text-right" style="width: 11%;">Debit (Dr)</th>
-              <th class="text-right" style="width: 11%;">Credit (Cr)</th>
-              <th class="text-right" style="width: 12%;">Net Balance / Status</th>
+              <th class="text-center" style="width: 4%;">S.No</th>
+              <th class="text-center" style="width: 7%;">ID</th>
+              <th style="width: 24%;">Customer Name</th>
+              <th style="width: 20%;">Address</th>
+              <th class="text-right" style="width: 14%; padding-right: 6px;">Debit (Dr)</th>
+              <th class="text-right" style="width: 14%; padding-right: 6px;">Credit (Cr)</th>
+              <th class="text-right" style="width: 17%; padding-right: 6px;">Net Balance / Status</th>
             </tr>
           </thead>
           <tbody>
@@ -771,9 +771,9 @@ export const generateCustomerListPrintHtml = (
               <td colspan="4" class="text-right" style="padding-right: 8px;">
                 PAGE ${pageIdx + 1} TOTAL (${pageCustomers.length} Records):
               </td>
-              <td class="text-right">₹ ${pageDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-              <td class="text-right">₹ ${pageCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-              <td class="text-right">
+              <td class="text-right" style="width: 14%; padding-right: 6px; white-space: nowrap;">₹ ${pageDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="width: 14%; padding-right: 6px; white-space: nowrap;">₹ ${pageCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="width: 17%; padding-right: 6px; white-space: nowrap;">
                 ${
                   pagePendingDue > 0
                     ? `Due: ₹ ${pagePendingDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
@@ -792,9 +792,9 @@ export const generateCustomerListPrintHtml = (
               <td colspan="4" class="text-right" style="padding-right: 8px;">
                 OVERALL GRAND TOTALS (${customers.length} Customers):
               </td>
-              <td class="text-right">₹ ${overallDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-              <td class="text-right">₹ ${overallCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-              <td class="text-right">
+              <td class="text-right" style="width: 14%; padding-right: 6px; white-space: nowrap;">₹ ${overallDebit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="width: 14%; padding-right: 6px; white-space: nowrap;">₹ ${overallCredit.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="width: 17%; padding-right: 6px; white-space: nowrap;">
                 ${
                   overallPendingDue > 0
                     ? `Due: ₹ ${overallPendingDue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}`
@@ -1021,6 +1021,7 @@ export const generateCustomerListPrintHtml = (
       padding: 0 4px;
       border: 1px solid #CBD5E1;
       vertical-align: middle;
+      overflow: hidden;
     }
     .data-row {
       height: 33px;
@@ -1037,17 +1038,19 @@ export const generateCustomerListPrintHtml = (
       border: 1px solid #CBD5E1 !important;
       font-size: 10px;
       font-weight: 800;
-      padding: 4px 4px;
+      padding: 4px 6px;
       height: 25px;
+      white-space: nowrap;
     }
     .grand-total-row td {
       background-color: #0F172A !important;
       color: #FFFFFF !important;
       border: 1px solid #0F172A !important;
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 900;
-      padding: 4px 4px;
+      padding: 4px 6px;
       height: 26px;
+      white-space: nowrap;
     }
     .signature-section {
       margin-top: auto;
@@ -1228,8 +1231,8 @@ export const generateLedgerStatementHtml = (
         <table class="data-table">
           <thead>
             <tr>
-              <th class="text-center" style="width:11%;">Date</th>
-              <th class="text-center" style="width:4%;">#</th>
+              <th class="text-center" style="width:5%;">Date</th>
+              <th class="text-center" style="width:5%;">S.No</th>
               <th style="width:24%;">Particulars</th>
               <th style="width:12%;">Bill No</th>
               <th style="width:15%;">Payment Type</th>
@@ -1245,9 +1248,9 @@ export const generateLedgerStatementHtml = (
             <!-- Page Total Row (Bottom of EVERY page) -->
             <tr class="page-total-row">
               <td colspan="5" class="text-right" style="padding-right:8px;">PAGE ${pageIdx + 1} TOTAL (${pageEntries.length} Records):</td>
-              <td class="text-right">₹ ${pageDeb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-              <td class="text-right">₹ ${pageCred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-              <td class="text-right">
+              <td class="text-right" style="white-space: nowrap; padding-right: 6px;">₹ ${pageDeb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="white-space: nowrap; padding-right: 6px;">₹ ${pageCred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="white-space: nowrap; padding-right: 6px;">
                 ₹ ${Math.abs(pageNet).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${pageNet > 0 ? 'Dr' : pageNet < 0 ? 'Cr' : ''}
               </td>
             </tr>
@@ -1258,9 +1261,9 @@ export const generateLedgerStatementHtml = (
                 ? `
             <tr class="grand-total-row">
               <td colspan="5" class="text-right" style="padding-right:8px;">OVERALL GRAND TOTALS (${ledgerEntries.length} Records):</td>
-              <td class="text-right">₹ ${totalDeb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-              <td class="text-right">₹ ${totalCred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
-              <td class="text-right">
+              <td class="text-right" style="white-space: nowrap; padding-right: 6px;">₹ ${totalDeb.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="white-space: nowrap; padding-right: 6px;">₹ ${totalCred.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="white-space: nowrap; padding-right: 6px;">
                 ₹ ${Math.abs(netBalance).toLocaleString('en-IN', { minimumFractionDigits: 2 })} ${netBalance > 0 ? 'Dr' : netBalance < 0 ? 'Cr' : ''}
               </td>
             </tr>`
@@ -1481,6 +1484,7 @@ export const generateLedgerStatementHtml = (
       padding: 0 4px;
       border: 1px solid #CBD5E1;
       vertical-align: middle;
+      overflow: hidden;
     }
     .data-row {
       height: 28px;
@@ -1497,17 +1501,19 @@ export const generateLedgerStatementHtml = (
       border: 1px solid #CBD5E1 !important;
       font-size: 9.5px;
       font-weight: 800;
-      padding: 3px 4px;
+      padding: 3px 6px;
       height: 23px;
+      white-space: nowrap;
     }
     .grand-total-row td {
       background-color: #0F172A !important;
       color: #FFFFFF !important;
       border: 1px solid #0F172A !important;
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 900;
-      padding: 4px 4px;
+      padding: 4px 6px;
       height: 25px;
+      white-space: nowrap;
     }
     .signature-section {
       margin-top: auto;
@@ -1687,7 +1693,7 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
         <table class="data-table">
           <thead>
             <tr>
-              <th class="text-center" style="width:4%;">#</th>
+              <th class="text-center" style="width:5%;">S.No</th>
               <th class="text-center" style="width:11%;">Date</th>
               <th class="text-center" style="width:9%;">Bill No</th>
               <th style="width:26%;">Customer Name</th>
@@ -1707,9 +1713,9 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
             <tr class="page-total-row">
               <td colspan="4" class="text-right" style="padding-right:8px;">PAGE ${pageIdx + 1} TOTAL (${pageItems.length} Bills):</td>
               <td class="text-center">${pageCasesSum}</td>
-              <td class="text-right">₹ ${pageSubtotalSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="white-space: nowrap; padding-right: 6px;">₹ ${pageSubtotalSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               <td colspan="3"></td>
-              <td class="text-right">₹ ${pageTotalSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="white-space: nowrap; padding-right: 6px;">₹ ${pageTotalSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
             </tr>
 
             <!-- Final Page Only: OVERALL GRAND TOTAL -->
@@ -1719,9 +1725,9 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
             <tr class="grand-total-row">
               <td colspan="4" class="text-right" style="padding-right:8px;">OVERALL GRAND TOTAL (${particulars.length} Bills):</td>
               <td class="text-center">${overallCasesSum}</td>
-              <td class="text-right">₹ ${overallSubtotalSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="white-space: nowrap; padding-right: 6px;">₹ ${overallSubtotalSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
               <td colspan="3"></td>
-              <td class="text-right">₹ ${overallTotalSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="white-space: nowrap; padding-right: 6px;">₹ ${overallTotalSum.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
             </tr>`
                 : ''
             }
@@ -1967,8 +1973,9 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
       border: 1px solid #CBD5E1 !important;
       font-size: 9.5px;
       font-weight: 800;
-      padding: 3px 3px;
+      padding: 3px 6px;
       height: 23px;
+      white-space: nowrap;
     }
     .grand-total-row td {
       background-color: #0F172A !important;
@@ -1976,8 +1983,9 @@ export const generateParticularsListPrintHtml = (particulars: any[], dateRangeTe
       border: 1px solid #0F172A !important;
       font-size: 10px;
       font-weight: 900;
-      padding: 4px 3px;
+      padding: 4px 6px;
       height: 24px;
+      white-space: nowrap;
     }
     .signature-section {
       margin-top: auto;
@@ -2119,7 +2127,7 @@ export const generateCompaniesListPrintHtml = (companies: any[]): string => {
       <table class="table">
         <thead>
           <tr>
-            <th class="text-center" style="width:5%;">#</th>
+            <th class="text-center" style="width:5%;">S.No</th>
             <th style="width:30%;">Company Name</th>
             <th style="width:18%;">Phone</th>
             <th style="width:18%;">GSTIN</th>
@@ -2252,7 +2260,7 @@ export const generateProductsListPrintHtml = (products: any[]): string => {
       <table class="table">
         <thead>
           <tr>
-            <th class="text-center" style="width:5%;">#</th>
+            <th class="text-center" style="width:5%;">S.No</th>
             <th style="width:35%;">Product Name</th>
             <th style="width:22%;">Company</th>
             <th class="text-center" style="width:12%;">Case</th>
@@ -2376,8 +2384,10 @@ export const generatePerformaHtml = (performa: any): string => {
         <div style="font-weight: 700; color: #0F172A;">${prodName}</div>
         ${prodCode ? `<div style="font-size: 10.5px; color: #64748B;">Code: ${prodCode}</div>` : ''}
       </td>
-      <td style="padding: 7px 8px; border: 1px solid #CBD5E1; color: #1D4ED8; font-weight: 600; font-size: 11.5px;">
-        ${compName || '-'}
+      <td style="padding: 6px 8px; border: 1px solid #CBD5E1; text-align: center;">
+        <span style="display: inline-block; padding: 2.5px 8px; border-radius: 4px; background-color: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; font-weight: 800; font-size: 11px; text-transform: uppercase; letter-spacing: 0.02em; white-space: nowrap;">
+          ${compName || '-'}
+        </span>
       </td>
       <td style="padding: 7px 6px; text-align: center; font-weight: 800; color: #0F172A; border: 1px solid #CBD5E1;">
         ${item.requiredCases}
@@ -2578,15 +2588,25 @@ export const generatePerformaHtml = (performa: any): string => {
                   <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Date: </span><span style="font-weight: 700;">${performa.date || '-'}</span></div>
                   <div>
                     <span style="color: #64748B; font-weight: 600;">Status: </span>
-                    <span style="font-weight: 800; color: ${performa.status === 'ACTIVE' ? '#16A34A' : performa.status === 'PARTIALLY_USED' ? '#D97706' : '#1D4ED8'}; font-size: 11px;">
-                      ${performa.status || 'ACTIVE'}
+                    <span style="display: inline-block; padding: 2px 7px; border-radius: 4px; font-weight: 800; font-size: 11px; background-color: ${performa.status === 'ACTIVE' ? '#DCFCE7' : (performa.status === 'PARTIALLY_USED' || performa.status === 'PARTIAL') ? '#FEF3C7' : '#F1F5F9'}; color: ${performa.status === 'ACTIVE' ? '#166534' : (performa.status === 'PARTIALLY_USED' || performa.status === 'PARTIAL') ? '#92400E' : '#475569'};">
+                      ${(performa.status === 'PARTIALLY_USED' ? 'PARTIAL' : (performa.status || 'ACTIVE')).toUpperCase()}
                     </span>
                   </div>
+                  ${(performa.companyName || (performa.products || []).find((p: any) => p.companyName)?.companyName) ? `
+                  <div style="margin-top: 8px;">
+                    <span style="display: inline-block; padding: 4px 12px; background-color: #EFF6FF; color: #1D4ED8; border: 2px solid #2563EB; border-radius: 6px; font-weight: 900; font-size: 13px; text-transform: uppercase; letter-spacing: 0.04em;">
+                      🏢 COMPANY: ${performa.companyName || (performa.products || []).find((p: any) => p.companyName)?.companyName}
+                    </span>
+                  </div>` : ''}
                 </td>
                 <td style="width: 50%; vertical-align: top; padding: 9px 14px;">
                   <div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Customer: </span><span style="font-weight: 800; font-size: 13px; color: #0F172A;">${customer.name || '-'}</span></div>
                   ${customer.phone ? `<div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Phone: </span><span style="font-weight: 600;">${customer.phone}</span></div>` : ''}
-                  ${customer.companyName ? `<div style="margin-bottom: 4px;"><span style="color: #64748B; font-weight: 600;">Company: </span><span>${customer.companyName}</span></div>` : ''}
+                  ${customer.companyName ? `
+                  <div style="margin-bottom: 5px; margin-top: 3px;">
+                    <span style="color: #475569; font-weight: 700;">Customer Company: </span>
+                    <span style="display: inline-block; padding: 2.5px 9px; background-color: #FEF3C7; color: #92400E; border: 1.5px solid #F59E0B; border-radius: 4px; font-weight: 900; font-size: 12.5px;">${customer.companyName}</span>
+                  </div>` : ''}
                   ${customer.address ? `<div><span style="color: #64748B; font-weight: 600;">Address: </span><span>${customer.address}</span></div>` : ''}
                 </td>
               </tr>
@@ -2595,9 +2615,9 @@ export const generatePerformaHtml = (performa: any): string => {
             <table style="width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11.5px; border: 1.5px solid #0F172A;">
               <thead>
                 <tr style="background-color: #0F172A;">
-                  <th style="width: 4%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 10.5px;">#</th>
+                  <th style="width: 5%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 10.5px;">S.No</th>
                   <th style="width: 38%; text-align: left; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 10px; font-weight: 800; font-size: 10.5px;">Product Description</th>
-                  <th style="width: 18%; text-align: left; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 8px; font-weight: 800; font-size: 10.5px;">Company</th>
+                  <th style="width: 18%; text-align: center; background-color: #1E293B; color: #FEF08A; border: 1px solid #0F172A; padding: 7px 8px; font-weight: 800; font-size: 10.5px;">Company</th>
                   <th style="width: 9%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 10.5px;">Total Cases</th>
                   <th style="width: 11%; text-align: right; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 8px; font-weight: 800; font-size: 10.5px;">Rate (₹)</th>
                   <th style="width: 7%; text-align: center; background-color: #0F172A; color: #FFFFFF; border: 1px solid #0F172A; padding: 7px 6px; font-weight: 800; font-size: 10.5px;">Units</th>
@@ -2637,7 +2657,7 @@ export const generatePerformaHtml = (performa: any): string => {
                     </div>` : ''}
                     ${taxAmt > 0 ? `
                     <div class="summary-row" style="display: flex; justify-content: space-between; margin-bottom: 4px; color: #475569;">
-                      <span>Tax (Amount):</span><strong style="font-weight: 700; color: #0F172A;">+ ₹ ${formatCurrency(taxAmt)}</strong>
+                      <span>Tax Amount ${taxNum > 0 ? `(${taxNum}%)` : ''}:</span><strong style="font-weight: 700; color: #0F172A;">+ ₹ ${formatCurrency(taxAmt)}</strong>
                     </div>` : ''}
                     <div class="summary-row" style="display: flex; justify-content: space-between; padding-top: 6px; border-top: 2px solid #1D4ED8; margin-top: 4px; font-size: 12.5px; color: #1D4ED8;">
                       <span style="font-weight: 800;">Total Allocated Value:</span><strong style="font-weight: 900; font-size: 13.5px;">₹ ${formatCurrency(totalAllocatedVal)}</strong>
@@ -2714,16 +2734,43 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
       const custName = p.customerSnapshot?.name || p.customerName || '-';
       const compName = p.companyName || p.customerSnapshot?.companyName || '-';
 
+      const rawStatus = (p.status || 'ACTIVE').toUpperCase();
+      let statusLabel = 'ACTIVE';
+      let statusBg = '#DCFCE7';
+      let statusColor = '#166534';
+
+      if (rawStatus === 'PARTIALLY_USED' || rawStatus === 'PARTIAL') {
+        statusLabel = 'PARTIAL';
+        statusBg = '#FEF3C7';
+        statusColor = '#92400E';
+      } else if (rawStatus === 'COMPLETED') {
+        statusLabel = 'COMPLETED';
+        statusBg = '#F1F5F9';
+        statusColor = '#475569';
+      } else if (rawStatus === 'CANCELLED') {
+        statusLabel = 'CANCELLED';
+        statusBg = '#FEE2E2';
+        statusColor = '#991B1B';
+      } else if (rawStatus === 'ACTIVE') {
+        statusLabel = 'ACTIVE';
+        statusBg = '#DCFCE7';
+        statusColor = '#166534';
+      } else {
+        statusLabel = rawStatus.replace(/_/g, ' ');
+      }
+
       return `
         <tr class="data-row" style="background-color: ${isEven ? '#F8FAFC' : '#FFFFFF'};">
           <td class="text-center" style="width:4%;">${globalIdx + 1}</td>
-          <td class="text-center" style="font-weight:800; color:#1D4ED8; width:12%;">#${p.performaNumber || '-'}</td>
-          <td class="text-center" style="width:11%; color:#334155;">${p.date || '-'}</td>
-          <td style="width:27%; font-weight:700; color:#0F172A; word-break: break-word;">${custName}</td>
-          <td style="width:17%; color:#475569; font-size:9.5px; word-break: break-word;">${compName}</td>
+          <td class="text-center" style="font-weight:800; color:#1D4ED8; width:10%;">#${p.performaNumber || '-'}</td>
+          <td class="text-center" style="width:10%; color:#334155;">${p.date || '-'}</td>
+          <td style="width:25%; font-weight:700; color:#0F172A; word-break: break-word;">${custName}</td>
+          <td style="width:15%; color:#475569; font-size:9.5px; word-break: break-word;">${compName}</td>
           <td class="text-center" style="width:8%; font-weight:800;">${cases}</td>
-          <td class="text-center" style="width:9%; font-size:9.5px; font-weight:700; color:${p.status === 'ACTIVE' ? '#16A34A' : '#1D4ED8'};">${p.status || 'ACTIVE'}</td>
-          <td class="text-right" style="width:12%; font-weight:800; color:#0F172A;">₹ ${value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+          <td class="text-center" style="width:13%; padding:0 2px;">
+            <span style="display:inline-block; padding:1.5px 6px; border-radius:3px; font-size:8.5px; font-weight:800; letter-spacing:0.02em; background-color:${statusBg}; color:${statusColor}; white-space:nowrap;">${statusLabel}</span>
+          </td>
+          <td class="text-right" style="width:15%; font-weight:800; color:#0F172A; white-space:nowrap; padding-right:6px;">₹ ${value.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
         </tr>
       `;
     }).join('');
@@ -2784,14 +2831,14 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
         <table class="data-table">
           <thead>
             <tr>
-              <th class="text-center" style="width:4%;">#</th>
-              <th class="text-center" style="width:12%;">Performa #</th>
-              <th class="text-center" style="width:11%;">Date</th>
-              <th style="width:27%;">Customer Name</th>
-              <th style="width:17%;">Company</th>
+              <th class="text-center" style="width:4%;">S.No</th>
+              <th class="text-center" style="width:10%;">Performa #</th>
+              <th class="text-center" style="width:10%;">Date</th>
+              <th style="width:25%;">Customer Name</th>
+              <th style="width:15%;">Company</th>
               <th class="text-center" style="width:8%;">Cases</th>
-              <th class="text-center" style="width:9%;">Status</th>
-              <th class="text-right" style="width:12%;">Total Value</th>
+              <th class="text-center" style="width:13%;">Status</th>
+              <th class="text-right" style="width:15%; padding-right:6px;">Total Value</th>
             </tr>
           </thead>
           <tbody>
@@ -2803,7 +2850,7 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
               <td colspan="5" class="text-right" style="padding-right:8px;">PAGE ${pageIdx + 1} TOTAL (${pageItems.length} Performas):</td>
               <td class="text-center">${pageCases}</td>
               <td></td>
-              <td class="text-right">₹ ${pageValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="padding-right:6px; white-space:nowrap;">₹ ${pageValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
             </tr>
 
             <!-- Final Page Only: OVERALL GRAND TOTAL -->
@@ -2814,7 +2861,7 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
               <td colspan="5" class="text-right" style="padding-right:8px;">OVERALL GRAND TOTAL (${performas.length} Performas):</td>
               <td class="text-center">${overallTotalCases}</td>
               <td></td>
-              <td class="text-right">₹ ${overallTotalValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
+              <td class="text-right" style="padding-right:6px; white-space:nowrap;">₹ ${overallTotalValue.toLocaleString('en-IN', { minimumFractionDigits: 2 })}</td>
             </tr>`
                 : ''
             }
@@ -3033,6 +3080,7 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
       padding: 0 4px;
       border: 1px solid #CBD5E1;
       vertical-align: middle;
+      overflow: hidden;
     }
     .data-row {
       height: 28px;
@@ -3049,17 +3097,19 @@ export const generateAllPerformasPrintHtml = (performas: any[], reportTitle = 'P
       border: 1px solid #CBD5E1 !important;
       font-size: 9.5px;
       font-weight: 800;
-      padding: 3px 4px;
+      padding: 3px 6px;
       height: 23px;
+      white-space: nowrap;
     }
     .grand-total-row td {
       background-color: #0F172A !important;
       color: #FFFFFF !important;
       border: 1px solid #0F172A !important;
-      font-size: 10.5px;
+      font-size: 10px;
       font-weight: 900;
-      padding: 4px 4px;
+      padding: 4px 6px;
       height: 25px;
+      white-space: nowrap;
     }
     .signature-section {
       margin-top: auto;
