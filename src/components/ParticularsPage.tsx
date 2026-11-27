@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type FC } from 'react';
+import { useState, useEffect, useMemo, useRef, type FC } from 'react';
 import {
   Box,
   Typography,
@@ -92,6 +92,8 @@ interface ProductRowItem {
 interface ParticularsPageProps {
   initialCustomerName?: string;
   initialSubTab?: ParticularSubTab;
+  navigationKey?: number;
+  isActive?: boolean;
   userRole?: 'superadmin' | 'admin' | 'user';
   onNavigateToPerforma?: (customerName?: string) => void;
 }
@@ -99,6 +101,8 @@ interface ParticularsPageProps {
 export const ParticularsPage: FC<ParticularsPageProps> = ({
   initialCustomerName,
   initialSubTab,
+  navigationKey = 0,
+  isActive = true,
   userRole,
   onNavigateToPerforma,
 }) => {
@@ -113,7 +117,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   })();
   const [activeSubTab, setActiveSubTab] = useState<ParticularSubTab>(() => {
     if (isCustomer) return 'Account Details';
-    return initialSubTab || (localStorage.getItem('gpk_particular_subtab') as ParticularSubTab) || (localStorage.getItem('dheeksha_particular_subtab') as ParticularSubTab) || 'Select Customer';
+    return initialSubTab || 'Select Customer';
   });
 
   // Live Dropdown options
@@ -188,13 +192,23 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
   const filteredProductOptions = useMemo(() => {
     if (!company || !company.trim()) return productOptions;
     const c = company.trim().toLowerCase();
-    const matching = productOptions.filter((p) => (p.company || '').trim().toLowerCase() === c);
-    if (matching.length > 0) {
-      const others = productOptions.filter((p) => (p.company || '').trim().toLowerCase() !== c);
-      return [...matching, ...others];
-    }
-    return productOptions;
+    return productOptions.filter((p) => (p.company || '').trim().toLowerCase() === c);
   }, [productOptions, company]);
+
+  const handleCompanySelection = (nextCompany: string) => {
+    setCompany(nextCompany);
+    if (nextCompany.trim() && selectedProduct) {
+      const c = nextCompany.trim().toLowerCase();
+      const stillValid = productOptions.some(
+        (p) => p.name === selectedProduct && (p.company || '').trim().toLowerCase() === c
+      );
+      if (!stillValid) {
+        setSelectedProduct('');
+        setRate('');
+        setPkt('');
+      }
+    }
+  };
 
   // Warning Dialog State for Additional Product / Exceeded Cases
   const [warningDialog, setWarningDialog] = useState<{
@@ -493,38 +507,34 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     }
   }, [productRows]);
 
-  // Update customer when prop changes
+  // Update customer and subtab only on explicit cross-page navigation or customer login
   useEffect(() => {
+    if (navigationKey === 0 && !isCustomer) return;
     if (initialCustomerName) {
       setCurrentCustomerName(initialCustomerName);
       setFilterCustomer(initialCustomerName);
       setAddCreditCustomerName(initialCustomerName);
       const match = customerOptions.find((c) => c.name === initialCustomerName);
-      if (match) {
-        setSelectedCustomerId(match.id);
-      }
-    } else {
+      setSelectedCustomerId(match ? match.id : '');
+    } else if (!isCustomer) {
       setCurrentCustomerName('');
       setFilterCustomer('');
       setAddCreditCustomerName('');
       setSelectedCustomerId('');
     }
-  }, [initialCustomerName, customerOptions]);
-
-  // Update subtab when prop changes
-  useEffect(() => {
-    if (initialSubTab) {
+    if (initialSubTab && !isCustomer) {
       setActiveSubTab(initialSubTab);
-      localStorage.setItem('gpk_particular_subtab', initialSubTab);
     }
-  }, [initialSubTab]);
+  }, [navigationKey, isCustomer, initialCustomerName, initialSubTab]);
 
-  // Persist activeSubTab whenever it changes
+  // Keep selectedCustomerId synced once customerOptions loads without resetting user selections
   useEffect(() => {
-    if (activeSubTab) {
-      localStorage.setItem('gpk_particular_subtab', activeSubTab);
+    if (!currentCustomerName || selectedCustomerId || customerOptions.length === 0) return;
+    const match = customerOptions.find((c) => c.name === currentCustomerName);
+    if (match) {
+      setSelectedCustomerId(match.id);
     }
-  }, [activeSubTab]);
+  }, [customerOptions, currentCustomerName, selectedCustomerId]);
 
   // Fetch Customer Performa Summary whenever customer changes
   useEffect(() => {
@@ -553,51 +563,60 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     };
   }, [currentCustomerName]);
 
-  // Load Dropdown Options
-  useEffect(() => {
-    const loadOptions = async () => {
-      try {
-        const [custRes, compRes, prodRes] = await Promise.all([
-          CustomersApi.getAll(),
-          CompaniesApi.getAll(),
-          ProductsApi.getAll(),
-        ]);
+  // Load Dropdown Options (and silently refresh when returning to this tab without wiping form state)
+  const loadOptions = async (isInitial = false) => {
+    try {
+      const [custRes, compRes, prodRes] = await Promise.all([
+        CustomersApi.getAll(),
+        CompaniesApi.getAll(),
+        ProductsApi.getAll(),
+      ]);
 
-        if (custRes && custRes.length > 0) {
-          const mapped = custRes.map((c: any) => ({ id: c._id || c.id, name: c.name, mobile: c.mobile || '' }));
-          setCustomerOptions(mapped);
+      if (custRes && custRes.length > 0) {
+        const mapped = custRes.map((c: any) => ({ id: c._id || c.id, name: c.name, mobile: c.mobile || '' }));
+        setCustomerOptions(mapped);
 
-          if (currentCustomerName) {
-            const existing = mapped.find((c: any) => c.name === currentCustomerName);
-            if (existing) {
-              setSelectedCustomerId(existing.id);
-              setAddCreditCustomerName(existing.name);
-              setFilterCustomer(existing.name);
-            }
+        if (isInitial && currentCustomerName) {
+          const existing = mapped.find((c: any) => c.name === currentCustomerName);
+          if (existing) {
+            setSelectedCustomerId(existing.id);
+            setAddCreditCustomerName(existing.name);
+            setFilterCustomer(existing.name);
           }
         }
-
-        if (compRes && compRes.length > 0) {
-          const mapped = compRes.map((c: any) => ({ id: c._id || c.id, name: c.name }));
-          setCompanyOptions(mapped);
-        }
-
-        if (prodRes && prodRes.length > 0) {
-          const mapped = prodRes.map((p: any) => ({
-            id: p._id || p.id,
-            name: p.name,
-            rate: p.rate || 0,
-            pktUnit: p.pktUnit || '1',
-            company: (p.company || p.companyName || '').trim(),
-          }));
-          setProductOptions(mapped);
-        }
-      } catch (err) {
-        console.error('Error loading dropdown options:', err);
       }
-    };
-    loadOptions();
+
+      if (compRes && compRes.length > 0) {
+        const mapped = compRes.map((c: any) => ({ id: c._id || c.id, name: c.name }));
+        setCompanyOptions(mapped);
+      }
+
+      if (prodRes && prodRes.length > 0) {
+        const mapped = prodRes.map((p: any) => ({
+          id: p._id || p.id,
+          name: p.name,
+          rate: p.rate || 0,
+          pktUnit: p.pktUnit || '1',
+          company: (p.company || p.companyName || '').trim(),
+        }));
+        setProductOptions(mapped);
+      }
+    } catch (err) {
+      console.error('Error loading dropdown options:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadOptions(true);
   }, []);
+
+  const wasActiveRef = useRef(isActive);
+  useEffect(() => {
+    if (isActive && !wasActiveRef.current) {
+      loadOptions(false);
+    }
+    wasActiveRef.current = isActive;
+  }, [isActive]);
 
   // Fetch Accounts
   const fetchAccounts = async (targetCustomer?: string) => {
@@ -695,7 +714,9 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
     const piecesPerCase = parseFloat(pktUnitVal) || 1;
     const totalPieces = caseVal * (piecesPerCase > 0 ? piecesPerCase : 1);
     const lineAmt = (totalPieces * (parseFloat(rt) || 0)).toFixed(2);
-    const matchedProd = productOptions.find((p) => p.name.toLowerCase() === prodName.trim().toLowerCase());
+    const matchedProd = (company ? filteredProductOptions : productOptions).find(
+      (p) => p.name.toLowerCase() === prodName.trim().toLowerCase()
+    );
     const rowCompany = (company || matchedProd?.company || '').trim();
 
     const newRow: ProductRowItem = {
@@ -2039,7 +2060,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                     <Chip
                       label={company}
                       size="small"
-                      onDelete={() => setCompany('')}
+                      onDelete={() => handleCompanySelection('')}
                       sx={{
                         height: 20,
                         fontSize: '10.5px',
@@ -2057,10 +2078,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                   freeSolo
                   options={companyOptions.map((c) => c.name).filter(Boolean)}
                   value={company}
-                  onChange={(_e, val) => setCompany(val || '')}
+                  onChange={(_e, val) => handleCompanySelection(val || '')}
                   onInputChange={(_e, val, reason) => {
                     if (reason === 'input' || reason === 'clear') {
-                      setCompany(val || '');
+                      handleCompanySelection(val || '');
                     }
                   }}
                   renderInput={(params) => (
@@ -2109,7 +2130,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                           key={i}
                           label={cn}
                           size="small"
-                          onClick={() => setCompany(cn)}
+                          onClick={() => handleCompanySelection(cn)}
                           sx={{
                             cursor: 'pointer',
                             height: 20,
@@ -2618,9 +2639,10 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                 autoHighlight
                 sx={{ flex: { xs: '1 1 100%', sm: 2.5 }, minWidth: '160px' }}
                 options={filteredProductOptions}
+                noOptionsText={company ? `No products found for "${company}"` : 'No products found'}
                 getOptionLabel={(option) => (typeof option === 'string' ? option : option.name || '')}
                 isOptionEqualToValue={(option, val) => option.id === val.id || option.name === val.name}
-                value={productOptions.find((p) => p.name === selectedProduct) || null}
+                value={filteredProductOptions.find((p) => p.name === selectedProduct) || null}
                 onChange={(_, val) => {
                   if (val) {
                     setSelectedProduct(val.name);
@@ -2936,7 +2958,7 @@ export const ParticularsPage: FC<ParticularsPageProps> = ({
                               <Autocomplete
                                 freeSolo
                                 size="small"
-                                options={productOptions.map((p) => p.name)}
+                                options={filteredProductOptions.map((p) => p.name)}
                                 value={editRowData.particular}
                                 onInputChange={(_e, val) =>
                                   setEditRowData((prev) => ({ ...prev, particular: val || '' }))

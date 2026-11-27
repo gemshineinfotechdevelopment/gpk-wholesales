@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, type FC } from 'react';
+import { useState, useEffect, useMemo, useRef, type FC } from 'react';
 import {
   Box,
   Typography,
@@ -88,6 +88,8 @@ interface EditProductItem {
 interface PerformaPageProps {
   initialCustomerName?: string;
   initialSubTab?: PerformaSubTab;
+  navigationKey?: number;
+  isActive?: boolean;
   onNavigateAllPerforma?: () => void;
   onSelectCustomerForBill?: (customerName: string, subTab?: any) => void;
   userRole?: 'superadmin' | 'admin' | 'user';
@@ -96,6 +98,8 @@ interface PerformaPageProps {
 export const PerformaPage: FC<PerformaPageProps> = ({
   initialCustomerName,
   initialSubTab,
+  navigationKey = 0,
+  isActive = true,
   onNavigateAllPerforma,
   onSelectCustomerForBill,
   userRole,
@@ -108,12 +112,7 @@ export const PerformaPage: FC<PerformaPageProps> = ({
   })();
   // Subtab Navigation
   const [activeSubTab, setActiveSubTab] = useState<PerformaSubTab>(() => {
-    return (
-      initialSubTab ||
-      (localStorage.getItem('gpk_performa_subtab') as PerformaSubTab) ||
-      (localStorage.getItem('dheeksha_performa_subtab') as PerformaSubTab) ||
-      'Create Performa'
-    );
+    return initialSubTab || 'Create Performa';
   });
 
   // Master Dropdown Data
@@ -259,22 +258,40 @@ export const PerformaPage: FC<PerformaPageProps> = ({
     };
 
     initData();
-  }, [initialCustomerName]);
+  }, []);
 
-  // Sync initialSubTab
+  // Apply cross-page navigation target only when explicitly triggered
   useEffect(() => {
+    if (navigationKey === 0) return;
     if (initialSubTab) {
       setActiveSubTab(initialSubTab);
-      localStorage.setItem('gpk_performa_subtab', initialSubTab);
     }
-  }, [initialSubTab]);
+    if (initialCustomerName && customers.length > 0) {
+      const match = customers.find(
+        (c: any) => c.name.toLowerCase() === initialCustomerName.toLowerCase()
+      );
+      if (match) {
+        setSelectedCustomer(match);
+      }
+    }
+  }, [navigationKey, initialSubTab, initialCustomerName]);
 
-  // Persist activeSubTab on change
+  // Silently refresh dropdowns when returning to Performa without clearing draft items
+  const wasActiveRef = useRef(isActive);
   useEffect(() => {
-    if (activeSubTab) {
-      localStorage.setItem('gpk_performa_subtab', activeSubTab);
+    if (isActive && !wasActiveRef.current) {
+      Promise.all([
+        CustomersApi.getAll().catch(() => null),
+        ProductsApi.getAll().catch(() => null),
+        CompaniesApi.getAll().catch(() => null),
+      ]).then(([custList, prodList, compList]) => {
+        if (custList) setCustomers(custList);
+        if (prodList) setProducts(prodList);
+        if (compList) setCompanies(compList);
+      });
     }
-  }, [activeSubTab]);
+    wasActiveRef.current = isActive;
+  }, [isActive]);
 
   // Fetch summary and performas for selected customer
   const fetchCustomerPerformaData = async (customer: any) => {
