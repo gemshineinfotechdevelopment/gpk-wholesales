@@ -85,6 +85,52 @@ interface EditProductItem {
   allocatedAmount: number | string;
 }
 
+// Helper to determine if a performa date is within the last 3 days compared to current system date
+const isWithinLast3Days = (dateStr?: string, createdAt?: string | Date): boolean => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+  let targetDate: Date | null = null;
+
+  if (dateStr && typeof dateStr === 'string' && dateStr.trim() !== '') {
+    const trimmed = dateStr.trim();
+    const dmy = trimmed.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})$/);
+    if (dmy) {
+      const day = parseInt(dmy[1], 10);
+      const month = parseInt(dmy[2], 10) - 1;
+      const year = parseInt(dmy[3], 10);
+      targetDate = new Date(year, month, day);
+    } else {
+      const ymd = trimmed.match(/^(\d{4})[-/](\d{1,2})[-/](\d{1,2})$/);
+      if (ymd) {
+        const year = parseInt(ymd[1], 10);
+        const month = parseInt(ymd[2], 10) - 1;
+        const day = parseInt(ymd[3], 10);
+        targetDate = new Date(year, month, day);
+      } else {
+        const d = new Date(trimmed);
+        if (!isNaN(d.getTime())) {
+          targetDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        }
+      }
+    }
+  }
+
+  if (!targetDate && createdAt) {
+    const d = new Date(createdAt);
+    if (!isNaN(d.getTime())) {
+      targetDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    }
+  }
+
+  if (!targetDate) return false;
+
+  const diffMs = today.getTime() - targetDate.getTime();
+  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+  return diffDays >= 0 && diffDays <= 3;
+};
+
 interface PerformaPageProps {
   initialCustomerName?: string;
   initialSubTab?: PerformaSubTab;
@@ -2648,7 +2694,53 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                               {p.performaNumber}
                             </Typography>
                           </TableCell>
-                          <TableCell sx={{ color: '#475569', fontSize: '13px', whiteSpace: 'nowrap' }}>{p.date}</TableCell>
+                          <TableCell sx={{ whiteSpace: 'nowrap' }}>
+                            {(() => {
+                              const isRecent = isWithinLast3Days(p.date, p.createdAt);
+                              if (isRecent) {
+                                return (
+                                  <Tooltip title="Recent Performa (Within last 3 days from system date)" arrow>
+                                    <Box
+                                      sx={{
+                                        display: 'inline-flex',
+                                        alignItems: 'center',
+                                        gap: 0.6,
+                                        backgroundColor: '#ECFDF5',
+                                        border: '1.5px solid #10B981',
+                                        color: '#065F46',
+                                        px: 1,
+                                        py: 0.35,
+                                        borderRadius: '6px',
+                                        fontWeight: 700,
+                                        fontSize: '12.5px',
+                                        boxShadow: '0 1px 2px rgba(16, 185, 129, 0.15)',
+                                      }}
+                                    >
+                                      <span>{p.date}</span>
+                                      <Chip
+                                        label="NEW"
+                                        size="small"
+                                        sx={{
+                                          height: '16px',
+                                          fontSize: '9px',
+                                          fontWeight: 900,
+                                          backgroundColor: '#10B981',
+                                          color: '#FFFFFF',
+                                          px: 0.2,
+                                          borderRadius: '4px',
+                                        }}
+                                      />
+                                    </Box>
+                                  </Tooltip>
+                                );
+                              }
+                              return (
+                                <Typography sx={{ color: '#475569', fontSize: '13px', fontWeight: 500 }}>
+                                  {p.date}
+                                </Typography>
+                              );
+                            })()}
+                          </TableCell>
                           <TableCell>
                             <Chip
                               icon={<BusinessRoundedIcon sx={{ fontSize: '14px !important' }} />}
