@@ -221,6 +221,8 @@ export const createOrder = async (req: Request, res: Response, next: NextFunctio
         date: finalDate,
         notes: `Customer Online Order #${orderNumber}`,
         createdBy: 'Customer Order',
+        orderStatus: 'PENDING',
+        orderId: newOrder._id,
       });
 
       newOrder.performaId = String(performaDoc._id);
@@ -264,13 +266,20 @@ export const updateOrderStatus = async (req: Request, res: Response, next: NextF
     }
     await order.save();
 
-    // Sync approval state to linked performa
-    if (order.performaId) {
+    // Sync approval state and order status to linked performa
+    const pfQuery = order.performaId ? { _id: order.performaId } : (order.performaNumber ? { performaNumber: order.performaNumber } : null);
+    if (pfQuery) {
+      const updateFields: any = { orderStatus: status };
       if (isRejectedStatus) {
-        await Performa.findByIdAndUpdate(order.performaId, { isApproved: false, approvedForAdmin: false, status: 'CANCELLED' }).catch(() => {});
+        updateFields.isApproved = false;
+        updateFields.approvedForAdmin = false;
+        updateFields.status = 'CANCELLED';
       } else if (order.approvedForAdmin) {
-        await Performa.findByIdAndUpdate(order.performaId, { isApproved: true, approvedForAdmin: true, status: 'ACTIVE' }).catch(() => {});
+        updateFields.isApproved = true;
+        updateFields.approvedForAdmin = true;
+        updateFields.status = 'ACTIVE';
       }
+      await Performa.findOneAndUpdate(pfQuery, updateFields).catch(() => {});
     }
 
     res.status(200).json({ success: true, message: `Order status updated to ${status}`, data: order });

@@ -2696,10 +2696,24 @@ export const PerformaPage: FC<PerformaPageProps> = ({
                           </TableCell>
                           <TableCell sx={{ whiteSpace: 'nowrap' }}>
                             {(() => {
+                              const isCustomerOrder =
+                                p.createdBy === 'Customer Order' ||
+                                (p.notes && /Customer Online Order/i.test(p.notes));
+                              const orderStatus = (p.orderStatus || '').toUpperCase();
+                              const isSeen =
+                                orderStatus === 'SEEN' ||
+                                orderStatus === 'VERIFIED' ||
+                                orderStatus === 'SENT' ||
+                                orderStatus === 'APPROVED' ||
+                                orderStatus === 'COMPLETED' ||
+                                orderStatus === 'REJECTED';
                               const isRecent = isWithinLast3Days(p.date, p.createdAt);
-                              if (isRecent) {
+
+                              const shouldHighlight = isCustomerOrder && !isSeen && isRecent;
+
+                              if (shouldHighlight) {
                                 return (
-                                  <Tooltip title="Recent Performa (Within last 3 days from system date)" arrow>
+                                  <Tooltip title="New Unseen Customer Order (Within last 3 days)" arrow>
                                     <Box
                                       sx={{
                                         display: 'inline-flex',

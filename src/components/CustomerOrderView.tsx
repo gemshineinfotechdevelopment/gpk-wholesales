@@ -13,10 +13,7 @@ import {
   TextField,
   CircularProgress,
   InputBase,
-  MenuItem,
-  Select,
-  FormControl,
-  InputLabel,
+  Autocomplete,
   Chip,
   Dialog,
   DialogTitle,
@@ -479,40 +476,66 @@ export const CustomerOrderView: FC<CustomerOrderViewProps> = ({ user }) => {
             >
               {/* Company Filter & Search */}
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, flexWrap: 'wrap' }}>
-                <FormControl size="small" sx={{ minWidth: 240 }}>
-                  <InputLabel id="company-filter-label" sx={{ fontSize: '13px', fontWeight: 700, color: !selectedCompany ? '#D97706' : '#64748B' }}>
-                    Select Company *
-                  </InputLabel>
-                  <Select
-                    labelId="company-filter-label"
-                    value={selectedCompany}
-                    label="Select Company *"
-                    onChange={(e) => handleCompanyChange(e.target.value)}
-                    sx={{
-                      fontSize: '13px',
-                      fontWeight: 700,
-                      backgroundColor: '#FFFFFF',
-                      borderRadius: '6px',
-                      height: '40px',
-                      '& .MuiOutlinedInput-notchedOutline': {
-                        borderColor: !selectedCompany ? '#F59E0B' : '#CBD5E1',
-                        borderWidth: !selectedCompany ? '1.5px' : '1px',
+                {/* Searchable Company Dropdown with 7 visible items & clean alignment */}
+                <Autocomplete
+                  size="small"
+                  options={availableCompanies}
+                  value={selectedCompany || null}
+                  onChange={(_, val) => handleCompanyChange(val || '')}
+                  isOptionEqualToValue={(option, val) => option === val}
+                  slotProps={{
+                    listbox: {
+                      sx: {
+                        maxHeight: '252px', // 7 items * 36px
+                        '& .MuiAutocomplete-option': {
+                          minHeight: '36px',
+                          fontSize: '13px',
+                          fontWeight: 600,
+                        },
                       },
-                      '&:hover .MuiOutlinedInput-notchedOutline': {
-                        borderColor: !selectedCompany ? '#D97706' : '#1D4ED8',
-                      },
-                      '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
-                        borderColor: '#1D4ED8',
-                      },
-                    }}
-                  >
-                    {availableCompanies.map((cName) => (
-                      <MenuItem key={cName} value={cName}>
-                        {cName}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                    },
+                  }}
+                  sx={{
+                    minWidth: { xs: '100%', sm: 250 },
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '6px',
+                  }}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Select Company *"
+                      placeholder="Type to search company..."
+                      slotProps={{
+                        inputLabel: {
+                          shrink: true,
+                          sx: {
+                            fontSize: '13px',
+                            fontWeight: 700,
+                            color: !selectedCompany ? '#D97706 !important' : '#64748B',
+                          },
+                        },
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          height: '40px',
+                          borderRadius: '6px',
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          '& fieldset': {
+                            borderColor: !selectedCompany ? '#F59E0B !important' : '#CBD5E1',
+                            borderWidth: !selectedCompany ? '1.5px !important' : '1px',
+                          },
+                          '&:hover fieldset': {
+                            borderColor: !selectedCompany ? '#D97706 !important' : '#1D4ED8 !important',
+                          },
+                          '&.Mui-focused fieldset': {
+                            borderColor: '#1D4ED8 !important',
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                />
 
                 {/* Product Search Box */}
                 <Box

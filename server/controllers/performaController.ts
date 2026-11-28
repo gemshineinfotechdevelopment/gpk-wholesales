@@ -5,6 +5,7 @@ import { PerformaAudit } from '../models/PerformaAudit';
 import { Customer } from '../models/Customer';
 import { Company } from '../models/Company';
 import { Particular } from '../models/Particular';
+import { CustomerOrder } from '../models/CustomerOrder';
 import { escapeRegex } from '../utils/ledgerUtils';
 import { getNextCustomerIdCode } from './customerController';
 import { getCustomerPerformaSummary, calculatePendingCasesData } from '../services/performaConsumptionService';
@@ -156,11 +157,36 @@ export const getPerformas = async (req: Request, res: Response, next: NextFuncti
     let totalRemainingAdvance = 0;
     let totalRequiredCases = 0;
 
+    // Fetch linked customer orders to enrich orderStatus
+    const performaIds = performas.map((p: any) => String(p._id));
+    const performaNumbers = performas.map((p: any) => p.performaNumber).filter(Boolean);
+    const linkedOrders = await CustomerOrder.find({
+      $or: [
+        { performaId: { $in: performaIds } },
+        { performaNumber: { $in: performaNumbers } },
+      ],
+    }).select('status performaId performaNumber').lean();
+
+    const orderStatusMap = new Map<string, string>();
+    linkedOrders.forEach((o: any) => {
+      if (o.performaId) orderStatusMap.set(String(o.performaId), o.status);
+      if (o.performaNumber) orderStatusMap.set(o.performaNumber, o.status);
+    });
+
     const enrichedPerformas = performas.map((p: any) => {
       const custKey = String(p.customerId || p.customerSnapshot?.name || '');
       const custSummary =
         customerSummaryMap.get(custKey) ||
         (p.customerSnapshot?.name ? customerSummaryMap.get(p.customerSnapshot.name.toLowerCase()) : null);
+
+      const isCustomerOrder =
+        p.createdBy === 'Customer Order' ||
+        (p.notes && /Customer Online Order/i.test(p.notes));
+      const resolvedOrderStatus =
+        p.orderStatus ||
+        orderStatusMap.get(String(p._id)) ||
+        (p.performaNumber ? orderStatusMap.get(p.performaNumber) : undefined) ||
+        (isCustomerOrder ? 'PENDING' : undefined);
 
       const adv =
         Number(p.advanceAmount) > 0
@@ -189,6 +215,7 @@ export const getPerformas = async (req: Request, res: Response, next: NextFuncti
         advanceUsedAmount: custSummary?.totalAdvanceUsed ?? (p.advanceUsedAmount || 0),
         remainingAdvanceAmount: custSummary?.availableAmount ?? (p.remainingAdvanceAmount || adv),
         balanceAmount,
+        orderStatus: resolvedOrderStatus,
         customerPendingAmount: balanceAmount,
         performaRemainingAmount: balanceAmount,
         customerBills: [],

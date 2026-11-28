@@ -57,6 +57,8 @@ export interface IPerforma extends Document {
   createdBy?: string;
   isApproved?: boolean;
   approvedForAdmin?: boolean;
+  orderStatus?: string;
+  orderId?: mongoose.Types.ObjectId | string;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -122,6 +124,8 @@ const PerformaSchema: Schema = new Schema(
     createdBy: { type: String, trim: true, default: 'Admin' },
     isApproved: { type: Boolean, default: true, index: true },
     approvedForAdmin: { type: Boolean, default: true, index: true },
+    orderStatus: { type: String, trim: true, default: '' },
+    orderId: { type: Schema.Types.ObjectId, ref: 'CustomerOrder' },
   },
   { timestamps: true }
 );
